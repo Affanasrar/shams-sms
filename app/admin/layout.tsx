@@ -1,14 +1,35 @@
 // app/admin/layout.tsx
 import { UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server"; // 👈 New Import
+import prisma from "@/lib/prisma";            // 👈 New Import
+import { redirect } from "next/navigation";   // 👈 New Import
 import Link from "next/link";
-import { LayoutDashboard, Users, Calendar, DollarSign, BookOpen } from "lucide-react";
-import { Settings } from 'lucide-react' // Import the icon
+import { LayoutDashboard, Users, Calendar, DollarSign, BookOpen, Settings } from "lucide-react";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // 1. Get the current User ID
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // 2. 🔒 SECURITY GATE: Check Database Role
+  const user = await prisma.user.findFirst({
+    where: { clerkId: userId }
+  });
+
+  // 3. If NOT an Admin, kick them out to the Teacher Dashboard
+  if (!user || user.role !== 'ADMIN') {
+    console.log(`⚠️ Unauthorized Admin Access Attempt by: ${user?.email || userId}`);
+    redirect("/teacher");
+  }
+
+  // ✅ Authorized: Render the Admin Interface (Your original design)
   return (
     <div className="flex min-h-screen bg-gray-100 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-black text-white hidden md:flex flex-col">
+      <aside className="w-64 bg-black text-white hidden md:flex flex-col fixed h-full z-10">
         <div className="p-6">
           <h1 className="text-xl font-bold tracking-wider">SHAMS SMS</h1>
           <p className="text-xs text-gray-400">Admin Console</p>
@@ -24,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <NavLink href="/admin/settings" icon={<Settings size={20}/>} label="Configuration" />
         </nav>
 
-        <div className="p-6 border-t border-gray-800">
+        <div className="absolute bottom-0 w-64 p-6 border-t border-gray-800 bg-black">
            <div className="flex items-center gap-3">
              <UserButton afterSignOutUrl="/" />
              <span className="text-sm">My Profile</span>
@@ -33,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-8 md:ml-64">
         {children}
       </main>
     </div>
