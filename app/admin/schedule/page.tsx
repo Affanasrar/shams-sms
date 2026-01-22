@@ -2,36 +2,57 @@
 import prisma from '@/lib/prisma'
 import { SlotCard } from './slot-card' 
 import { CalendarDays } from 'lucide-react'
+import { Course, FeeType } from '@prisma/client'
 
 // Force fresh data every time so capacity is accurate
 export const dynamic = 'force-dynamic'
 
+type CourseWithAssignments = {
+  id: string
+  name: string
+  durationMonths: number
+  baseFee: any // Decimal
+  feeType: FeeType
+  slotAssignments: any[] // CourseOnSlot with includes
+}
+
 // 👇 THIS "export default" IS REQUIRED BY NEXT.JS
 export default async function SchedulePage() {
   
-  // Fetch Slots with Room details and Active Enrollments
+  // Fetch all slot assignments with course, slot, and enrollment data
   const assignments = await prisma.courseOnSlot.findMany({
     include: {
       course: true,
-      teacher: true,
       slot: {
         include: { room: true }
       },
+      teacher: true,
       enrollments: {
         where: { status: 'ACTIVE' },
-        select: { endDate: true } // Fetch dates to calculate vacancies
+        select: { endDate: true }
       }
     },
-    orderBy: { slot: { startTime: 'asc' } }
+    orderBy: { course: { name: 'asc' } }
   })
 
-  // Group by Day for better layout
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-  
-  const scheduleByDay = days.reduce((acc, day) => {
-    acc[day] = assignments.filter(a => a.slot.days.includes(day))
-    return acc
-  }, {} as Record<string, typeof assignments>)
+  // Group assignments by course
+  const coursesMap = new Map()
+  assignments.forEach(assignment => {
+    const courseId = assignment.courseId
+    if (!coursesMap.has(courseId)) {
+      coursesMap.set(courseId, {
+        id: courseId,
+        name: assignment.course.name,
+        durationMonths: assignment.course.durationMonths,
+        baseFee: assignment.course.baseFee,
+        feeType: assignment.course.feeType,
+        slotAssignments: []
+      })
+    }
+    coursesMap.get(courseId).slotAssignments.push(assignment)
+  })
+
+  const courses: CourseWithAssignments[] = Array.from(coursesMap.values())
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -40,35 +61,45 @@ export default async function SchedulePage() {
           <CalendarDays size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Class Timetable & Capacity</h1>
-          <p className="text-gray-500">Monitor active classes, occupancy, and upcoming vacancies.</p>
+          <h1 className="text-2xl font-bold">Course Timetables & Capacity</h1>
+          <p className="text-gray-500">Monitor all courses, their schedules, capacity, and current enrollments.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {days.filter(d => scheduleByDay[d].length > 0).map((day) => (
-          <div key={day} className="flex flex-col gap-4">
-            
-            {/* Day Header */}
-            <div className="bg-gray-100 p-3 rounded-lg text-center font-bold text-gray-700 border border-gray-200">
-              {day}
+      <div className="space-y-8">
+        {courses.map((course) => (
+          <div key={course.id} className="bg-white border rounded-lg p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{course.name}</h2>
+                <p className="text-sm text-gray-600">
+                  Duration: {course.durationMonths} months • Fee: ${course.baseFee.toString()} ({course.feeType})
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Total Slots: {course.slotAssignments.length}</p>
+              </div>
             </div>
 
-            {/* Render Slots for this Day */}
-            <div className="space-y-4">
-              {scheduleByDay[day].map((assignment) => (
-                <SlotCard key={assignment.id} data={assignment} />
-              ))}
-            </div>
-
+            {course.slotAssignments.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {course.slotAssignments.map((assignment) => (
+                  <SlotCard key={assignment.id} data={assignment} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No slots assigned to this course yet.</p>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {assignments.length === 0 && (
+      {courses.length === 0 && (
         <div className="text-center py-20 bg-white border border-dashed rounded-xl">
-          <p className="text-gray-500">No classes scheduled yet.</p>
-          <p className="text-sm">Go to Configuration to assign courses to slots.</p>
+          <p className="text-gray-500">No courses found.</p>
+          <p className="text-sm">Create courses first, then assign them to time slots.</p>
         </div>
       )}
     </div>

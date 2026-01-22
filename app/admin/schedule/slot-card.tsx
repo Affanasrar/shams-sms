@@ -10,6 +10,7 @@ type Props = {
     slot: { 
       startTime: Date
       endTime: Date
+      days: string
       room: { name: string; capacity: number }
     }
     // 👇 FIX: We must allow 'null' here because Prisma returns null for active students
@@ -45,6 +46,9 @@ export function SlotCard({ data }: Props) {
           <p className="text-xs text-gray-500">
             {new Date(data.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})} - 
             {new Date(data.slot.endTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}
+          </p>
+          <p className="text-xs text-gray-500">
+            {data.slot.days}
           </p>
         </div>
         <div className={`text-xs font-bold px-2 py-1 rounded ${isFull ? 'bg-red-200 text-red-800' : 'bg-green-100 text-green-800'}`}>
