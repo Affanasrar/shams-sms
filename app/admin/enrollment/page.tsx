@@ -3,18 +3,21 @@ import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 import { dropStudent } from '@/app/actions/enrollment'
-import { EnrollmentFilters } from './enrollment-filters' // 👈 Import the component
+import { EnrollmentFilters } from './enrollment-filters'
 
-export default async function EnrollmentIndex({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
-  // 1. Read Filters from URL
+// 👇 Define the props type correctly for Next.js 15+
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function EnrollmentIndex(props: Props) {
+  // 1. 👇 AWAIT the searchParams (Critical Fix)
+  const searchParams = await props.searchParams
+  
   const courseId = searchParams.courseId as string | undefined
   const slotId = searchParams.slotId as string | undefined
 
-  // 2. Fetch Filter Options (Courses & Slots)
+  // 2. Fetch Filter Options
   const courses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
   const slots = await prisma.slot.findMany({
     include: { room: true },
@@ -22,16 +25,23 @@ export default async function EnrollmentIndex({
   })
 
   // 3. Build Dynamic Query
-  const whereClause: any = { status: 'ACTIVE' }
+  // We start with the base requirement: Status must be ACTIVE
+  const whereClause: any = { 
+    status: 'ACTIVE',
+    courseOnSlot: {} // Initialize the relation filter object
+  }
 
+  // If a Course is selected, add it to the filter
   if (courseId) {
-    whereClause.courseOnSlot = { ...whereClause.courseOnSlot, courseId: courseId }
-  }
-  if (slotId) {
-    whereClause.courseOnSlot = { ...whereClause.courseOnSlot, slotId: slotId }
+    whereClause.courseOnSlot.courseId = courseId
   }
 
-  // 4. Fetch Enrollments based on filters
+  // If a Slot is selected, add it to the filter
+  if (slotId) {
+    whereClause.courseOnSlot.slotId = slotId
+  }
+
+  // 4. Fetch Enrollments
   const enrollments = await prisma.enrollment.findMany({
     where: whereClause,
     include: {
@@ -58,7 +68,7 @@ export default async function EnrollmentIndex({
         </Link>
       </div>
 
-      {/* 👇 RENDER THE FILTER BAR */}
+      {/* Render the Filters */}
       <EnrollmentFilters courses={courses} slots={slots} />
 
       <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
@@ -120,8 +130,8 @@ export default async function EnrollmentIndex({
             {enrollments.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                  <p className="mb-2 text-lg">No students found.</p>
-                  <p className="text-sm">Try changing filters or adding a new enrollment.</p>
+                  <p className="mb-2 text-lg">No students found for this filter.</p>
+                  <p className="text-sm">Try clearing filters or checking other classes.</p>
                 </td>
               </tr>
             )}
