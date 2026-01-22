@@ -13,7 +13,26 @@ type CourseWithAssignments = {
   durationMonths: number
   baseFee: any // Decimal
   feeType: FeeType
-  slotAssignments: any[] // CourseOnSlot with includes
+  slotAssignments: {
+    id: string
+    course: { name: string; durationMonths: number }
+    slot: { 
+      startTime: Date
+      endTime: Date
+      days: string
+      room: { name: string; capacity: number }
+    }
+    enrollments: { 
+      endDate: Date | null
+      student: {
+        id: string
+        name: string
+        phone: string
+        fatherName: string
+      }
+    }[]
+    teacher?: { firstName: string | null } | null
+  }[]
 }
 
 // 👇 THIS "export default" IS REQUIRED BY NEXT.JS
@@ -29,7 +48,17 @@ export default async function SchedulePage() {
       teacher: true,
       enrollments: {
         where: { status: 'ACTIVE' },
-        select: { endDate: true }
+        select: { 
+          endDate: true,
+          student: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              fatherName: true
+            }
+          }
+        }
       }
     },
     orderBy: { course: { name: 'asc' } }

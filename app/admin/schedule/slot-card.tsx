@@ -1,7 +1,8 @@
 // app/admin/schedule/slot-card.tsx
 'use client'
 
-import { Users, LogOut } from 'lucide-react'
+import { Users, LogOut, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState } from 'react'
 
 type Props = {
   data: {
@@ -14,12 +15,21 @@ type Props = {
       room: { name: string; capacity: number }
     }
     // 👇 FIX: We must allow 'null' here because Prisma returns null for active students
-    enrollments: { endDate: Date | null }[] 
+    enrollments: { 
+      endDate: Date | null
+      student: {
+        id: string
+        name: string
+        phone: string
+        fatherName: string
+      }
+    }[] 
     teacher?: { firstName: string | null } | null
   }
 }
 
 export function SlotCard({ data }: Props) {
+  const [showStudents, setShowStudents] = useState(false)
   const totalStudents = data.enrollments.length
   const capacity = data.slot.room.capacity
   const isFull = totalStudents >= capacity
@@ -39,7 +49,7 @@ export function SlotCard({ data }: Props) {
       
       {/* Header */}
       <div className="flex justify-between items-start mb-2">
-        <div>
+        <div className="flex-1">
           <h3 className="font-bold text-gray-900 line-clamp-1" title={data.course.name}>
             {data.course.name}
           </h3>
@@ -90,6 +100,38 @@ export function SlotCard({ data }: Props) {
              +{capacity - totalStudents} Seats Available Now
           </div>
         )
+      )}
+
+      {/* Toggle Students Button */}
+      {totalStudents > 0 && (
+        <button
+          onClick={() => setShowStudents(!showStudents)}
+          className="w-full mt-3 flex items-center justify-center gap-2 text-xs text-blue-600 hover:text-blue-800 font-medium py-2 border border-blue-200 rounded hover:bg-blue-50 transition-colors"
+        >
+          {showStudents ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {showStudents ? 'Hide' : 'Show'} Enrolled Students ({totalStudents})
+        </button>
+      )}
+
+      {/* Enrolled Students List */}
+      {showStudents && totalStudents > 0 && (
+        <div className="mt-3 border-t pt-3">
+          <h4 className="text-sm font-semibold text-gray-800 mb-2">Enrolled Students:</h4>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {data.enrollments.map((enrollment, index) => (
+              <div key={enrollment.student.id} className="bg-gray-50 p-2 rounded text-xs">
+                <div className="font-medium text-gray-900">{enrollment.student.name}</div>
+                <div className="text-gray-600">Father: {enrollment.student.fatherName}</div>
+                <div className="text-gray-600">Phone: {enrollment.student.phone}</div>
+                {enrollment.endDate && (
+                  <div className="text-gray-500 mt-1">
+                    Ends: {new Date(enrollment.endDate).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
     </div>
