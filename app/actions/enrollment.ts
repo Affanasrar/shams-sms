@@ -123,3 +123,27 @@ export async function getEnrollmentData() {
 
   return { students, assignments }
 }
+
+export async function dropStudent(formData: FormData) {
+  const enrollmentId = formData.get('enrollmentId') as string
+
+  if (!enrollmentId) return
+
+  try {
+    // Soft Delete: Mark as DROPPED and set endDate to today
+    await prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { 
+        status: 'DROPPED',
+        endDate: new Date() // Mark today as their last day
+      }
+    })
+
+    // Refresh the page so the student disappears from the list
+    revalidatePath('/admin/enrollment')
+    return { success: true, message: "Student dropped successfully" }
+  } catch (error) {
+    console.error("Drop Error:", error)
+    return { success: false, error: "Failed to drop student" }
+  }
+}
