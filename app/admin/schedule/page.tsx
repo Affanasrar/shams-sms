@@ -1,96 +1,76 @@
-// app/admin/schedule/slot-card.tsx
-'use client'
+// app/admin/schedule/page.tsx
+import prisma from '@/lib/prisma'
+import { SlotCard } from './slot-card' 
+import { CalendarDays } from 'lucide-react'
 
-import { Users, LogOut } from 'lucide-react'
+// Force fresh data every time so capacity is accurate
+export const dynamic = 'force-dynamic'
 
-type Props = {
-  data: {
-    id: string
-    course: { name: string; durationMonths: number }
-    slot: { 
-      startTime: Date
-      endTime: Date
-      room: { name: string; capacity: number }
-    }
-    // 👇 FIX: Allow endDate to be Date OR null
-    enrollments: { endDate: Date | null }[] 
-    // 👇 FIX: Allow teacher firstName to be null just in case
-    teacher?: { firstName: string | null } | null
-  }
-}
-
-export function SlotCard({ data }: Props) {
-  const totalStudents = data.enrollments.length
-  const capacity = data.slot.room.capacity
-  const isFull = totalStudents >= capacity
+// 👇 THIS "export default" IS REQUIRED BY NEXT.JS
+export default async function SchedulePage() {
   
-  const occupancyPercent = Math.min((totalStudents / capacity) * 100, 100)
+  // Fetch Slots with Room details and Active Enrollments
+  const assignments = await prisma.courseOnSlot.findMany({
+    include: {
+      course: true,
+      teacher: true,
+      slot: {
+        include: { room: true }
+      },
+      enrollments: {
+        where: { status: 'ACTIVE' },
+        select: { endDate: true } // Fetch dates to calculate vacancies
+      }
+    },
+    orderBy: { slot: { startTime: 'asc' } }
+  })
+
+  // Group by Day for better layout
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   
-  // Find the Next Vacancy
-  const today = new Date()
-  const nextGraduation = data.enrollments
-    // 1. Get all end dates
-    .map(e => e.endDate)
-    // 2. 👇 FIX: Filter out NULL dates and PAST dates
-    .filter((d): d is Date => d !== null && new Date(d) >= today)
-    // 3. Sort to find the earliest upcoming one
-    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]
+  const scheduleByDay = days.reduce((acc, day) => {
+    acc[day] = assignments.filter(a => a.slot.days.includes(day))
+    return acc
+  }, {} as Record<string, typeof assignments>)
 
   return (
-    <div className={`p-4 rounded-lg border shadow-sm transition-all hover:shadow-md ${isFull ? 'bg-red-50 border-red-200' : 'bg-white hover:border-blue-300'}`}>
-      
-      {/* Header */}
-      <div className="flex justify-between items-start mb-2">
+    <div className="max-w-7xl mx-auto space-y-8">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-3 bg-black text-white rounded-lg">
+          <CalendarDays size={24} />
+        </div>
         <div>
-          <h3 className="font-bold text-gray-900 line-clamp-1" title={data.course.name}>
-            {data.course.name}
-          </h3>
-          <p className="text-xs text-gray-500">
-            {new Date(data.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})} - 
-            {new Date(data.slot.endTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}
-          </p>
-        </div>
-        <div className={`text-xs font-bold px-2 py-1 rounded ${isFull ? 'bg-red-200 text-red-800' : 'bg-green-100 text-green-800'}`}>
-          {isFull ? 'FULL' : 'OPEN'}
+          <h1 className="text-2xl font-bold">Class Timetable & Capacity</h1>
+          <p className="text-gray-500">Monitor active classes, occupancy, and upcoming vacancies.</p>
         </div>
       </div>
 
-      {/* Teacher & Room */}
-      <div className="text-xs text-gray-600 mb-3 space-y-1">
-        <p>👨‍🏫 {data.teacher?.firstName || "No Teacher"}</p>
-        <p>📍 {data.slot.room.name}</p>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {days.filter(d => scheduleByDay[d].length > 0).map((day) => (
+          <div key={day} className="flex flex-col gap-4">
+            
+            {/* Day Header */}
+            <div className="bg-gray-100 p-3 rounded-lg text-center font-bold text-gray-700 border border-gray-200">
+              {day}
+            </div>
 
-      {/* Progress Bar */}
-      <div className="space-y-1 mb-3">
-        <div className="flex justify-between text-xs font-medium text-gray-700">
-          <span className="flex items-center gap-1"><Users size={12}/> Students</span>
-          <span>{totalStudents} / {capacity}</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-          <div 
-            className={`h-full rounded-full ${isFull ? 'bg-red-500' : 'bg-blue-500'}`} 
-            style={{ width: `${occupancyPercent}%` }}
-          />
-        </div>
-      </div>
+            {/* Render Slots for this Day */}
+            <div className="space-y-4">
+              {scheduleByDay[day].map((assignment) => (
+                <SlotCard key={assignment.id} data={assignment} />
+              ))}
+            </div>
 
-      {/* Next Vacancy Info */}
-      {isFull && nextGraduation ? (
-        <div className="bg-white/50 p-2 rounded border border-red-100 text-xs text-red-700 flex items-start gap-2">
-          <LogOut size={12} className="mt-0.5 shrink-0"/>
-          <span>
-            Seat opens: <strong>{new Date(nextGraduation).toLocaleDateString()}</strong>
-          </span>
-        </div>
-      ) : (
-        !isFull && (
-          <div className="text-xs text-green-600 font-medium flex items-center gap-1">
-             +{capacity - totalStudents} Seats Available Now
           </div>
-        )
-      )}
+        ))}
+      </div>
 
+      {assignments.length === 0 && (
+        <div className="text-center py-20 bg-white border border-dashed rounded-xl">
+          <p className="text-gray-500">No classes scheduled yet.</p>
+          <p className="text-sm">Go to Configuration to assign courses to slots.</p>
+        </div>
+      )}
     </div>
   )
 }
