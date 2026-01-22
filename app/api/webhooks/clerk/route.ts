@@ -23,7 +23,6 @@ export async function POST(req: Request) {
   const body = JSON.stringify(payload);
 
   // 3. Create a new Svix instance with your secret.
-  // Note: Add WEBHOOK_SECRET to your .env file
   const wh = new Webhook(process.env.WEBHOOK_SECRET || '');
 
   let evt: WebhookEvent
@@ -48,14 +47,15 @@ export async function POST(req: Request) {
   if (eventType === 'user.created') {
     const { id, email_addresses, first_name, last_name } = evt.data;
     const email = email_addresses[0].email_address;
-    const name = `${first_name} ${last_name}`;
 
     try {
+        // 👇 FIXED: Use firstName and lastName instead of 'name'
         await prisma.user.create({
             data: {
                 clerkId: id,
                 email: email,
-                name: name, // or firstName: first_name, lastName: last_name depending on your schema
+                firstName: first_name, 
+                lastName: last_name,
                 role: 'TEACHER' // Default role
             }
         })
