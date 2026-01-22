@@ -1,6 +1,7 @@
 // app/admin/settings/page.tsx
 import prisma from '@/lib/prisma'
 import { SettingsForms } from './settings-forms'
+export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
   const rooms = await prisma.room.findMany()
