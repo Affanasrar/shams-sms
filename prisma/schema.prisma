@@ -1,0 +1,204 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------
+// 1. User Management (Admin & Teacher)
+// --------------------------------------
+enum Role {
+  ADMIN
+  TEACHER
+}
+
+model User {
+  id            String   @id @default(uuid())
+  clerkId       String   @unique // Links to Clerk Auth [cite: 100]
+  email         String   @unique
+  firstName     String?
+  lastName      String?
+  role          Role     @default(TEACHER)
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  taughtSlots       CourseOnSlot[] // Slots this teacher is assigned to [cite: 108]
+  markedAttendance  Attendance[]
+  collectedPayments Transaction[]
+}
+
+// --------------------------------------
+// 2. Resource & Academic Structure
+// --------------------------------------
+enum FeeType {
+  MONTHLY
+  PACKAGE
+}
+
+model Room {
+  id       String @id @default(uuid())
+  name     String // e.g., "Lab 1"
+  capacity Int    // e.g., 15 [cite: 118]
+  slots    Slot[]
+}
+
+model Course {
+  id              String         @id @default(uuid())
+  name            String         // e.g., "Computer Basics"
+  durationMonths  Int
+  baseFee         Decimal
+  feeType         FeeType
+  slotAssignments CourseOnSlot[]
+  results         Result[]
+}
+
+model Slot {
+  id        String   @id @default(uuid())
+  roomId    String
+  startTime DateTime 
+  endTime   DateTime
+  days      String   // "Mon,Tue,Wed" [cite: 144]
+  
+  room      Room     @relation(fields: [roomId], references: [id])
+  courses   CourseOnSlot[]
+}
+
+// The Junction Table: A specific Course, taught by a Teacher, in a Slot
+model CourseOnSlot {
+  id        String  @id @default(uuid())
+  slotId    String
+  courseId  String
+  teacherId String?
+
+  slot        Slot        @relation(fields: [slotId], references: [id])
+  course      Course      @relation(fields: [courseId], references: [id])
+  teacher     User?       @relation(fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+  attendance  Attendance[]
+}
+
+// --------------------------------------
+// 3. Student Domain
+// --------------------------------------
+enum EnrollStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+model Student {
+  id          String   @id @default(uuid())
+  name        String
+  fatherName  String
+  phone       String
+  address     String?
+  admission   DateTime @default(now()) // Global admission [cite: 173]
+
+  enrollments Enrollment[]
+  fees        Fee[]
+  attendance  Attendance[]
+  results     Result[]
+}
+
+model Enrollment {
+  id             String       @id @default(uuid())
+  studentId      String
+  courseOnSlotId String
+  joiningDate    DateTime     @default(now()) // Critical for "Rolling Fee" [cite: 185]
+  status         EnrollStatus @default(ACTIVE)
+  endDate        DateTime?    
+  extendedDays   Int          @default(0)     // For "Student need some more days" [cite: 188]
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  courseOnSlot CourseOnSlot @relation(fields: [courseOnSlotId], references: [id])
+
+  fees         Fee[] //
+}
+
+// --------------------------------------
+// 4. Financial Domain
+// --------------------------------------
+enum FeeStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+model Fee {
+  id           String    @id @default(uuid())
+  studentId    String
+  enrollmentId String?
+  amount       Decimal
+  dueDate      DateTime
+  status       FeeStatus @default(UNPAID)
+  cycleDate    DateTime  // The specific month this fee covers [cite: 209]
+
+  student      Student       @relation(fields: [studentId], references: [id])
+  enrollment   Enrollment?   @relation(fields: [enrollmentId], references: [id])
+  transactions Transaction[]
+  
+  @@index([status, dueDate]) // Optimize for "Overdue" reports
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  feeId         String
+  amount        Decimal
+  date          DateTime @default(now())
+  collectedById String
+
+  fee         Fee  @relation(fields: [feeId], references: [id])
+  collectedBy User @relation(fields: [collectedById], references: [id])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  title       String
+  amount      Decimal
+  date        DateTime @default(now())
+  description String?
+}
+
+// --------------------------------------
+// 5. Academic Records
+// --------------------------------------
+enum AttendStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+}
+
+model Attendance {
+  id             String       @id @default(uuid())
+  studentId      String
+  courseOnSlotId String
+  date           DateTime
+  status         AttendStatus
+  markedById     String
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  courseOnSlot CourseOnSlot @relation(fields: [courseOnSlotId], references: [id])
+  markedBy     User         @relation(fields: [markedById], references: [id])
+
+  @@unique([studentId, courseOnSlotId, date]) // Prevent duplicate marking [cite: 251]
+}
+
+model Result {
+  id        String   @id @default(uuid())
+  studentId String
+  courseId  String
+  marks     Decimal
+  total     Decimal
+  grade     String?
+  attempt   Int      @default(1) // Handles "Student may give Test Multiple time" [cite: 266]
+  date      DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+  course  Course  @relation(fields: [courseId], references: [id])
+}

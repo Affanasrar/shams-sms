@@ -1,0 +1,116 @@
+// app/teacher/attendance/[id]/attendance-form.tsx
+'use client'
+
+import { useActionState } from 'react'
+import { submitAttendance } from '@/app/actions/attendance'
+import { CalendarIcon, UserCheck, CheckCircle2, AlertCircle } from 'lucide-react'
+
+// Define the shape of our state
+type ActionState = {
+  success: boolean
+  message?: string
+  error?: string
+}
+
+const initialState: ActionState = { success: false }
+
+type Props = {
+  classId: string
+  teacherId: string
+  enrollments: any[] // We pass the student list here
+}
+
+export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
+  const [state, action, isPending] = useActionState<ActionState, FormData>(submitAttendance, initialState)
+  
+  const today = new Date().toISOString().split('T')[0]
+
+  return (
+    <form action={action} className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      
+      {/* Hidden Fields */}
+      <input type="hidden" name="classId" value={classId} />
+      <input type="hidden" name="teacherId" value={teacherId} />
+      
+      {/* Date Header */}
+      <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+        <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+          <CalendarIcon size={16}/> 
+          Date:
+          <input 
+            type="date" 
+            name="date" 
+            defaultValue={today} 
+            className="bg-transparent border-none focus:ring-0 p-0 text-gray-900 font-bold"
+          />
+        </div>
+        <div className="text-sm text-gray-500">
+          Total Students: {enrollments.length}
+        </div>
+      </div>
+
+      {/* Student List */}
+      <div className="divide-y max-h-[60vh] overflow-y-auto">
+        {enrollments.map((enr) => (
+          <div key={enr.student.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                {enr.student.name.charAt(0)}
+              </div>
+              <div>
+                <p className="font-bold text-gray-900">{enr.student.name}</p>
+                <p className="text-xs text-gray-500">ID: {enr.student.id.slice(0,6)}</p>
+              </div>
+            </div>
+
+            {/* Status Radio Buttons */}
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <label className="cursor-pointer">
+                <input type="radio" name={`status_${enr.student.id}`} value="PRESENT" defaultChecked className="peer sr-only" />
+                <span className="block px-3 py-1 rounded-md text-xs font-bold text-gray-500 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-sm transition-all">
+                  P
+                </span>
+              </label>
+              <label className="cursor-pointer">
+                <input type="radio" name={`status_${enr.student.id}`} value="ABSENT" className="peer sr-only" />
+                <span className="block px-3 py-1 rounded-md text-xs font-bold text-gray-500 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm transition-all">
+                  A
+                </span>
+              </label>
+              <label className="cursor-pointer">
+                <input type="radio" name={`status_${enr.student.id}`} value="LATE" className="peer sr-only" />
+                <span className="block px-3 py-1 rounded-md text-xs font-bold text-gray-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">
+                  L
+                </span>
+              </label>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Submit Footer */}
+      <div className="p-4 bg-gray-50 border-t flex flex-col items-end gap-3">
+        
+        {/* Success/Error Messages */}
+        {state?.message && (
+          <div className="flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+            <CheckCircle2 size={14} /> {state.message}
+          </div>
+        )}
+        {state?.error && (
+          <div className="flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-100">
+            <AlertCircle size={14} /> {state.error}
+          </div>
+        )}
+
+        <button 
+          disabled={isPending}
+          className="bg-black text-white px-6 py-2 rounded-lg font-bold hover:bg-gray-800 transition flex items-center gap-2 disabled:opacity-50"
+        >
+          {isPending ? 'Saving...' : <><UserCheck size={18} /> Save Attendance</>}
+        </button>
+      </div>
+
+    </form>
+  )
+}
