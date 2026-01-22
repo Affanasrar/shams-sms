@@ -1,6 +1,6 @@
 // app/teacher/page.tsx
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation" // 👈 Import redirect
+import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import { Clock, Users, MapPin, ArrowRight } from "lucide-react"
 import Link from "next/link"
@@ -9,15 +9,13 @@ export default async function TeacherDashboard() {
   const { userId } = await auth()
   const user = await currentUser()
 
-  // 1. 👇 FIX: If not logged in, force redirect to Sign In
   if (!userId || !user) {
     redirect("/sign-in")
   }
 
   const email = user.emailAddresses[0].emailAddress
 
-  // 2. Find the Database User
-  // We check by Email OR ClerkId to catch both cases
+  // 1. Try to find the user in DB
   let dbUser = await prisma.user.findFirst({
     where: {
       OR: [
@@ -27,31 +25,42 @@ export default async function TeacherDashboard() {
     }
   })
 
-  // 3. 👇 SELF-HEALING: Link Real Clerk Account to Database User
-  // If we found the user by Email, but the ClerkID in the DB is the "fake" one, update it!
+  // 2. 👇 SELF-HEALING: If user is missing, CREATE THEM INSTANTLY!
+  if (!dbUser) {
+    console.log(`🛠️ Auto-Creating Missing Teacher: ${email}`)
+    
+    // Default everyone to TEACHER, unless their email says "admin"
+    const role = email.toLowerCase().includes("admin") ? "ADMIN" : "TEACHER"
+
+    try {
+      dbUser = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: email,
+          firstName: user.firstName || "New",
+          lastName: user.lastName || "Teacher",
+          role: role as "ADMIN" | "TEACHER"
+        }
+      })
+    } catch (e) {
+      console.error("Error auto-creating user:", e)
+    }
+  }
+
+  // 3. 👇 SELF-HEALING: If Clerk ID mismatch (e.g. they were created manually), Link them
   if (dbUser && dbUser.clerkId !== userId) {
-    console.log("🔗 Linking Clerk User to Database User...")
     dbUser = await prisma.user.update({
       where: { id: dbUser.id },
-      data: { clerkId: userId } // Save the REAL ID
+      data: { clerkId: userId }
     })
   }
 
+  // 4. Safety Check: If still no user (Database error?), show access denied
   if (!dbUser) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
-        <p className="text-gray-600">
-          Your email <span className="font-mono bg-gray-100 px-2 py-1 rounded">{email}</span> is not registered as a Teacher.
-        </p>
-        <p className="text-sm text-gray-500">
-          (As Admin, go to <strong>Configuration</strong> and assign yourself as a teacher first.)
-        </p>
-      </div>
-    )
+    return <div>Database Error: Could not create user profile.</div>
   }
 
-  // 4. Fetch Classes Assigned to This Teacher
+  // 5. Fetch Classes Assigned to This Teacher
   const myClasses = await prisma.courseOnSlot.findMany({
     where: { teacherId: dbUser.id },
     include: {
@@ -88,7 +97,7 @@ export default async function TeacherDashboard() {
           {myClasses.length === 0 ? (
             <div className="col-span-2 text-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
               <p className="text-gray-500 italic mb-2">No classes assigned to you yet.</p>
-              <p className="text-sm text-blue-600">Go to Admin Configuration to assign classes.</p>
+              <p className="text-sm text-blue-600">Admin needs to assign classes in Configuration.</p>
             </div>
           ) : (
             myClasses.map((cls) => (
