@@ -5,26 +5,30 @@ import { WebhookEvent } from '@clerk/nextjs/server'
 import prisma from '@/lib/prisma'
 
 export async function POST(req: Request) {
-  // 1. Verify the headers to ensure this request is actually from Clerk
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
-  if (!WEBHOOK_SECRET) {
-    throw new Error('Please add CLERK_WEBHOOK_SECRET from Clerk Dashboard to .env')
-  }
-
+  // 1. Get the headers
   const headerPayload = headers();
   const svix_id = (await headerPayload).get("svix-id");
   const svix_timestamp = (await headerPayload).get("svix-timestamp");
   const svix_signature = (await headerPayload).get("svix-signature");
 
+  // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response('Error occured -- no svix headers', { status: 400 })
+    return new Response('Error occured -- no svix headers', {
+      status: 400
+    })
   }
 
+  // 2. Get the body
   const payload = await req.json()
   const body = JSON.stringify(payload);
-  const wh = new Webhook(WEBHOOK_SECRET);
+
+  // 3. Create a new Svix instance with your secret.
+  // Note: Add WEBHOOK_SECRET to your .env file
+  const wh = new Webhook(process.env.WEBHOOK_SECRET || '');
+
   let evt: WebhookEvent
 
+  // 4. Verify the payload with the headers
   try {
     evt = wh.verify(body, {
       "svix-id": svix_id,
@@ -33,28 +37,32 @@ export async function POST(req: Request) {
     }) as WebhookEvent
   } catch (err) {
     console.error('Error verifying webhook:', err);
-    return new Response('Error occured', { status: 400 })
+    return new Response('Error occured', {
+      status: 400
+    })
   }
 
-  // 2. Handle the "user.created" event
+  // 5. Handle the event
   const eventType = evt.type;
-
+  
   if (eventType === 'user.created') {
     const { id, email_addresses, first_name, last_name } = evt.data;
+    const email = email_addresses[0].email_address;
+    const name = `${first_name} ${last_name}`;
 
-    // Create the user in YOUR database
-    // Default role is TEACHER (as per schema default). 
-    // You will manually update your own account to ADMIN in the database later.
-    await prisma.user.create({
-      data: {
-        clerkId: id,
-        email: email_addresses[0].email_address,
-        firstName: first_name,
-        lastName: last_name,
-        role: 'TEACHER' // Default role
-      }
-    })
-    console.log(`✅ User ${id} synced to database.`);
+    try {
+        await prisma.user.create({
+            data: {
+                clerkId: id,
+                email: email,
+                name: name, // or firstName: first_name, lastName: last_name depending on your schema
+                role: 'TEACHER' // Default role
+            }
+        })
+        console.log(`User ${id} created in DB`)
+    } catch (error) {
+        console.log("Error creating user in DB:", error)
+    }
   }
 
   return new Response('', { status: 200 })
