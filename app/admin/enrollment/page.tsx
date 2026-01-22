@@ -2,12 +2,38 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
-import { dropStudent } from '@/app/actions/enrollment' // 👈 IMPORT THE ACTION
+import { dropStudent } from '@/app/actions/enrollment'
+import { EnrollmentFilters } from './enrollment-filters' // 👈 Import the component
 
-export default async function EnrollmentIndex() {
-  // Fetch only ACTIVE enrollments for the list
+export default async function EnrollmentIndex({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  // 1. Read Filters from URL
+  const courseId = searchParams.courseId as string | undefined
+  const slotId = searchParams.slotId as string | undefined
+
+  // 2. Fetch Filter Options (Courses & Slots)
+  const courses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
+  const slots = await prisma.slot.findMany({
+    include: { room: true },
+    orderBy: { startTime: 'asc' }
+  })
+
+  // 3. Build Dynamic Query
+  const whereClause: any = { status: 'ACTIVE' }
+
+  if (courseId) {
+    whereClause.courseOnSlot = { ...whereClause.courseOnSlot, courseId: courseId }
+  }
+  if (slotId) {
+    whereClause.courseOnSlot = { ...whereClause.courseOnSlot, slotId: slotId }
+  }
+
+  // 4. Fetch Enrollments based on filters
   const enrollments = await prisma.enrollment.findMany({
-    where: { status: 'ACTIVE' },
+    where: whereClause,
     include: {
       student: true,
       courseOnSlot: {
@@ -31,6 +57,9 @@ export default async function EnrollmentIndex() {
           <Plus size={16} /> New Enrollment
         </Link>
       </div>
+
+      {/* 👇 RENDER THE FILTER BAR */}
+      <EnrollmentFilters courses={courses} slots={slots} />
 
       <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
         <table className="w-full text-sm text-left">
@@ -67,8 +96,6 @@ export default async function EnrollmentIndex() {
                   {new Date(record.joiningDate).toLocaleDateString()}
                 </td>
                 
-                {/* 👇 THE WORKING DROP ACTION */}
-                {/* 👇 REPLACE THIS TABLE CELL */}
                 <td className="px-6 py-4 text-right">
                   <form 
                     action={async (formData) => {
@@ -87,17 +114,14 @@ export default async function EnrollmentIndex() {
                     </button>
                   </form>
                 </td>
-
               </tr>
             ))}
             
             {enrollments.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                  <p className="mb-2">No active students found.</p>
-                  <Link href="/admin/enrollment/new" className="text-blue-600 hover:underline">
-                    Enroll your first student
-                  </Link>
+                  <p className="mb-2 text-lg">No students found.</p>
+                  <p className="text-sm">Try changing filters or adding a new enrollment.</p>
                 </td>
               </tr>
             )}
