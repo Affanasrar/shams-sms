@@ -40,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <NavLink href="/admin/students" icon={<Users size={20}/>} label="Students" />
           <NavLink href="/admin/enrollment" icon={<BookOpen size={20}/>} label="Enrollment" />
           <NavLink href="/admin/attendance" icon={<CheckSquare size={20}/>} label="Attendance" />
-          <NavLink href="/admin/fees" icon={<DollarSign size={20}/>} label="Fees & Finance" />
+          <NavLink href="/admin/fees/dashboard" icon={<DollarSign size={20}/>} label="Fees Dashboard" />
           <NavLink href="/admin/schedule" icon={<Calendar size={20}/>} label="Timetable" />
           <NavLink href="/admin/results/new" icon={<BookOpen size={20}/>} label="Exam Entry" />
           <NavLink href="/admin/settings" icon={<Settings size={20}/>} label="Configuration" />
