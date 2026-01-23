@@ -2,13 +2,49 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
 
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF
-  }
+// Simple table drawing function for serverless compatibility
+function drawTable(doc: jsPDF, headers: string[], rows: string[][], startY: number) {
+  const pageWidth = doc.internal.pageSize.width
+  const margin = 20
+  const tableWidth = pageWidth - 2 * margin
+  const colWidth = tableWidth / headers.length
+  let y = startY
+
+  // Draw headers
+  doc.setFillColor(41, 128, 185) // Blue header
+  doc.rect(margin, y - 5, tableWidth, 10, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(9)
+
+  headers.forEach((header, i) => {
+    doc.text(header, margin + i * colWidth + 2, y)
+  })
+
+  y += 8
+  doc.setTextColor(0, 0, 0)
+  doc.setFontSize(8)
+
+  // Draw rows
+  rows.forEach((row, rowIndex) => {
+    if (y > 250) { // New page if needed
+      doc.addPage()
+      y = 20
+    }
+
+    // Alternate row colors
+    if (rowIndex % 2 === 0) {
+      doc.setFillColor(245, 245, 245)
+      doc.rect(margin, y - 3, tableWidth, 8, 'F')
+    }
+
+    row.forEach((cell, i) => {
+      const cellText = cell.length > 15 ? cell.substring(0, 12) + '...' : cell
+      doc.text(cellText, margin + i * colWidth + 2, y)
+    })
+
+    y += 8
+  })
 }
 
 export async function GET(request: NextRequest) {
@@ -128,22 +164,7 @@ async function generateMonthlyReport(doc: jsPDF, month: number, year: number) {
   })
 
   // Generate table
-  doc.autoTable({
-    head: [['Student ID', 'Name', 'Course', 'Total', 'Paid', 'Pending', 'Status']],
-    body: tableData,
-    startY: 90,
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [41, 128, 185] },
-    columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 35 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 25 },
-      5: { cellWidth: 25 },
-      6: { cellWidth: 20 }
-    }
-  })
+  drawTable(doc, ['Student ID', 'Name', 'Course', 'Total', 'Paid', 'Pending', 'Status'], tableData, 90)
 }
 
 async function generateStudentReport(doc: jsPDF, studentId: string) {
@@ -207,13 +228,7 @@ async function generateStudentReport(doc: jsPDF, studentId: string) {
     ]
   })
 
-  doc.autoTable({
-    head: [['Month', 'Course', 'Total', 'Paid', 'Pending']],
-    body: tableData,
-    startY: 90,
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [41, 128, 185] }
-  })
+  drawTable(doc, ['Month', 'Course', 'Total', 'Paid', 'Pending'], tableData, 90)
 }
 
 async function generateCourseReport(doc: jsPDF, courseId: string, month: number, year: number) {
@@ -298,13 +313,7 @@ async function generateCourseReport(doc: jsPDF, courseId: string, month: number,
     ]
   })
 
-  doc.autoTable({
-    head: [['Student ID', 'Name', 'Total', 'Paid', 'Pending']],
-    body: tableData,
-    startY: 90,
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [41, 128, 185] }
-  })
+  drawTable(doc, ['Student ID', 'Name', 'Total', 'Paid', 'Pending'], tableData, 90)
 }
 
 async function generateOverallReport(doc: jsPDF, month: number, year: number) {
@@ -380,11 +389,5 @@ async function generateOverallReport(doc: jsPDF, month: number, year: number) {
     `PKR ${(stats.totalFees - stats.totalPaid).toLocaleString()}`
   ])
 
-  doc.autoTable({
-    head: [['Course', 'Students', 'Total Fees', 'Collected', 'Pending']],
-    body: tableData,
-    startY: 90,
-    styles: { fontSize: 8 },
-    headStyles: { fillColor: [41, 128, 185] }
-  })
+  drawTable(doc, ['Course', 'Students', 'Total Fees', 'Collected', 'Pending'], tableData, 90)
 }
