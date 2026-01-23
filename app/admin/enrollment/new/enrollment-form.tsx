@@ -59,7 +59,7 @@ export function EnrollmentForm({ students, assignments }: any) {
           <option value="">-- Choose a Student --</option>
           {students.map((s: any) => (
             <option key={s.id} value={s.id}>
-              {s.name} (s/o {s.fatherName})
+              {s.studentId} - {s.name} (s/o {s.fatherName})
             </option>
           ))}
         </select>

@@ -104,6 +104,7 @@ model Student {
   fees        Fee[]
   attendance  Attendance[]
   results     Result[]
+  discounts   StudentDiscount[]
 }
 
 model Enrollment {
@@ -117,8 +118,9 @@ model Enrollment {
 
   student      Student      @relation(fields: [studentId], references: [id])
   courseOnSlot CourseOnSlot @relation(fields: [courseOnSlotId], references: [id])
-
-  fees         Fee[] //
+  
+  fees        Fee[] //
+  discounts   StudentDiscount[]
 }
 
 // --------------------------------------
@@ -130,20 +132,55 @@ enum FeeStatus {
   PAID
 }
 
+enum DiscountType {
+  FIXED      // Fixed amount discount (e.g., PKR 500)
+  PERCENTAGE // Percentage discount (e.g., 10%)
+}
+
+enum DiscountDuration {
+  SINGLE_MONTH    // Apply discount only to one month
+  ENTIRE_COURSE   // Apply discount to all months of the course
+}
+
 model Fee {
-  id           String    @id @default(uuid())
-  studentId    String
-  enrollmentId String?
-  amount       Decimal
-  dueDate      DateTime
-  status       FeeStatus @default(UNPAID)
-  cycleDate    DateTime  // The specific month this fee covers [cite: 209]
+  id            String    @id @default(uuid())
+  studentId     String
+  enrollmentId  String?
+  amount        Decimal   // Original amount
+  discountAmount Decimal   @default(0) // Amount deducted due to discount
+  finalAmount   Decimal   // Final amount after discount (amount - discountAmount)
+  paidAmount    Decimal   @default(0) // Amount paid by student
+  rolloverAmount Decimal   @default(0) // Amount carried over from previous month
+  dueDate       DateTime
+  status        FeeStatus @default(UNPAID)
+  cycleDate     DateTime  // The specific month this fee covers [cite: 209]
 
   student      Student       @relation(fields: [studentId], references: [id])
   enrollment   Enrollment?   @relation(fields: [enrollmentId], references: [id])
+  discount     StudentDiscount? @relation(fields: [discountId], references: [id])
+  discountId   String?
   transactions Transaction[]
   
   @@index([status, dueDate]) // Optimize for "Overdue" reports
+}
+
+model StudentDiscount {
+  id                String             @id @default(uuid())
+  studentId         String
+  enrollmentId      String
+  discountAmount    Decimal            // Fixed amount or percentage value
+  discountType      DiscountType       // FIXED or PERCENTAGE
+  discountDuration  DiscountDuration   // SINGLE_MONTH or ENTIRE_COURSE
+  applicableFromMonth Int              // Month number (1-based) when discount starts
+  applicableToMonth Int?               // Month number when discount ends (null = entire course)
+  appliedToMonths   Int[]              @default([]) // Track which months have this discount applied
+  createdAt         DateTime           @default(now())
+  
+  student    Student       @relation(fields: [studentId], references: [id])
+  enrollment Enrollment    @relation(fields: [enrollmentId], references: [id])
+  fees       Fee[]
+
+  @@index([studentId, enrollmentId])
 }
 
 model Transaction {

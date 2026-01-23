@@ -102,7 +102,7 @@ export default async function EnrollmentIndex(props: Props) {
               <th className="px-6 py-3">Student Name</th>
               <th className="px-6 py-3">Course</th>
               <th className="px-6 py-3">Slot / Room</th>
-              <th className="px-6 py-3">Joined</th>
+              <th className="px-6 py-3">Enrollment Date</th>
               <th className="px-6 py-3 text-right">Action</th>
             </tr>
           </thead>

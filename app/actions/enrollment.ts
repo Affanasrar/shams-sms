@@ -75,6 +75,7 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
         studentId: studentId,
         enrollmentId: newEnrollment.id,
         amount: courseFee,       // Charge the Course Fee
+        finalAmount: courseFee,  // Same as amount initially (no discount)
         dueDate: today,          // Due Today
         cycleDate: today,        // Billing cycle starts today
         status: 'UNPAID'

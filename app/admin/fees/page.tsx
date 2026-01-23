@@ -1,6 +1,8 @@
 // app/admin/fees/page.tsx
 import prisma from '@/lib/prisma'
+import Link from 'next/link'
 import { CollectButton } from './collect-button'
+import { ArrowLeft } from 'lucide-react'
 
 export default async function FeesPage() {
   const dueFees = await prisma.fee.findMany({
@@ -38,13 +40,31 @@ export default async function FeesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">💰 Fee Collection</h2>
+      <div className="flex items-center gap-3">
+        <Link 
+          href="/admin/fees"
+          className="text-gray-600 hover:text-gray-900 transition"
+        >
+          <ArrowLeft size={20} />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold">Fee Collection</h1>
+          <p className="text-gray-500 text-sm">View and collect fees from students</p>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
         <a 
           href="/admin/fees/by-course" 
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
         >
           View by Course
+        </a>
+        <a 
+          href="/admin/fees/discounts" 
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium text-sm"
+        >
+          Manage Discounts
         </a>
       </div>
 
