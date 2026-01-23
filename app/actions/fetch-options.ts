@@ -6,7 +6,7 @@ export async function getEnrollmentOptions() {
   // 1. Get all students (In production, use search instead of fetching all)
   const students = await prisma.student.findMany({
     orderBy: { name: 'asc' },
-    select: { id: true, name: true, fatherName: true } // Minimal data
+    select: { id: true, studentId: true, name: true, fatherName: true } // Include studentId
   })
 
   // 2. Get all Course Assignments
