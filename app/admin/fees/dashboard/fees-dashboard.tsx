@@ -80,6 +80,27 @@ export function FeesDashboard({ courses }: Props) {
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
+  const handleExportReport = () => {
+    // Generate monthly report for current filters
+    const params = new URLSearchParams({
+      type: 'monthly',
+      month: selectedMonth.toString(),
+      year: selectedYear.toString()
+    })
+
+    if (selectedCourse) {
+      params.append('courseId', selectedCourse)
+    }
+
+    window.open(`/api/admin/fees/reports/generate?${params}`, '_blank')
+  }
+
+  const handleViewStudent = (studentId: string) => {
+    // Navigate to student details or fees details
+    window.open(`/admin/students/${studentId}`, '_blank')
+  }
+
+  // Calculate summary statistics
   const totalFees = feesData.reduce((sum, fee) => sum + fee.totalAmount, 0)
   const totalPaid = feesData.reduce((sum, fee) => sum + fee.paidAmount, 0)
   const totalPending = feesData.reduce((sum, fee) => sum + fee.pendingAmount, 0)
@@ -190,7 +211,10 @@ export function FeesDashboard({ courses }: Props) {
           <h3 className="font-semibold text-gray-900">
             Student Fees - {months[selectedMonth - 1]} {selectedYear}
           </h3>
-          <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm">
+          <button 
+            onClick={handleExportReport}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm"
+          >
             <Download size={16} />
             Export Report
           </button>
@@ -248,7 +272,11 @@ export function FeesDashboard({ courses }: Props) {
                       {fee.lastPayment || 'No payments'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="text-blue-600 hover:text-blue-800 p-1">
+                      <button 
+                        onClick={() => handleViewStudent(fee.studentId)}
+                        className="text-blue-600 hover:text-blue-800 p-1"
+                        title="View student details"
+                      >
                         <Eye size={16} />
                       </button>
                     </td>

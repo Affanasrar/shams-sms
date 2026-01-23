@@ -12,6 +12,8 @@ export async function GET(request: NextRequest) {
     const studentId = searchParams.get('studentId')
     const courseId = searchParams.get('courseId')
 
+    console.log('Generating report:', { reportType, month, year, studentId, courseId })
+
     // Create PDF document
     const doc = new PDFDocument({
       size: 'A4',
@@ -29,18 +31,18 @@ export async function GET(request: NextRequest) {
         await generateMonthlyReport(doc, month, year)
         break
       case 'student':
-        if (!studentId) throw new Error('Student ID required')
+        if (!studentId) throw new Error('Student ID required for student report')
         await generateStudentReport(doc, studentId)
         break
       case 'course':
-        if (!courseId) throw new Error('Course ID required')
+        if (!courseId) throw new Error('Course ID required for course report')
         await generateCourseReport(doc, courseId, month, year)
         break
       case 'overall':
         await generateOverallReport(doc, month, year)
         break
       default:
-        throw new Error('Invalid report type')
+        throw new Error(`Invalid report type: ${reportType}`)
     }
 
     // Convert PDF to buffer
@@ -51,13 +53,22 @@ export async function GET(request: NextRequest) {
     return new Promise<NextResponse>((resolve) => {
       doc.on('end', () => {
         const pdfBuffer = Buffer.concat(chunks)
+        console.log('PDF generated successfully, size:', pdfBuffer.length)
         resolve(new NextResponse(pdfBuffer, { headers }))
+      })
+
+      doc.on('error', (error) => {
+        console.error('PDF generation error:', error)
+        resolve(NextResponse.json({ error: 'PDF generation failed' }, { status: 500 }))
       })
     })
 
   } catch (error) {
     console.error('Error generating PDF report:', error)
-    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to generate report',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
@@ -89,6 +100,11 @@ async function generateMonthlyReport(doc: PDFKit.PDFDocument, month: number, yea
     },
     orderBy: { student: { name: 'asc' } }
   })
+
+  if (fees.length === 0) {
+    doc.fontSize(12).text('No fee data found for the selected month.', { align: 'center' })
+    return
+  }
 
   // Summary
   const totalFees = fees.reduce((sum, fee) => sum + Number(fee.finalAmount), 0)
@@ -154,7 +170,15 @@ async function generateStudentReport(doc: PDFKit.PDFDocument, studentId: string)
     }
   })
 
-  if (!student) throw new Error('Student not found')
+  if (!student) {
+    doc.fontSize(12).text('Student not found.', { align: 'center' })
+    return
+  }
+
+  if (student.fees.length === 0) {
+    doc.fontSize(12).text('No fee data found for this student.', { align: 'center' })
+    return
+  }
 
   // Header
   doc.fontSize(20).text('SHAMS SMS - Student Fees Report', { align: 'center' })
@@ -223,7 +247,15 @@ async function generateCourseReport(doc: PDFKit.PDFDocument, courseId: string, m
     }
   })
 
-  if (!course) throw new Error('Course not found')
+  if (!course) {
+    doc.fontSize(12).text('Course not found.', { align: 'center' })
+    return
+  }
+
+  if (course.slotAssignments.length === 0 || course.slotAssignments.every(slot => slot.enrollments.length === 0)) {
+    doc.fontSize(12).text('No enrollment data found for this course.', { align: 'center' })
+    return
+  }
 
   const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' })
 
@@ -308,6 +340,11 @@ async function generateOverallReport(doc: PDFKit.PDFDocument, month: number, yea
       }
     }
   })
+
+  if (fees.length === 0) {
+    doc.fontSize(12).text('No fee data found for this month.', { align: 'center' })
+    return
+  }
 
   // Group by course
   const courseStats = new Map()

@@ -42,7 +42,7 @@ export default async function FeesPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link 
-          href="/admin/fees"
+          href="/admin/fees/dashboard"
           className="text-gray-600 hover:text-gray-900 transition"
         >
           <ArrowLeft size={20} />
