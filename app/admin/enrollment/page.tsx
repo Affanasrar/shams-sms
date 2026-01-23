@@ -27,18 +27,21 @@ export default async function EnrollmentIndex(props: Props) {
   // 3. Build Dynamic Query
   // We start with the base requirement: Status must be ACTIVE
   const whereClause: any = { 
-    status: 'ACTIVE',
-    courseOnSlot: {} // Initialize the relation filter object
+    status: 'ACTIVE'
   }
 
   // If a Course is selected, add it to the filter
   if (courseId) {
-    whereClause.courseOnSlot.courseId = courseId
+    whereClause.courseOnSlot = { courseId: courseId }
   }
 
   // If a Slot is selected, add it to the filter
   if (slotId) {
-    whereClause.courseOnSlot.slotId = slotId
+    if (whereClause.courseOnSlot) {
+      whereClause.courseOnSlot.slotId = slotId
+    } else {
+      whereClause.courseOnSlot = { slotId: slotId }
+    }
   }
 
   // 4. Fetch Enrollments
@@ -72,6 +75,26 @@ export default async function EnrollmentIndex(props: Props) {
       <EnrollmentFilters courses={courses} slots={slots} />
 
       <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
+          <p className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{enrollments.length}</span> enrollment{enrollments.length !== 1 ? 's' : ''}
+            {(courseId || slotId) && (
+              <span> • 
+                {courseId && ` Course: ${courses.find(c => c.id === courseId)?.name}`}
+                {courseId && slotId && ' •'}
+                {slotId && ` Slot: ${slots.find(s => s.id === slotId)?.days}`}
+              </span>
+            )}
+          </p>
+          {(courseId || slotId) && (
+            <Link
+              href="/admin/enrollment"
+              className="text-sm text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear filters
+            </Link>
+          )}
+        </div>
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 border-b text-gray-500">
             <tr>
