@@ -38,7 +38,15 @@ export default async function FeesPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">💰 Fee Collection</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">💰 Fee Collection</h2>
+        <a 
+          href="/admin/fees/by-course" 
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+        >
+          View by Course
+        </a>
+      </div>
 
       <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
         <table className="w-full text-sm text-left">
