@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import jsPDF from 'jspdf'
+import fs from 'fs'
+import path from 'path'
 
 // Professional table drawing function with modern styling
 function drawProfessionalTable(doc: jsPDF, headers: string[], rows: string[][], startY: number, options: {
@@ -11,13 +13,13 @@ function drawProfessionalTable(doc: jsPDF, headers: string[], rows: string[][], 
   textColor?: [number, number, number]
 } = {}) {
   const pageWidth = doc.internal.pageSize.width
-  const margin = 20
+  const margin = 15 // Reduced margin for more space
   const tableWidth = pageWidth - 2 * margin
   const colWidth = tableWidth / headers.length
   let y = startY
 
   const {
-    headerColor = [41, 128, 185],
+    headerColor = [52, 152, 219],
     alternateRowColor = [248, 249, 250],
     borderColor = [200, 200, 200],
     textColor = [33, 37, 41]
@@ -26,45 +28,45 @@ function drawProfessionalTable(doc: jsPDF, headers: string[], rows: string[][], 
   // Draw table border
   doc.setDrawColor(...borderColor)
   doc.setLineWidth(0.5)
-  doc.rect(margin, y - 8, tableWidth, (rows.length + 1) * 12 + 4)
+  doc.rect(margin, y - 8, tableWidth, (rows.length + 1) * 10 + 4)
 
   // Draw header with gradient effect
   doc.setFillColor(...headerColor)
-  doc.rect(margin + 1, y - 7, tableWidth - 2, 14, 'F')
+  doc.rect(margin + 1, y - 7, tableWidth - 2, 12, 'F')
 
   // Add header shadow effect
   doc.setFillColor(0, 0, 0, 0.1)
-  doc.rect(margin + 1, y + 5, tableWidth - 2, 2, 'F')
+  doc.rect(margin + 1, y + 3, tableWidth - 2, 2, 'F')
 
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(10)
+  doc.setFontSize(8) // Smaller font for headers
   doc.setFont('helvetica', 'bold')
 
   headers.forEach((header, i) => {
     const x = margin + i * colWidth + colWidth / 2
-    doc.text(header, x, y + 2, { align: 'center' })
+    doc.text(header, x, y - 1, { align: 'center' })
   })
 
-  y += 10
+  y += 8
   doc.setTextColor(...textColor)
-  doc.setFontSize(9)
+  doc.setFontSize(7) // Smaller font for data
   doc.setFont('helvetica', 'normal')
 
   // Draw rows with alternating colors and borders
   rows.forEach((row, rowIndex) => {
     if (y > 250) { // New page if needed
       doc.addPage()
-      y = 30
+      y = 50
       // Redraw header on new page
       doc.setFillColor(...headerColor)
-      doc.rect(margin + 1, y - 7, tableWidth - 2, 14, 'F')
+      doc.rect(margin + 1, y - 7, tableWidth - 2, 12, 'F')
       doc.setTextColor(255, 255, 255)
       doc.setFont('helvetica', 'bold')
       headers.forEach((header, i) => {
         const x = margin + i * colWidth + colWidth / 2
-        doc.text(header, x, y + 2, { align: 'center' })
+        doc.text(header, x, y - 1, { align: 'center' })
       })
-      y += 10
+      y += 8
       doc.setTextColor(...textColor)
       doc.setFont('helvetica', 'normal')
     }
@@ -72,7 +74,7 @@ function drawProfessionalTable(doc: jsPDF, headers: string[], rows: string[][], 
     // Alternate row background
     if (rowIndex % 2 === 0) {
       doc.setFillColor(...alternateRowColor)
-      doc.rect(margin + 1, y - 4, tableWidth - 2, 10, 'F')
+      doc.rect(margin + 1, y - 2, tableWidth - 2, 8, 'F')
     }
 
     // Draw row border
@@ -81,12 +83,30 @@ function drawProfessionalTable(doc: jsPDF, headers: string[], rows: string[][], 
     doc.line(margin, y + 4, margin + tableWidth, y + 4)
 
     row.forEach((cell, i) => {
-      const cellText = cell.length > 18 ? cell.substring(0, 15) + '...' : cell
+      // Better text truncation and formatting
+      let cellText = cell
+      if (cell.includes('PKR')) {
+        // Format currency amounts to be shorter
+        const amount = cell.replace('PKR ', '').replace(/,/g, '')
+        const numAmount = parseFloat(amount)
+        if (numAmount >= 10000000) {
+          cellText = `PKR ${(numAmount / 10000000).toFixed(1)}Cr`
+        } else if (numAmount >= 100000) {
+          cellText = `PKR ${(numAmount / 100000).toFixed(1)}L`
+        } else if (numAmount >= 1000) {
+          cellText = `PKR ${(numAmount / 1000).toFixed(0)}K`
+        } else {
+          cellText = cell.length > 12 ? `PKR ${numAmount.toFixed(0)}` : cell
+        }
+      } else {
+        cellText = cell.length > 15 ? cell.substring(0, 12) + '...' : cell
+      }
+
       const x = margin + i * colWidth + colWidth / 2
       doc.text(cellText, x, y + 2, { align: 'center' })
     })
 
-    y += 10
+    y += 8
   })
 }
 
@@ -117,42 +137,45 @@ function drawSummaryCard(doc: jsPDF, x: number, y: number, width: number, height
   doc.text(value, x + width / 2, y + 18, { align: 'center' })
 }
 
-// Function to draw professional header
+// Function to draw professional header with logo
 function drawHeader(doc: jsPDF, title: string, subtitle: string = '') {
   const pageWidth = doc.internal.pageSize.width
 
   // Header background gradient
   doc.setFillColor(41, 128, 185)
-  doc.rect(0, 0, pageWidth, 35, 'F')
+  doc.rect(0, 0, pageWidth, 45, 'F')
 
   // Add gradient effect
   doc.setFillColor(52, 152, 219)
-  doc.rect(0, 25, pageWidth, 10, 'F')
+  doc.rect(0, 30, pageWidth, 15, 'F')
+
+  // Add logo (automatically loaded from file system)
+  addLogoToHeader(doc)
 
   // Institution name with shadow
   doc.setTextColor(255, 255, 255, 0.3)
-  doc.setFontSize(24)
+  doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
-  doc.text('SHAMS SMS', pageWidth / 2, 18)
+  doc.text('SHAMS COMMERCIAL INSTITUTE', pageWidth / 2, 20)
 
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(24)
-  doc.text('SHAMS SMS', pageWidth / 2, 16)
+  doc.setFontSize(20)
+  doc.text('SHAMS COMMERCIAL INSTITUTE', pageWidth / 2, 18)
 
   // Report title
-  doc.setFontSize(16)
+  doc.setFontSize(14)
   doc.setFont('helvetica', 'normal')
-  doc.text(title, pageWidth / 2, 28, { align: 'center' })
+  doc.text(title, pageWidth / 2, 32, { align: 'center' })
 
   if (subtitle) {
-    doc.setFontSize(12)
-    doc.text(subtitle, pageWidth / 2, 35, { align: 'center' })
+    doc.setFontSize(11)
+    doc.text(subtitle, pageWidth / 2, 40, { align: 'center' })
   }
 
   // Decorative line
   doc.setDrawColor(255, 255, 255)
   doc.setLineWidth(1)
-  doc.line(20, 40, pageWidth - 20, 40)
+  doc.line(20, 47, pageWidth - 20, 47)
 }
 
 // Function to draw footer
@@ -167,7 +190,7 @@ function drawFooter(doc: jsPDF, pageNumber: number = 1) {
   // Footer line
   doc.setDrawColor(200, 200, 200)
   doc.setLineWidth(0.5)
-  doc.line(20, pageHeight - 20, pageWidth - 20, pageHeight - 20)
+  doc.line(15, pageHeight - 20, pageWidth - 15, pageHeight - 20)
 
   // Footer text
   doc.setTextColor(100, 100, 100)
@@ -175,12 +198,79 @@ function drawFooter(doc: jsPDF, pageNumber: number = 1) {
   doc.setFont('helvetica', 'normal')
 
   const currentDate = new Date().toLocaleDateString()
-  doc.text(`Generated on: ${currentDate}`, 20, pageHeight - 12)
-  doc.text(`Page ${pageNumber}`, pageWidth - 20, pageHeight - 12, { align: 'right' })
+  doc.text(`Generated on: ${currentDate}`, 15, pageHeight - 12)
+  doc.text(`Page ${pageNumber}`, pageWidth - 15, pageHeight - 12, { align: 'right' })
 
   // Institution info
   doc.setFontSize(6)
-  doc.text('SHAMS School Management System - Professional Fee Reports', pageWidth / 2, pageHeight - 6, { align: 'center' })
+  doc.text('Shams Commercial Institute - Professional Fee Reports', pageWidth / 2, pageHeight - 6, { align: 'center' })
+}
+
+// Function to load logo from file system
+function loadLogoFromFile(): string | null {
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'assets', 'images', 'logo.png')
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath)
+      const base64Logo = logoBuffer.toString('base64')
+      return `data:image/png;base64,${base64Logo}`
+    }
+
+    // Try other common formats
+    const formats = ['jpg', 'jpeg', 'svg']
+    for (const format of formats) {
+      const altLogoPath = path.join(process.cwd(), 'public', 'assets', 'images', `logo.${format}`)
+      if (fs.existsSync(altLogoPath)) {
+        const logoBuffer = fs.readFileSync(altLogoPath)
+        const mimeType = format === 'svg' ? 'image/svg+xml' : `image/${format}`
+        const base64Logo = logoBuffer.toString('base64')
+        return `data:${mimeType};base64,${base64Logo}`
+      }
+    }
+
+    return null // No logo found
+  } catch (error) {
+    console.warn('Failed to load logo from file system:', error)
+    return null
+  }
+}
+
+// Function to add logo to header (accepts base64 image data)
+function addLogoToHeader(doc: jsPDF, logoData?: string) {
+  const logoToUse = logoData || loadLogoFromFile()
+
+  if (!logoToUse) {
+    // Draw default logo if no image provided
+    doc.setFillColor(255, 255, 255)
+    doc.rect(15, 8, 25, 25, 'F')
+
+    // Simple logo design
+    doc.setFillColor(231, 76, 60) // Red circle for logo
+    doc.circle(27.5, 20.5, 8, 'F')
+
+    // White "S" in logo
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('S', 24, 24)
+    return
+  }
+
+  try {
+    // Add actual logo image
+    doc.addImage(logoToUse, 'PNG', 15, 8, 25, 25)
+  } catch (error) {
+    console.warn('Failed to load logo, using default:', error)
+    // Fallback to default logo
+    doc.setFillColor(255, 255, 255)
+    doc.rect(15, 8, 25, 25, 'F')
+    doc.setFillColor(231, 76, 60)
+    doc.circle(27.5, 20.5, 8, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('S', 24, 24)
+  }
 }
 
 export async function GET(request: NextRequest) {
