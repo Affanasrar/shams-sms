@@ -1,19 +1,23 @@
 // app/admin/students/[id]/page.tsx
 import { getStudentProfile } from '@/app/actions/get-student-profile'
 import { CheckCircle, Clock, DollarSign, BookOpen } from 'lucide-react'
+import { unstable_noStore as noStore } from 'next/cache'
 
 // 👇 CHANGED: params is now a Promise type
 export default async function StudentProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  
+  // 👇 ADDED: Prevent caching to ensure fresh data
+  noStore()
   
   // 👇 ADDED: We must await the params to get the ID
   const { id } = await params; 
   
   const student = await getStudentProfile(id)
 
-  // Calculate Total Outstanding Balance
+  // Calculate Total Outstanding Balance - FIXED: Use finalAmount - paidAmount instead of amount
   const totalDue = student.fees
     .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
-    .reduce((sum, fee) => sum + Number(fee.amount), 0)
+    .reduce((sum, fee) => sum + (Number(fee.finalAmount) - Number(fee.paidAmount)), 0)
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -130,7 +134,16 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                       <span className="font-medium text-sm">
                         {feeTitle}
                       </span>
-                      <span className="font-bold text-sm">PKR {Number(fee.amount).toLocaleString()}</span>
+                      <span className="font-bold text-sm">PKR {Number(fee.finalAmount).toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-xs mb-2">
+                      <span className="text-gray-500">
+                        Paid: PKR {Number(fee.paidAmount).toLocaleString()}
+                      </span>
+                      <span className="text-gray-500">
+                        Due: PKR {(Number(fee.finalAmount) - Number(fee.paidAmount)).toLocaleString()}
+                      </span>
                     </div>
                     
                     <div className="flex justify-between items-center text-xs">
@@ -141,6 +154,10 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                       {fee.status === 'PAID' ? (
                         <span className="flex items-center gap-1 text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-bold">
                           <CheckCircle size={12} /> PAID
+                        </span>
+                      ) : fee.status === 'PARTIAL' ? (
+                        <span className="flex items-center gap-1 text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full font-bold">
+                          <Clock size={12} /> PARTIAL
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-red-700 bg-red-100 px-2 py-0.5 rounded-full font-bold">

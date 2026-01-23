@@ -3,8 +3,11 @@
 
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export async function getStudentProfile(studentId: string) {
+  // Prevent caching of database queries
+  noStore()
   const student = await prisma.student.findUnique({
     where: { studentId: studentId },
     include: {
