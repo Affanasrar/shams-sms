@@ -152,14 +152,14 @@ function drawHeader(doc: jsPDF, title: string, subtitle: string = '') {
   // Add logo (automatically loaded from file system)
   addLogoToHeader(doc)
 
-  // Institution name with shadow
+  // Institution name with shadow - adjusted font size for better fit
   doc.setTextColor(255, 255, 255, 0.3)
-  doc.setFontSize(20)
+  doc.setFontSize(18)  // Reduced from 20 to fit better
   doc.setFont('helvetica', 'bold')
   doc.text('SHAMS COMMERCIAL INSTITUTE', pageWidth / 2, 20)
 
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(20)
+  doc.setFontSize(18)  // Reduced from 20 to fit better
   doc.text('SHAMS COMMERCIAL INSTITUTE', pageWidth / 2, 18)
 
   // Report title
@@ -367,20 +367,21 @@ async function generateMonthlyReport(doc: jsPDF, month: number, year: number) {
   const totalPending = totalFees - totalPaid
   const totalStudents = new Set(fees.map(f => f.studentId)).size
 
-  // Summary cards
-  const cardWidth = 50
+  // Summary cards - adjusted for proper fit
+  const cardWidth = 42  // Reduced width to fit 4 cards
   const cardHeight = 25
-  const startX = 20
+  const cardSpacing = 8  // Reduced spacing
+  const startX = 15  // Adjusted margin
   let currentX = startX
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Total Students', totalStudents.toString(), [52, 152, 219])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Total Fees', `PKR ${totalFees.toLocaleString()}`, [46, 204, 113])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Collected', `PKR ${totalPaid.toLocaleString()}`, [46, 204, 113])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Pending', `PKR ${totalPending.toLocaleString()}`, [231, 76, 60])
 
@@ -483,16 +484,18 @@ async function generateStudentReport(doc: jsPDF, studentId: string) {
   const totalPaid = student.fees.reduce((sum, fee) => sum + Number(fee.paidAmount), 0)
   const totalPending = totalFees - totalPaid
 
-  // Summary cards
-  const cardWidth = 50
+  // Summary cards - adjusted for proper fit
+  const cardWidth = 42  // Consistent width with other reports
   const cardHeight = 25
-  let currentX = 20
+  const cardSpacing = 8  // Consistent spacing
+  const startX = 15  // Adjusted margin
+  let currentX = startX
 
   drawSummaryCard(doc, currentX, 75, cardWidth, cardHeight, 'Total Fees', `PKR ${totalFees.toLocaleString()}`, [52, 152, 219])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 75, cardWidth, cardHeight, 'Total Paid', `PKR ${totalPaid.toLocaleString()}`, [46, 204, 113])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 75, cardWidth, cardHeight, 'Pending', `PKR ${totalPending.toLocaleString()}`, [231, 76, 60])
 
@@ -599,19 +602,21 @@ async function generateCourseReport(doc: jsPDF, courseId: string, month: number,
   const totalPending = totalFees - totalPaid
   const totalStudents = new Set(allFees.map(f => f.studentId)).size
 
-  // Summary cards
-  const cardWidth = 50
+  // Summary cards - adjusted for proper fit
+  const cardWidth = 42  // Reduced width to fit 4 cards
   const cardHeight = 25
-  let currentX = 20
+  const cardSpacing = 8  // Reduced spacing
+  const startX = 15  // Adjusted margin
+  let currentX = startX
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Total Students', totalStudents.toString(), [52, 152, 219])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Course Fees', `PKR ${totalFees.toLocaleString()}`, [46, 204, 113])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Collected', `PKR ${totalPaid.toLocaleString()}`, [46, 204, 113])
-  currentX += cardWidth + 10
+  currentX += cardWidth + cardSpacing
 
   drawSummaryCard(doc, currentX, 50, cardWidth, cardHeight, 'Pending', `PKR ${totalPending.toLocaleString()}`, [231, 76, 60])
 
