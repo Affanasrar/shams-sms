@@ -4,6 +4,13 @@ import prisma from '@/lib/prisma'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -121,7 +128,7 @@ async function generateMonthlyReport(doc: jsPDF, month: number, year: number) {
   })
 
   // Generate table
-  ;(doc as any).autoTable({
+  doc.autoTable({
     head: [['Student ID', 'Name', 'Course', 'Total', 'Paid', 'Pending', 'Status']],
     body: tableData,
     startY: 90,
@@ -200,7 +207,7 @@ async function generateStudentReport(doc: jsPDF, studentId: string) {
     ]
   })
 
-  ;(doc as any).autoTable({
+  doc.autoTable({
     head: [['Month', 'Course', 'Total', 'Paid', 'Pending']],
     body: tableData,
     startY: 90,
@@ -291,7 +298,7 @@ async function generateCourseReport(doc: jsPDF, courseId: string, month: number,
     ]
   })
 
-  ;(doc as any).autoTable({
+  doc.autoTable({
     head: [['Student ID', 'Name', 'Total', 'Paid', 'Pending']],
     body: tableData,
     startY: 90,
@@ -373,7 +380,7 @@ async function generateOverallReport(doc: jsPDF, month: number, year: number) {
     `PKR ${(stats.totalFees - stats.totalPaid).toLocaleString()}`
   ])
 
-  ;(doc as any).autoTable({
+  doc.autoTable({
     head: [['Course', 'Students', 'Total Fees', 'Collected', 'Pending']],
     body: tableData,
     startY: 90,
