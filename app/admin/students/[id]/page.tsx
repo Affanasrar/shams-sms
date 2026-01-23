@@ -24,7 +24,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
           <h1 className="text-3xl font-bold">{student.name}</h1>
           <p className="text-gray-500 mt-1">Father: {student.fatherName}</p>
           <div className="flex gap-4 mt-4 text-sm text-gray-600 font-mono">
-            <span className="bg-gray-100 px-2 py-1 rounded">ID: {student.id.slice(0,8)}</span>
+            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">ID: {student.studentId}</span>
             <span>📱 {student.phone}</span>
             <span>📅 Joined: {new Date(student.admission).toLocaleDateString()}</span>
           </div>

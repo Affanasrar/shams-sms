@@ -34,7 +34,7 @@ export default async function StudentList() {
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 border-b text-gray-500">
             <tr>
-              <th className="px-6 py-3">ID</th>
+              <th className="px-6 py-3">Student ID</th>
               <th className="px-6 py-3">Student Name</th>
               <th className="px-6 py-3">Father's Name</th>
               <th className="px-6 py-3">Phone</th>
@@ -44,8 +44,8 @@ export default async function StudentList() {
           <tbody className="divide-y">
             {students.map((student) => (
               <tr key={student.id} className="hover:bg-gray-50 group">
-                <td className="px-6 py-4 font-mono text-xs text-gray-400">
-                  {student.id.slice(0, 8)}...
+                <td className="px-6 py-4 font-mono text-xs text-blue-600 font-medium">
+                  {student.studentId}
                 </td>
                 
                 {/* 👇 THIS IS THE UPDATED PART 👇 */}

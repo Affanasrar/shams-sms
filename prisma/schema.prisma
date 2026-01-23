@@ -93,6 +93,7 @@ enum EnrollStatus {
 
 model Student {
   id          String   @id @default(uuid())
+  studentId   String   @unique // Custom format: SCI-YYMM-XXX
   name        String
   fatherName  String
   phone       String

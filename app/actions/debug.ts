@@ -1,10 +1,14 @@
 // app/actions/debug.ts
 'use server'
 import prisma from '@/lib/prisma'
+import { generateStudentId } from '@/lib/utils'
 
 export async function createDummyStudent() {
+  const studentId = await generateStudentId(prisma)
+  
   return await prisma.student.create({
     data: {
+      studentId: studentId,
       name: `Test Student ${Math.floor(Math.random() * 1000)}`,
       fatherName: 'Debug Father',
       phone: '0300-0000000',

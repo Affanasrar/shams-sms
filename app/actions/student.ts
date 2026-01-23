@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { generateStudentId } from '@/lib/utils'
 
 // 1. Validation Schema
 const StudentSchema = z.object({
@@ -34,8 +35,12 @@ export async function createStudent(prevState: any, formData: FormData) {
 
   // 4. Save to Database
   try {
+    // Generate unique student ID
+    const studentId = await generateStudentId(prisma)
+    
     await prisma.student.create({
       data: {
+        studentId: studentId,
         name: validated.data.name as string,
         fatherName: validated.data.fatherName as string,
         phone: validated.data.phone as string,
@@ -48,7 +53,12 @@ export async function createStudent(prevState: any, formData: FormData) {
     
     // Check for common errors (like Unique Constraints)
     if (error.code === 'P2002') {
-       return { success: false, error: "This phone number is already registered." }
+      if (error.meta?.target?.includes('phone')) {
+        return { success: false, error: "This phone number is already registered." }
+      }
+      if (error.meta?.target?.includes('studentId')) {
+        return { success: false, error: "Student ID generation failed. Please try again." }
+      }
     }
     
     return { success: false, error: "Database Error: See terminal for details." }

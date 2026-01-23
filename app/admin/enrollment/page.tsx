@@ -75,6 +75,7 @@ export default async function EnrollmentIndex(props: Props) {
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 border-b text-gray-500">
             <tr>
+              <th className="px-6 py-3">Student ID</th>
               <th className="px-6 py-3">Student Name</th>
               <th className="px-6 py-3">Course</th>
               <th className="px-6 py-3">Slot / Room</th>
@@ -85,6 +86,9 @@ export default async function EnrollmentIndex(props: Props) {
           <tbody className="divide-y">
             {enrollments.map((record) => (
               <tr key={record.id} className="hover:bg-gray-50 group">
+                <td className="px-6 py-4 font-mono text-xs text-blue-600 font-medium">
+                  {record.student.studentId}
+                </td>
                 <td className="px-6 py-4 font-medium text-gray-900">
                   {record.student.name}
                   <div className="text-xs text-gray-500 font-normal">{record.student.fatherName}</div>
