@@ -75,7 +75,7 @@ export default async function FeesPage() {
               <th className="px-6 py-3">Due Date</th>
               <th className="px-6 py-3">Student</th>
               <th className="px-6 py-3">Course</th>
-              <th className="px-6 py-3">Amount</th>
+              <th className="px-6 py-3">Fee Details</th>
               <th className="px-6 py-3 text-right">Action</th>
             </tr>
           </thead>
@@ -98,10 +98,20 @@ export default async function FeesPage() {
                   </td>
 
                   <td className="px-6 py-4 font-mono">
-                    PKR {Number(fee.amount).toLocaleString()}
+                    <div>PKR {Number(fee.finalAmount).toLocaleString()}</div>
+                    {Number(fee.paidAmount) > 0 && (
+                      <div className="text-xs text-green-600">
+                        Paid: {Number(fee.paidAmount).toLocaleString()}
+                      </div>
+                    )}
+                    {Number(fee.finalAmount) - Number(fee.paidAmount) > 0 && (
+                      <div className="text-xs text-red-600 font-medium">
+                        Due: {(Number(fee.finalAmount) - Number(fee.paidAmount)).toLocaleString()}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <CollectButton feeId={fee.id} adminId={adminId} />
+                    <CollectButton feeId={fee.id} adminId={adminId} finalAmount={Number(fee.finalAmount)} />
                   </td>
                 </tr>
               )

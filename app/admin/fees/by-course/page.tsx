@@ -34,7 +34,7 @@ export default async function FeesByCourse() {
     const totalUnpaid = uniqueStudents.reduce((sum, enrollment) => {
       const unpaid = enrollment.fees
         .filter(fee => fee.status === 'UNPAID' || fee.status === 'PARTIAL')
-        .reduce((feeSum, fee) => feeSum + Number(fee.amount), 0)
+        .reduce((feeSum, fee) => feeSum + (Number(fee.finalAmount) - Number(fee.paidAmount)), 0)
       return sum + unpaid
     }, 0)
 
@@ -106,13 +106,11 @@ export default async function FeesByCourse() {
                   </thead>
                   <tbody className="divide-y">
                     {course.enrollments.map((enrollment) => {
-                      const totalFees = enrollment.fees.reduce((sum, fee) => sum + Number(fee.amount), 0)
-                      const paidFees = enrollment.fees
-                        .filter(fee => fee.status === 'PAID')
-                        .reduce((sum, fee) => sum + Number(fee.amount), 0)
+                      const totalFees = enrollment.fees.reduce((sum, fee) => sum + Number(fee.finalAmount), 0)
+                      const paidFees = enrollment.fees.reduce((sum, fee) => sum + Number(fee.paidAmount), 0)
                       const pendingFees = enrollment.fees
                         .filter(fee => fee.status === 'UNPAID' || fee.status === 'PARTIAL')
-                        .reduce((sum, fee) => sum + Number(fee.amount), 0)
+                        .reduce((sum, fee) => sum + (Number(fee.finalAmount) - Number(fee.paidAmount)), 0)
                       
                       const status = pendingFees === 0 ? 'PAID' : (paidFees > 0 ? 'PARTIAL' : 'UNPAID')
                       const statusColor = status === 'PAID' ? 'bg-green-100 text-green-800' : 
