@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation'
 
 export async function getStudentProfile(studentId: string) {
   const student = await prisma.student.findUnique({
-    where: { id: studentId },
+    where: { studentId: studentId },
     include: {
       // 1. Get Enrollments (Active & Past)
       enrollments: {

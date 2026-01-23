@@ -1,7 +1,8 @@
 // app/api/admin/fees/reports/generate/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import PDFDocument from 'pdfkit'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,11 +15,8 @@ export async function GET(request: NextRequest) {
 
     console.log('Generating report:', { reportType, month, year, studentId, courseId })
 
-    // Create PDF document
-    const doc = new PDFDocument({
-      size: 'A4',
-      margin: 50
-    })
+    // Create PDF document using jsPDF (serverless-friendly)
+    const doc = new jsPDF()
 
     // Set response headers for PDF download
     const headers = new Headers()
@@ -46,22 +44,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert PDF to buffer
-    const chunks: Buffer[] = []
-    doc.on('data', (chunk) => chunks.push(chunk))
-    doc.end()
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+    console.log('PDF generated successfully, size:', pdfBuffer.length)
 
-    return new Promise<NextResponse>((resolve) => {
-      doc.on('end', () => {
-        const pdfBuffer = Buffer.concat(chunks)
-        console.log('PDF generated successfully, size:', pdfBuffer.length)
-        resolve(new NextResponse(pdfBuffer, { headers }))
-      })
-
-      doc.on('error', (error) => {
-        console.error('PDF generation error:', error)
-        resolve(NextResponse.json({ error: 'PDF generation failed' }, { status: 500 }))
-      })
-    })
+    return new NextResponse(pdfBuffer, { headers })
 
   } catch (error) {
     console.error('Error generating PDF report:', error)
@@ -72,14 +58,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function generateMonthlyReport(doc: PDFKit.PDFDocument, month: number, year: number) {
+async function generateMonthlyReport(doc: jsPDF, month: number, year: number) {
   const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' })
 
   // Header
-  doc.fontSize(20).text('SHAMS SMS - Monthly Fees Report', { align: 'center' })
-  doc.moveDown()
-  doc.fontSize(14).text(`${monthName} ${year}`, { align: 'center' })
-  doc.moveDown(2)
+  doc.setFontSize(20)
+  doc.text('SHAMS SMS - Monthly Fees Report', 105, 20, { align: 'center' })
+  doc.setFontSize(14)
+  doc.text(`${monthName} ${year}`, 105, 35, { align: 'center' })
 
   // Fetch data
   const startDate = new Date(year, month - 1, 1)
@@ -102,7 +88,8 @@ async function generateMonthlyReport(doc: PDFKit.PDFDocument, month: number, yea
   })
 
   if (fees.length === 0) {
-    doc.fontSize(12).text('No fee data found for the selected month.', { align: 'center' })
+    doc.setFontSize(12)
+    doc.text('No fee data found for the selected month.', 105, 50, { align: 'center' })
     return
   }
 
@@ -111,48 +98,48 @@ async function generateMonthlyReport(doc: PDFKit.PDFDocument, month: number, yea
   const totalPaid = fees.reduce((sum, fee) => sum + Number(fee.paidAmount), 0)
   const totalPending = totalFees - totalPaid
 
-  doc.fontSize(12).text(`Total Students: ${new Set(fees.map(f => f.studentId)).size}`)
-  doc.text(`Total Fees: PKR ${totalFees.toLocaleString()}`)
-  doc.text(`Total Collected: PKR ${totalPaid.toLocaleString()}`)
-  doc.text(`Total Pending: PKR ${totalPending.toLocaleString()}`)
-  doc.moveDown()
+  doc.setFontSize(12)
+  doc.text(`Total Students: ${new Set(fees.map(f => f.studentId)).size}`, 20, 50)
+  doc.text(`Total Fees: PKR ${totalFees.toLocaleString()}`, 20, 60)
+  doc.text(`Total Collected: PKR ${totalPaid.toLocaleString()}`, 20, 70)
+  doc.text(`Total Pending: PKR ${totalPending.toLocaleString()}`, 20, 80)
 
-  // Table header
-  const tableTop = doc.y
-  doc.fontSize(10)
-  doc.text('Student ID', 50, tableTop)
-  doc.text('Student Name', 120, tableTop)
-  doc.text('Course', 250, tableTop)
-  doc.text('Total', 350, tableTop)
-  doc.text('Paid', 400, tableTop)
-  doc.text('Pending', 450, tableTop)
-  doc.text('Status', 500, tableTop)
-
-  doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke()
-
-  let y = tableTop + 25
-  fees.forEach((fee) => {
-    if (y > 700) {
-      doc.addPage()
-      y = 50
-    }
-
+  // Create table data
+  const tableData = fees.map(fee => {
     const pending = Number(fee.finalAmount) - Number(fee.paidAmount)
     const status = pending === 0 ? 'PAID' : Number(fee.paidAmount) > 0 ? 'PARTIAL' : 'UNPAID'
 
-    doc.text(fee.student.studentId, 50, y)
-    doc.text(fee.student.name, 120, y, { width: 120 })
-    doc.text(fee.enrollment?.courseOnSlot.course.name || 'General', 250, y, { width: 90 })
-    doc.text(Number(fee.finalAmount).toLocaleString(), 350, y)
-    doc.text(Number(fee.paidAmount).toLocaleString(), 400, y)
-    doc.text(pending.toLocaleString(), 450, y)
-    doc.text(status, 500, y)
+    return [
+      fee.student.studentId,
+      fee.student.name,
+      fee.enrollment?.courseOnSlot.course.name || 'General',
+      `PKR ${Number(fee.finalAmount).toLocaleString()}`,
+      `PKR ${Number(fee.paidAmount).toLocaleString()}`,
+      `PKR ${pending.toLocaleString()}`,
+      status
+    ]
+  })
 
-    y += 20
+  // Generate table
+  ;(doc as any).autoTable({
+    head: [['Student ID', 'Name', 'Course', 'Total', 'Paid', 'Pending', 'Status']],
+    body: tableData,
+    startY: 90,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [41, 128, 185] },
+    columnStyles: {
+      0: { cellWidth: 25 },
+      1: { cellWidth: 40 },
+      2: { cellWidth: 35 },
+      3: { cellWidth: 25 },
+      4: { cellWidth: 25 },
+      5: { cellWidth: 25 },
+      6: { cellWidth: 20 }
+    }
   })
 }
 
-async function generateStudentReport(doc: PDFKit.PDFDocument, studentId: string) {
+async function generateStudentReport(doc: jsPDF, studentId: string) {
   const student = await prisma.student.findUnique({
     where: { studentId },
     include: {
@@ -171,58 +158,58 @@ async function generateStudentReport(doc: PDFKit.PDFDocument, studentId: string)
   })
 
   if (!student) {
-    doc.fontSize(12).text('Student not found.', { align: 'center' })
+    doc.setFontSize(12)
+    doc.text('Student not found.', 105, 50, { align: 'center' })
     return
   }
 
   if (student.fees.length === 0) {
-    doc.fontSize(12).text('No fee data found for this student.', { align: 'center' })
+    doc.setFontSize(12)
+    doc.text('No fee data found for this student.', 105, 50, { align: 'center' })
     return
   }
 
   // Header
-  doc.fontSize(20).text('SHAMS SMS - Student Fees Report', { align: 'center' })
-  doc.moveDown()
-  doc.fontSize(14).text(`${student.studentId} - ${student.name}`, { align: 'center' })
-  doc.text(`s/o ${student.fatherName}`, { align: 'center' })
-  doc.moveDown(2)
+  doc.setFontSize(20)
+  doc.text('SHAMS SMS - Student Fees Report', 105, 20, { align: 'center' })
+  doc.setFontSize(14)
+  doc.text(`${student.studentId} - ${student.name}`, 105, 35, { align: 'center' })
+  doc.text(`s/o ${student.fatherName}`, 105, 45, { align: 'center' })
 
   // Summary
   const totalFees = student.fees.reduce((sum, fee) => sum + Number(fee.finalAmount), 0)
   const totalPaid = student.fees.reduce((sum, fee) => sum + Number(fee.paidAmount), 0)
   const totalPending = totalFees - totalPaid
 
-  doc.fontSize(12).text(`Total Fees: PKR ${totalFees.toLocaleString()}`)
-  doc.text(`Total Paid: PKR ${totalPaid.toLocaleString()}`)
-  doc.text(`Total Pending: PKR ${totalPending.toLocaleString()}`)
-  doc.moveDown()
+  doc.setFontSize(12)
+  doc.text(`Total Fees: PKR ${totalFees.toLocaleString()}`, 20, 60)
+  doc.text(`Total Paid: PKR ${totalPaid.toLocaleString()}`, 20, 70)
+  doc.text(`Total Pending: PKR ${totalPending.toLocaleString()}`, 20, 80)
 
-  // Monthly breakdown
-  doc.fontSize(12).text('Monthly Fee Details:', { underline: true })
-  doc.moveDown()
-
-  let y = doc.y
-  student.fees.forEach((fee) => {
-    if (y > 700) {
-      doc.addPage()
-      y = 50
-    }
-
+  // Monthly breakdown table
+  const tableData = student.fees.map(fee => {
     const monthName = fee.cycleDate.toLocaleString('default', { month: 'long', year: 'numeric' })
     const pending = Number(fee.finalAmount) - Number(fee.paidAmount)
 
-    doc.fontSize(10)
-    doc.text(`${monthName}`, 50, y)
-    doc.text(fee.enrollment?.courseOnSlot.course.name || 'General', 150, y)
-    doc.text(`PKR ${Number(fee.finalAmount).toLocaleString()}`, 300, y)
-    doc.text(`PKR ${Number(fee.paidAmount).toLocaleString()}`, 400, y)
-    doc.text(`PKR ${pending.toLocaleString()}`, 480, y)
+    return [
+      monthName,
+      fee.enrollment?.courseOnSlot.course.name || 'General',
+      `PKR ${Number(fee.finalAmount).toLocaleString()}`,
+      `PKR ${Number(fee.paidAmount).toLocaleString()}`,
+      `PKR ${pending.toLocaleString()}`
+    ]
+  })
 
-    y += 15
+  ;(doc as any).autoTable({
+    head: [['Month', 'Course', 'Total', 'Paid', 'Pending']],
+    body: tableData,
+    startY: 90,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [41, 128, 185] }
   })
 }
 
-async function generateCourseReport(doc: PDFKit.PDFDocument, courseId: string, month: number, year: number) {
+async function generateCourseReport(doc: jsPDF, courseId: string, month: number, year: number) {
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
@@ -248,22 +235,24 @@ async function generateCourseReport(doc: PDFKit.PDFDocument, courseId: string, m
   })
 
   if (!course) {
-    doc.fontSize(12).text('Course not found.', { align: 'center' })
+    doc.setFontSize(12)
+    doc.text('Course not found.', 105, 50, { align: 'center' })
     return
   }
 
   if (course.slotAssignments.length === 0 || course.slotAssignments.every(slot => slot.enrollments.length === 0)) {
-    doc.fontSize(12).text('No enrollment data found for this course.', { align: 'center' })
+    doc.setFontSize(12)
+    doc.text('No enrollment data found for this course.', 105, 50, { align: 'center' })
     return
   }
 
   const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' })
 
   // Header
-  doc.fontSize(20).text('SHAMS SMS - Course Fees Report', { align: 'center' })
-  doc.moveDown()
-  doc.fontSize(14).text(`${course.name} - ${monthName} ${year}`, { align: 'center' })
-  doc.moveDown(2)
+  doc.setFontSize(20)
+  doc.text('SHAMS SMS - Course Fees Report', 105, 20, { align: 'center' })
+  doc.setFontSize(14)
+  doc.text(`${course.name} - ${monthName} ${year}`, 105, 35, { align: 'center' })
 
   // Collect all fees
   const allFees: any[] = []
@@ -284,44 +273,41 @@ async function generateCourseReport(doc: PDFKit.PDFDocument, courseId: string, m
   const totalPaid = allFees.reduce((sum, fee) => sum + Number(fee.paidAmount), 0)
   const totalPending = totalFees - totalPaid
 
-  doc.fontSize(12).text(`Total Students: ${new Set(allFees.map(f => f.studentId)).size}`)
-  doc.text(`Total Fees: PKR ${totalFees.toLocaleString()}`)
-  doc.text(`Total Collected: PKR ${totalPaid.toLocaleString()}`)
-  doc.text(`Total Pending: PKR ${totalPending.toLocaleString()}`)
-  doc.moveDown()
+  doc.setFontSize(12)
+  doc.text(`Total Students: ${new Set(allFees.map(f => f.studentId)).size}`, 20, 50)
+  doc.text(`Total Fees: PKR ${totalFees.toLocaleString()}`, 20, 60)
+  doc.text(`Total Collected: PKR ${totalPaid.toLocaleString()}`, 20, 70)
+  doc.text(`Total Pending: PKR ${totalPending.toLocaleString()}`, 20, 80)
 
-  // Student list
-  doc.fontSize(12).text('Student Fee Details:', { underline: true })
-  doc.moveDown()
-
-  let y = doc.y
-  allFees.forEach((fee) => {
-    if (y > 700) {
-      doc.addPage()
-      y = 50
-    }
-
+  // Student table
+  const tableData = allFees.map(fee => {
     const pending = Number(fee.finalAmount) - Number(fee.paidAmount)
+    return [
+      fee.student.studentId,
+      fee.student.name,
+      `PKR ${Number(fee.finalAmount).toLocaleString()}`,
+      `PKR ${Number(fee.paidAmount).toLocaleString()}`,
+      `PKR ${pending.toLocaleString()}`
+    ]
+  })
 
-    doc.fontSize(10)
-    doc.text(fee.student.studentId, 50, y)
-    doc.text(fee.student.name, 120, y, { width: 120 })
-    doc.text(`PKR ${Number(fee.finalAmount).toLocaleString()}`, 250, y)
-    doc.text(`PKR ${Number(fee.paidAmount).toLocaleString()}`, 350, y)
-    doc.text(`PKR ${pending.toLocaleString()}`, 450, y)
-
-    y += 15
+  ;(doc as any).autoTable({
+    head: [['Student ID', 'Name', 'Total', 'Paid', 'Pending']],
+    body: tableData,
+    startY: 90,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [41, 128, 185] }
   })
 }
 
-async function generateOverallReport(doc: PDFKit.PDFDocument, month: number, year: number) {
+async function generateOverallReport(doc: jsPDF, month: number, year: number) {
   const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' })
 
   // Header
-  doc.fontSize(20).text('SHAMS SMS - Overall Fees Report', { align: 'center' })
-  doc.moveDown()
-  doc.fontSize(14).text(`${monthName} ${year}`, { align: 'center' })
-  doc.moveDown(2)
+  doc.setFontSize(20)
+  doc.text('SHAMS SMS - Overall Fees Report', 105, 20, { align: 'center' })
+  doc.setFontSize(14)
+  doc.text(`${monthName} ${year}`, 105, 35, { align: 'center' })
 
   // Get all fees for the month
   const startDate = new Date(year, month - 1, 1)
@@ -342,7 +328,8 @@ async function generateOverallReport(doc: PDFKit.PDFDocument, month: number, yea
   })
 
   if (fees.length === 0) {
-    doc.fontSize(12).text('No fee data found for this month.', { align: 'center' })
+    doc.setFontSize(12)
+    doc.text('No fee data found for this month.', 105, 50, { align: 'center' })
     return
   }
 
@@ -371,30 +358,26 @@ async function generateOverallReport(doc: PDFKit.PDFDocument, month: number, yea
   const totalPaid = fees.reduce((sum, fee) => sum + Number(fee.paidAmount), 0)
   const totalStudents = new Set(fees.map(f => f.studentId)).size
 
-  doc.fontSize(12).text(`Total Students: ${totalStudents}`)
-  doc.text(`Total Fees: PKR ${totalFees.toLocaleString()}`)
-  doc.text(`Total Collected: PKR ${totalPaid.toLocaleString()}`)
-  doc.text(`Total Pending: PKR ${(totalFees - totalPaid).toLocaleString()}`)
-  doc.moveDown()
+  doc.setFontSize(12)
+  doc.text(`Total Students: ${totalStudents}`, 20, 50)
+  doc.text(`Total Fees: PKR ${totalFees.toLocaleString()}`, 20, 60)
+  doc.text(`Total Collected: PKR ${totalPaid.toLocaleString()}`, 20, 70)
+  doc.text(`Total Pending: PKR ${(totalFees - totalPaid).toLocaleString()}`, 20, 80)
 
-  // Course-wise breakdown
-  doc.fontSize(12).text('Course-wise Summary:', { underline: true })
-  doc.moveDown()
+  // Course-wise breakdown table
+  const tableData = Array.from(courseStats.values()).map(stats => [
+    stats.courseName,
+    `${stats.studentCount.size} students`,
+    `PKR ${stats.totalFees.toLocaleString()}`,
+    `PKR ${stats.totalPaid.toLocaleString()}`,
+    `PKR ${(stats.totalFees - stats.totalPaid).toLocaleString()}`
+  ])
 
-  let y = doc.y
-  courseStats.forEach((stats) => {
-    if (y > 700) {
-      doc.addPage()
-      y = 50
-    }
-
-    doc.fontSize(10)
-    doc.text(stats.courseName, 50, y, { width: 150 })
-    doc.text(`${stats.studentCount.size} students`, 210, y)
-    doc.text(`PKR ${stats.totalFees.toLocaleString()}`, 300, y)
-    doc.text(`PKR ${stats.totalPaid.toLocaleString()}`, 400, y)
-    doc.text(`PKR ${(stats.totalFees - stats.totalPaid).toLocaleString()}`, 480, y)
-
-    y += 15
+  ;(doc as any).autoTable({
+    head: [['Course', 'Students', 'Total Fees', 'Collected', 'Pending']],
+    body: tableData,
+    startY: 90,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [41, 128, 185] }
   })
 }

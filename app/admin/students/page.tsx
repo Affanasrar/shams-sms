@@ -94,7 +94,7 @@ export default async function StudentList(props: Props) {
                 {/* 👇 THIS IS THE UPDATED PART 👇 */}
                 <td className="px-6 py-4 font-medium text-gray-900">
                   <Link 
-                    href={`/admin/students/${student.id}`} 
+                    href={`/admin/students/${student.studentId}`} 
                     className="hover:text-blue-600 hover:underline"
                   >
                     {student.name}
