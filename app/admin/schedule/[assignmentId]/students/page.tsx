@@ -9,7 +9,27 @@ type Props = {
 }
 
 export default async function EnrolledStudentsPage({ params }: Props) {
-  const assignmentId = params.assignmentId
+  const assignmentId = (await params).assignmentId
+
+  if (!assignmentId) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin/schedule"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft size={20} />
+            Back to Schedule
+          </Link>
+        </div>
+        <div className="bg-white border rounded-lg p-6 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid Assignment ID</h1>
+          <p className="text-gray-600">The assignment ID is missing or invalid.</p>
+        </div>
+      </div>
+    )
+  }
 
   try {
     // Fetch the assignment with enrolled students
