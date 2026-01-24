@@ -148,3 +148,49 @@ export async function dropStudent(formData: FormData) {
     return { success: false, error: "Failed to drop student" }
   }
 }
+
+export async function extendCourse(prevState: any, formData: FormData) {
+  const enrollmentId = formData.get('enrollmentId') as string
+  const additionalDays = parseInt(formData.get('additionalDays') as string)
+
+  if (!enrollmentId || !additionalDays || additionalDays <= 0) {
+    return { success: false, error: "Invalid enrollment ID or days" }
+  }
+
+  try {
+    // Get current enrollment to calculate new end date
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: { courseOnSlot: { include: { course: true } } }
+    })
+
+    if (!enrollment) {
+      return { success: false, error: "Enrollment not found" }
+    }
+
+    // Calculate new end date: current end date + additional days
+    const currentEndDate = enrollment.endDate || new Date(
+      enrollment.joiningDate.getTime() + 
+      (enrollment.courseOnSlot.course.durationMonths * 30 * 24 * 60 * 60 * 1000) +
+      ((enrollment.extendedDays || 0) * 24 * 60 * 60 * 1000)
+    )
+    
+    const newEndDate = new Date(currentEndDate.getTime() + (additionalDays * 24 * 60 * 60 * 1000))
+
+    // Update enrollment with new extended days and end date
+    await prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { 
+        extendedDays: (enrollment.extendedDays || 0) + additionalDays,
+        endDate: newEndDate
+      }
+    })
+
+    // Refresh the student profile page
+    revalidatePath(`/admin/students/${enrollment.studentId}`)
+    return { success: true, message: `Course extended by ${additionalDays} days` }
+  } catch (error) {
+    console.error("Extend Course Error:", error)
+    return { success: false, error: "Failed to extend course" }
+  }
+}

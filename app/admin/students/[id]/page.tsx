@@ -1,8 +1,10 @@
 // app/admin/students/[id]/page.tsx
 import { getStudentProfile } from '@/app/actions/get-student-profile'
-import { CheckCircle, Clock, DollarSign, BookOpen, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Clock, DollarSign, BookOpen, ArrowLeft, Calendar, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { unstable_noStore as noStore } from 'next/cache'
+import { ExtendCourseModal } from './extend-course-modal'
+import { EnrollmentTable } from './enrollment-table'
 
 // 👇 CHANGED: params is now a Promise type
 export default async function StudentProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,31 +60,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <BookOpen size={20}/> Course Enrollment History
             </h2>
-            <div className="bg-white border rounded-lg overflow-hidden">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="p-4">Course</th>
-                    <th className="p-4">Slot</th>
-                    <th className="p-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {student.enrollments.map(enr => (
-                    <tr key={enr.id}>
-                      <td className="p-4 font-medium">{enr.courseOnSlot.course.name}</td>
-                      <td className="p-4 text-gray-500">
-                        {enr.courseOnSlot.slot.days} <br/>
-                        {new Date(enr.courseOnSlot.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}
-                      </td>
-                      <td className="p-4">
-                        <StatusBadge status={enr.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <EnrollmentTable enrollments={student.enrollments} />
           </section>
 
           {/* Exam Results */}
@@ -193,20 +171,5 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
       </div>
     </div>
-  )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles = {
-    ACTIVE: "bg-green-100 text-green-800",
-    COMPLETED: "bg-blue-100 text-blue-800",
-    DROPPED: "bg-red-100 text-red-800",
-  }
-  // @ts-ignore
-  const style = styles[status] || "bg-gray-100 text-gray-800"
-  return (
-    <span className={`px-2 py-1 rounded text-xs font-bold ${style}`}>
-      {status}
-    </span>
   )
 }
