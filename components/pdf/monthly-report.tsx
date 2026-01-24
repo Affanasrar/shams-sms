@@ -9,6 +9,7 @@ type ReportFormat = {
   name: string
   showLogo: boolean
   logoPosition: string
+  logoUrl?: string | null
   headerText?: string | null
   footerText?: string | null
   titleFontSize: number

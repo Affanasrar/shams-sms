@@ -259,6 +259,7 @@ model ReportFormat {
   // Layout & Structure
   showLogo          Boolean    @default(true)
   logoPosition      String     @default("top-left") // top-left, top-center, top-right
+  logoUrl           String?    // URL or path to logo file
   headerText        String?    // Custom header text
   footerText        String?    // Custom footer text
 

@@ -1,6 +1,8 @@
 // components/pdf/base-template.tsx
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer'
+import fs from 'fs'
+import path from 'path'
 
 type ReportFormat = {
   id: string
@@ -8,6 +10,7 @@ type ReportFormat = {
   name: string
   showLogo: boolean
   logoPosition: string
+  logoUrl?: string | null
   headerText?: string | null
   footerText?: string | null
   titleFontSize: number
@@ -44,6 +47,48 @@ interface BaseTemplateProps {
 }
 
 export function BaseTemplate({ title, subtitle, generatedAt, format, children }: BaseTemplateProps) {
+  // Get logo as base64
+  const getLogoSrc = () => {
+    // If a custom logo URL is provided, try to load it
+    if (format.logoUrl) {
+      try {
+        const logoPath = path.join(process.cwd(), 'public', format.logoUrl)
+        if (fs.existsSync(logoPath)) {
+          const logoBuffer = fs.readFileSync(logoPath)
+          const base64 = logoBuffer.toString('base64')
+          const ext = path.extname(format.logoUrl).toLowerCase().slice(1)
+          const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`
+          return `data:${mimeType};base64,${base64}`
+        }
+      } catch (error) {
+        console.warn(`Custom logo file could not be read:`, error)
+      }
+    }
+
+    // Fall back to default logo files
+    const logoExtensions = ['png', 'jpg', 'jpeg', 'svg']
+    const publicPath = path.join(process.cwd(), 'public', 'assets', 'images')
+
+    for (const ext of logoExtensions) {
+      try {
+        const logoPath = path.join(publicPath, `logo.${ext}`)
+        if (fs.existsSync(logoPath)) {
+          const logoBuffer = fs.readFileSync(logoPath)
+          const base64 = logoBuffer.toString('base64')
+          const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`
+          return `data:${mimeType};base64,${base64}`
+        }
+      } catch (error) {
+        console.warn(`Logo file logo.${ext} could not be read:`, error)
+      }
+    }
+
+    console.warn('No logo file found')
+    return null
+  }
+
+  const logoSrc = getLogoSrc()
+
   // Create dynamic styles based on format
   const dynamicStyles = StyleSheet.create({
     page: {
@@ -163,9 +208,9 @@ export function BaseTemplate({ title, subtitle, generatedAt, format, children }:
 
         {/* Header */}
         <View style={dynamicStyles.header}>
-          {format.showLogo && format.logoPosition.includes('left') && (
+          {format.showLogo && format.logoPosition.includes('left') && logoSrc && (
             <Image
-              src="/assets/images/logo.png"
+              src={logoSrc}
               style={dynamicStyles.logo}
             />
           )}
@@ -175,9 +220,9 @@ export function BaseTemplate({ title, subtitle, generatedAt, format, children }:
             {subtitle && <Text style={dynamicStyles.subtitle}>{subtitle}</Text>}
           </View>
 
-          {format.showLogo && format.logoPosition.includes('right') && (
+          {format.showLogo && format.logoPosition.includes('right') && logoSrc && (
             <Image
-              src="/assets/images/logo.png"
+              src={logoSrc}
               style={dynamicStyles.logo}
             />
           )}
