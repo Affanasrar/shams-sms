@@ -167,7 +167,7 @@ export default async function EnrolledStudentsPage({ params }: Props) {
     </div>
   )
   } catch (error) {
-    console.error('Error fetching enrolled students:', error)
+    console.error('Error fetching enrolled students for assignment ID:', assignmentId, error)
     return (
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
@@ -181,7 +181,9 @@ export default async function EnrolledStudentsPage({ params }: Props) {
         </div>
         <div className="bg-white border rounded-lg p-6 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Students</h1>
-          <p className="text-gray-600">There was an error loading the enrolled students. Please try again later.</p>
+          <p className="text-gray-600 mb-2">There was an error loading the enrolled students.</p>
+          <p className="text-sm text-gray-500">Assignment ID: {assignmentId}</p>
+          <p className="text-sm text-gray-500 mt-4">Please try again later or contact support if the problem persists.</p>
         </div>
       </div>
     )
