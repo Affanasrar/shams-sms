@@ -11,38 +11,55 @@ type Props = {
 export default async function EnrolledStudentsPage({ params }: Props) {
   const assignmentId = params.assignmentId
 
-  // Fetch the assignment with enrolled students
-  const assignment = await prisma.courseOnSlot.findUnique({
-    where: { id: assignmentId },
-    include: {
-      course: true,
-      slot: {
-        include: { room: true }
-      },
-      teacher: true,
-      enrollments: {
-        where: { status: 'ACTIVE' },
-        select: {
-          id: true,
-          joiningDate: true,
-          endDate: true,
-          student: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              fatherName: true,
-              address: true
+  try {
+    // Fetch the assignment with enrolled students
+    const assignment = await prisma.courseOnSlot.findUnique({
+      where: { id: assignmentId },
+      include: {
+        course: true,
+        slot: {
+          include: { room: true }
+        },
+        teacher: true,
+        enrollments: {
+          where: { status: 'ACTIVE' },
+          select: {
+            id: true,
+            joiningDate: true,
+            endDate: true,
+            student: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                fatherName: true,
+                address: true
+              }
             }
           }
         }
       }
-    }
-  })
+    })
 
-  if (!assignment) {
-    notFound()
-  }
+    if (!assignment) {
+      return (
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/schedule"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft size={20} />
+              Back to Schedule
+            </Link>
+          </div>
+          <div className="bg-white border rounded-lg p-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h1>
+            <p className="text-gray-600">The requested course assignment could not be found.</p>
+          </div>
+        </div>
+      )
+    }
 
   const totalStudents = assignment.enrollments.length
   const capacity = assignment.slot.room.capacity
@@ -149,4 +166,24 @@ export default async function EnrolledStudentsPage({ params }: Props) {
       </div>
     </div>
   )
+  } catch (error) {
+    console.error('Error fetching enrolled students:', error)
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin/schedule"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft size={20} />
+            Back to Schedule
+          </Link>
+        </div>
+        <div className="bg-white border rounded-lg p-6 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Students</h1>
+          <p className="text-gray-600">There was an error loading the enrolled students. Please try again later.</p>
+        </div>
+      </div>
+    )
+  }
 }
