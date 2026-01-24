@@ -2,6 +2,7 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { CollectButton } from './collect-button'
+import { EarlyFeeCollection } from './early-fee-collection'
 import { ArrowLeft } from 'lucide-react'
 
 export default async function FeesPage() {
@@ -67,6 +68,8 @@ export default async function FeesPage() {
           Manage Discounts
         </a>
       </div>
+
+      <EarlyFeeCollection adminId={adminId} />
 
       <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
         <table className="w-full text-sm text-left">
