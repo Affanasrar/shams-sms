@@ -1,7 +1,7 @@
 // app/admin/students/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { UserPlus, Search } from 'lucide-react'
+import { UserPlus, Search, ArrowLeft } from 'lucide-react'
 
 // 👇 Define the props type correctly for Next.js 15+
 type Props = {
@@ -33,6 +33,13 @@ export default async function StudentList(props: Props) {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href="/admin" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={20} />
+          Back to Dashboard
+        </Link>
+      </div>
+      
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Student Directory</h2>
         <Link 

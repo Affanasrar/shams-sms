@@ -3,6 +3,8 @@
 
 import { createStudent } from '@/app/actions/student'
 import { useActionState } from 'react' // 👈 CHANGED: Import from 'react'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 // Initial state for the server action
 const initialState = { success: false, error: '' }
@@ -14,6 +16,13 @@ export default function NewStudentPage() {
 
   return (
     <div className="max-w-xl mx-auto p-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/admin/students" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={20} />
+          Back to Students
+        </Link>
+      </div>
+      
       <h1 className="text-2xl font-bold mb-6">🎓 New Student Admission</h1>
       
       <form action={formAction} className="space-y-6 bg-white p-8 rounded-lg border shadow-sm">

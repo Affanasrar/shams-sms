@@ -1,7 +1,8 @@
 // app/admin/schedule/page.tsx
 import prisma from '@/lib/prisma'
 import { SlotCard } from './slot-card' 
-import { CalendarDays, Settings } from 'lucide-react'
+import { CalendarDays, Settings, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { Course, FeeType } from '@prisma/client'
 import { ManagementPanel } from './management-panel'
 
@@ -103,6 +104,13 @@ export default async function SchedulePage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
+      <div className="flex items-center gap-4">
+        <Link href="/admin" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={20} />
+          Back to Dashboard
+        </Link>
+      </div>
+      
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-black text-white rounded-lg">

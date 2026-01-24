@@ -1,6 +1,8 @@
 // app/test/page.tsx
 import prisma from '@/lib/prisma'
 import { EnrollButton } from './enroll-button' // We will create this small component next
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 export default async function TestPage() {
   // 1. Fetch the Data we just seeded
@@ -24,6 +26,13 @@ export default async function TestPage() {
 
   return (
     <div className="p-10 font-sans space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={20} />
+          Back to Home
+        </Link>
+      </div>
+      
       <h1 className="text-2xl font-bold">🧪 System Diagnostics</h1>
       
       <div className="grid grid-cols-2 gap-4">

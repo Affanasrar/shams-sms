@@ -1,6 +1,8 @@
 // app/admin/enrollment/new/page.tsx
 import { EnrollmentForm } from './enrollment-form'
 import { getEnrollmentOptions } from '@/app/actions/fetch-options'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 export default async function NewEnrollmentPage() {
   const data = await getEnrollmentOptions()
@@ -17,6 +19,13 @@ export default async function NewEnrollmentPage() {
   
   return (
     <div className="max-w-2xl mx-auto p-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/admin/enrollment" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={20} />
+          Back to Enrollments
+        </Link>
+      </div>
+      
       <h1 className="text-2xl font-bold mb-6">📝 New Student Enrollment</h1>
       <div className="bg-white p-6 rounded-lg border shadow-sm">
         {/* Pass 'safeAssignments' instead of 'data.assignments' */}

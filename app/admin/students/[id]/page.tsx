@@ -1,6 +1,7 @@
 // app/admin/students/[id]/page.tsx
 import { getStudentProfile } from '@/app/actions/get-student-profile'
-import { CheckCircle, Clock, DollarSign, BookOpen } from 'lucide-react'
+import { CheckCircle, Clock, DollarSign, BookOpen, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { unstable_noStore as noStore } from 'next/cache'
 
 // 👇 CHANGED: params is now a Promise type
@@ -21,6 +22,12 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
+      <div className="flex items-center gap-4">
+        <Link href="/admin/students" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={20} />
+          Back to Students
+        </Link>
+      </div>
       
       {/* 1. Header Card (Bio-Data) */}
       <div className="bg-white p-8 rounded-xl border shadow-sm flex justify-between items-start">

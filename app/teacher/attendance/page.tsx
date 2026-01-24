@@ -1,7 +1,7 @@
 // app/teacher/attendance/page.tsx
 import { auth } from "@clerk/nextjs/server"
 import prisma from "@/lib/prisma"
-import { Clock, MapPin, ArrowRight, CheckSquare } from "lucide-react"
+import { Clock, MapPin, ArrowRight, CheckSquare, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
@@ -24,6 +24,13 @@ export default async function AttendanceSelectionPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href="/teacher" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+          <ArrowLeft size={20} />
+          Back to Dashboard
+        </Link>
+      </div>
+      
       <div className="flex items-center gap-3 mb-8">
         <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
           <CheckSquare size={24} />
