@@ -174,6 +174,36 @@ export default async function EnrolledStudentsPage({ params }: Props) {
         )}
       </div>
 
+      {/* Action Buttons */}
+      <div className="bg-white border rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link
+            href="/admin/fees"
+            className="flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Users size={20} />
+            <span className="font-medium">Collect Fees</span>
+          </Link>
+
+          <Link
+            href="/admin/enrollment/new"
+            className="flex items-center justify-center gap-3 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <User size={20} />
+            <span className="font-medium">New Enrollment</span>
+          </Link>
+
+          <Link
+            href="/admin/students/new"
+            className="flex items-center justify-center gap-3 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <User size={20} />
+            <span className="font-medium">New Admission</span>
+          </Link>
+        </div>
+      </div>
+
       {/* Enrolled Students */}
       <div className="bg-white border rounded-lg p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
