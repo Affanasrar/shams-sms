@@ -1,8 +1,9 @@
 // app/admin/schedule/page.tsx
 import prisma from '@/lib/prisma'
 import { SlotCard } from './slot-card' 
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Settings } from 'lucide-react'
 import { Course, FeeType } from '@prisma/client'
+import { ManagementPanel } from './management-panel'
 
 // Force fresh data every time so capacity is accurate
 export const dynamic = 'force-dynamic'
@@ -20,7 +21,7 @@ type CourseWithAssignments = {
       startTime: Date
       endTime: Date
       days: string
-      room: { name: string; capacity: number }
+      room: { name: string; capacity: number; id: string }
     }
     enrollments: { 
       endDate: Date | null
@@ -31,7 +32,7 @@ type CourseWithAssignments = {
         fatherName: string
       }
     }[]
-    teacher?: { firstName: string | null } | null
+    teacher?: { id: string; firstName: string | null; lastName: string | null } | null
   }[]
 }
 
@@ -83,16 +84,41 @@ export default async function SchedulePage() {
 
   const courses: CourseWithAssignments[] = Array.from(coursesMap.values())
 
+  // Fetch additional data for management
+  const rooms = await prisma.room.findMany()
+  const allCourses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
+  const slots = await prisma.slot.findMany({
+    include: { room: true },
+    orderBy: { startTime: 'asc' }
+  })
+  const teachers = await prisma.user.findMany({
+    where: { 
+      OR: [
+        { role: 'TEACHER' },
+        { role: 'ADMIN' }
+      ]
+    },
+    orderBy: { firstName: 'asc' }
+  })
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="p-3 bg-black text-white rounded-lg">
-          <CalendarDays size={24} />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-black text-white rounded-lg">
+            <CalendarDays size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Course Timetables & Capacity</h1>
+            <p className="text-gray-500">Monitor all courses, their schedules, capacity, and current enrollments.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">Course Timetables & Capacity</h1>
-          <p className="text-gray-500">Monitor all courses, their schedules, capacity, and current enrollments.</p>
-        </div>
+        <ManagementPanel 
+          rooms={rooms} 
+          courses={allCourses.map(c => ({ ...c, baseFee: Number(c.baseFee) }))} 
+          slots={slots} 
+          teachers={teachers} 
+        />
       </div>
 
       <div className="space-y-8">
@@ -113,7 +139,7 @@ export default async function SchedulePage() {
             {course.slotAssignments.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {course.slotAssignments.map((assignment) => (
-                  <SlotCard key={assignment.id} data={assignment} />
+                  <SlotCard key={assignment.id} data={assignment} teachers={teachers} />
                 ))}
               </div>
             ) : (

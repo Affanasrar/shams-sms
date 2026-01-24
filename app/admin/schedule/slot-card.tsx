@@ -1,8 +1,9 @@
 // app/admin/schedule/slot-card.tsx
 'use client'
 
-import { Users, LogOut, ChevronDown, ChevronUp } from 'lucide-react'
+import { Users, LogOut, ChevronDown, ChevronUp, Edit, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { changeTeacherForm, deleteAssignmentForm } from '@/app/actions/settings'
 
 type Props = {
   data: {
@@ -12,9 +13,8 @@ type Props = {
       startTime: Date
       endTime: Date
       days: string
-      room: { name: string; capacity: number }
+      room: { name: string; capacity: number; id: string }
     }
-    // 👇 FIX: We must allow 'null' here because Prisma returns null for active students
     enrollments: { 
       endDate: Date | null
       student: {
@@ -24,12 +24,14 @@ type Props = {
         fatherName: string
       }
     }[] 
-    teacher?: { firstName: string | null } | null
+    teacher?: { id: string; firstName: string | null; lastName: string | null } | null
   }
+  teachers: any[]
 }
 
-export function SlotCard({ data }: Props) {
+export function SlotCard({ data, teachers }: Props) {
   const [showStudents, setShowStudents] = useState(false)
+  const [isEditingTeacher, setIsEditingTeacher] = useState(false)
   const totalStudents = data.enrollments.length
   const capacity = data.slot.room.capacity
   const isFull = totalStudents >= capacity
@@ -61,8 +63,34 @@ export function SlotCard({ data }: Props) {
             {data.slot.days}
           </p>
         </div>
-        <div className={`text-xs font-bold px-2 py-1 rounded ${isFull ? 'bg-red-200 text-red-800' : 'bg-green-100 text-green-800'}`}>
-          {isFull ? 'FULL' : 'OPEN'}
+        <div className="flex items-center gap-2">
+          <div className={`text-xs font-bold px-2 py-1 rounded ${isFull ? 'bg-red-200 text-red-800' : 'bg-green-100 text-green-800'}`}>
+            {isFull ? 'FULL' : 'OPEN'}
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setIsEditingTeacher(true)}
+              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+              title="Change Teacher"
+            >
+              <Edit size={14} />
+            </button>
+            <form action={deleteAssignmentForm} className="inline">
+              <input type="hidden" name="id" value={data.id} />
+              <button
+                type="submit"
+                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                title="Delete Assignment"
+                onClick={(e) => {
+                  if (!confirm('Are you sure you want to delete this course assignment? This will remove all enrollments.')) {
+                    e.preventDefault()
+                  }
+                }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -134,6 +162,47 @@ export function SlotCard({ data }: Props) {
         </div>
       )}
 
+      {/* Teacher Edit Modal */}
+      {isEditingTeacher && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Change Teacher for {data.course.name}</h3>
+            <form action={changeTeacherForm} className="space-y-4">
+              <input type="hidden" name="assignmentId" value={data.id} />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select New Teacher</label>
+                <select
+                  name="teacherId"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">-- Choose Teacher --</option>
+                  {teachers.map((teacher: any) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.firstName} {teacher.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+                >
+                  Change Teacher
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingTeacher(false)}
+                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
