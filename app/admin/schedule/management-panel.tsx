@@ -25,11 +25,40 @@ import {
   changeTeacherForm,
   deleteAssignmentForm
 } from '@/app/actions/settings'
+import { FeeType } from '@prisma/client'
 
 type ActionState = {
   success: boolean
   message?: string
   error?: string
+}
+
+type CourseWithAssignments = {
+  id: string
+  name: string
+  durationMonths: number
+  baseFee: any // Decimal
+  feeType: FeeType
+  slotAssignments: {
+    id: string
+    course: { name: string; durationMonths: number }
+    slot: {
+      startTime: Date
+      endTime: Date
+      days: string
+      room: { name: string; capacity: number; id: string }
+    }
+    enrollments: {
+      endDate: Date | null
+      student: {
+        id: string
+        name: string
+        phone: string
+        fatherName: string
+      }
+    }[]
+    teacher?: { id: string; firstName: string | null; lastName: string | null } | null
+  }[]
 }
 
 const initialState: ActionState = { success: false }
@@ -512,47 +541,64 @@ function SlotManagement({ slots, rooms, editSlotState, editSlotAction, editSlotP
 }
 
 // Assignment Management Component
-function AssignmentManagement({ courses, slots, teachers, changeTeacherState, changeTeacherAction, changeTeacherPending, handleDeleteAssignment, editingItem, setEditingItem }: any) {
+function AssignmentManagement({ courses, slots, teachers, changeTeacherState, changeTeacherAction, changeTeacherPending, handleDeleteAssignment, editingItem, setEditingItem }: {
+  courses: CourseWithAssignments[]
+  slots: any[]
+  teachers: any[]
+  changeTeacherState: ActionState
+  changeTeacherAction: any
+  changeTeacherPending: boolean
+  handleDeleteAssignment: any
+  editingItem: any
+  setEditingItem: any
+}) {
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">Existing Assignments</h3>
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          {courses.map((course: any) =>
-            course.slotAssignments?.map((assignment: any) => (
-              <div key={assignment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <span className="font-medium">{course.name}</span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    {assignment.slot.room.name} • {assignment.teacher?.firstName || 'No Teacher'}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingItem({ ...assignment, courseName: course.name })}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    title="Change Teacher"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <form action={handleDeleteAssignment} className="inline">
-                    <input type="hidden" name="id" value={assignment.id} />
+          {courses.length === 0 || courses.every(course => !course.slotAssignments || course.slotAssignments.length === 0) ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No assignments found.</p>
+              <p className="text-sm">Create courses and assign them to time slots first.</p>
+            </div>
+          ) : (
+            courses.map((course: CourseWithAssignments) =>
+              course.slotAssignments?.map((assignment) => (
+                <div key={assignment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <span className="font-medium">{course.name}</span>
+                    <span className="text-sm text-gray-500 ml-2">
+                      {assignment.slot.room.name} • {assignment.teacher?.firstName || 'No Teacher'}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
                     <button
-                      type="submit"
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      title="Delete Assignment"
-                      onClick={(e) => {
-                        if (!confirm('Are you sure you want to delete this assignment?')) {
-                          e.preventDefault()
-                        }
-                      }}
+                      onClick={() => setEditingItem({ ...assignment, courseName: course.name })}
+                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                      title="Change Teacher"
                     >
-                      <Trash2 size={16} />
+                      <Edit size={16} />
                     </button>
-                  </form>
+                    <form action={handleDeleteAssignment} className="inline">
+                      <input type="hidden" name="id" value={assignment.id} />
+                      <button
+                        type="submit"
+                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        title="Delete Assignment"
+                        onClick={(e) => {
+                          if (!confirm('Are you sure you want to delete this assignment?')) {
+                            e.preventDefault()
+                          }
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </form>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))
+            )
           )}
         </div>
       </div>

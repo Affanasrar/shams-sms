@@ -115,7 +115,7 @@ export default async function SchedulePage() {
         </div>
         <ManagementPanel 
           rooms={rooms} 
-          courses={allCourses.map(c => ({ ...c, baseFee: Number(c.baseFee) }))} 
+          courses={courses} 
           slots={slots} 
           teachers={teachers} 
         />
