@@ -1,7 +1,47 @@
 // components/pdf/student-report.tsx
 import React from 'react'
-import { Text, View } from '@react-pdf/renderer'
-import { BaseTemplate, styles } from './base-template'
+import { Text, View, StyleSheet } from '@react-pdf/renderer'
+import { BaseTemplate } from './base-template'
+
+type ReportFormat = {
+  id: string
+  reportType: string
+  name: string
+  showLogo: boolean
+  logoPosition: string
+  headerText?: string | null
+  footerText?: string | null
+  titleFontSize: number
+  titleFontFamily: string
+  subtitleFontSize: number
+  subtitleFontFamily: string
+  bodyFontSize: number
+  bodyFontFamily: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor: string
+  pageOrientation: string
+  pageSize: string
+  marginTop: number
+  marginBottom: number
+  marginLeft: number
+  marginRight: number
+  showGeneratedDate: boolean
+  showPageNumbers: boolean
+  showInstitutionInfo: boolean
+  institutionName: string
+  institutionAddress?: string | null
+  institutionPhone?: string | null
+  institutionEmail?: string | null
+  monthlyShowStudentDetails: boolean
+  monthlyShowPaymentHistory: boolean
+  studentShowFeeBreakdown: boolean
+  studentShowPaymentTimeline: boolean
+  courseShowStudentList: boolean
+  overallShowCharts: boolean
+  overallShowMonthlyTrends: boolean
+}
 
 interface StudentReportData {
   student: {
@@ -30,100 +70,187 @@ interface StudentReportData {
 interface StudentReportProps {
   data: StudentReportData
   generatedAt: Date
+  format: ReportFormat
 }
 
-export function StudentReport({ data, generatedAt }: StudentReportProps) {
+export function StudentReport({ data, generatedAt, format }: StudentReportProps) {
+  // Create dynamic styles based on format
+  const dynamicStyles = StyleSheet.create({
+    section: {
+      marginBottom: 20,
+    },
+    sectionTitle: {
+      fontSize: format.subtitleFontSize,
+      fontFamily: format.subtitleFontFamily,
+      color: format.primaryColor,
+      marginBottom: 10,
+      fontWeight: 'bold',
+      backgroundColor: format.secondaryColor + '20',
+      padding: 8,
+      borderRadius: 4,
+    },
+    infoGrid: {
+      flexDirection: 'row',
+      marginBottom: 10,
+    },
+    infoColumn: {
+      flex: 1,
+    },
+    infoLabel: {
+      fontSize: format.bodyFontSize - 1,
+      color: format.secondaryColor,
+      marginBottom: 2,
+    },
+    infoValue: {
+      fontSize: format.bodyFontSize,
+      fontFamily: format.bodyFontFamily,
+      fontWeight: 'bold',
+      color: format.primaryColor,
+      marginBottom: 5,
+    },
+    summary: {
+      marginTop: 20,
+      padding: 15,
+      backgroundColor: format.secondaryColor + '20',
+      borderRadius: 4,
+    },
+    summaryTitle: {
+      fontSize: format.subtitleFontSize,
+      fontFamily: format.subtitleFontFamily,
+      fontWeight: 'bold',
+      color: format.primaryColor,
+      marginBottom: 8,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    summaryLabel: {
+      fontSize: format.bodyFontSize - 1,
+      fontFamily: format.bodyFontFamily,
+      color: format.secondaryColor,
+    },
+    summaryValue: {
+      fontSize: format.bodyFontSize,
+      fontFamily: format.bodyFontFamily,
+      fontWeight: 'bold',
+      color: format.primaryColor,
+    },
+    table: {
+      marginBottom: 15,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      backgroundColor: format.accentColor,
+      padding: 8,
+      marginBottom: 2,
+    },
+    tableHeaderText: {
+      color: 'white',
+      fontSize: format.bodyFontSize - 1,
+      fontFamily: format.bodyFontFamily,
+      fontWeight: 'bold',
+    },
+    tableRow: {
+      flexDirection: 'row',
+      padding: 6,
+      backgroundColor: format.backgroundColor === '#ffffff' ? '#f9fafb' : format.secondaryColor + '10',
+      marginBottom: 1,
+    },
+    tableRowAlt: {
+      flexDirection: 'row',
+      padding: 6,
+      backgroundColor: format.backgroundColor,
+      marginBottom: 1,
+    },
+    tableCell: {
+      fontSize: format.bodyFontSize - 2,
+      fontFamily: format.bodyFontFamily,
+      color: format.primaryColor,
+    },
+  })
+
   return (
     <BaseTemplate
       title={`Student Fee Report - ${data.student.name}`}
       subtitle={`Complete fee history and payment details for ${data.student.studentId}`}
       generatedAt={generatedAt}
+      format={format}
     >
       {/* Student Information */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Student Information</Text>
-        <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Student ID:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 5 }}>{data.student.studentId}</Text>
+      <View style={dynamicStyles.section}>
+        <Text style={dynamicStyles.sectionTitle}>Student Information</Text>
+        <View style={dynamicStyles.infoGrid}>
+          <View style={dynamicStyles.infoColumn}>
+            <Text style={dynamicStyles.infoLabel}>Student ID:</Text>
+            <Text style={dynamicStyles.infoValue}>{data.student.studentId}</Text>
 
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Name:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 5 }}>{data.student.name}</Text>
+            <Text style={dynamicStyles.infoLabel}>Name:</Text>
+            <Text style={dynamicStyles.infoValue}>{data.student.name}</Text>
 
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Father's Name:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{data.student.fatherName}</Text>
+            <Text style={dynamicStyles.infoLabel}>Father's Name:</Text>
+            <Text style={dynamicStyles.infoValue}>{data.student.fatherName}</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Phone:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 5 }}>{data.student.phone}</Text>
+          <View style={dynamicStyles.infoColumn}>
+            <Text style={dynamicStyles.infoLabel}>Phone:</Text>
+            <Text style={dynamicStyles.infoValue}>{data.student.phone}</Text>
 
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Admission Date:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 5 }}>
-              {new Date(data.student.admission).toLocaleDateString()}
-            </Text>
+            <Text style={dynamicStyles.infoLabel}>Admission Date:</Text>
+            <Text style={dynamicStyles.infoValue}>{new Date(data.student.admission).toLocaleDateString()}</Text>
           </View>
         </View>
       </View>
 
-      {/* Summary Section */}
-      <View style={styles.summary}>
-        <Text style={styles.summaryTitle}>Fee Summary</Text>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Total Fees:</Text>
-          <Text style={styles.summaryValue}>${data.totalFees.toFixed(2)}</Text>
+      {/* Fee Summary */}
+      <View style={dynamicStyles.summary}>
+        <Text style={dynamicStyles.summaryTitle}>Fee Summary</Text>
+        <View style={dynamicStyles.summaryRow}>
+          <Text style={dynamicStyles.summaryLabel}>Total Fees:</Text>
+          <Text style={dynamicStyles.summaryValue}>${data.totalFees.toFixed(2)}</Text>
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Total Paid:</Text>
-          <Text style={styles.summaryValue}>${data.totalPaid.toFixed(2)}</Text>
+        <View style={dynamicStyles.summaryRow}>
+          <Text style={dynamicStyles.summaryLabel}>Total Paid:</Text>
+          <Text style={dynamicStyles.summaryValue}>${data.totalPaid.toFixed(2)}</Text>
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Total Pending:</Text>
-          <Text style={styles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Payment Status:</Text>
-          <Text style={[styles.summaryValue, {
-            color: data.totalPending === 0 ? '#059669' : data.totalPaid > 0 ? '#d97706' : '#dc2626'
-          }]}>
-            {data.totalPending === 0 ? 'All Paid' : data.totalPaid > 0 ? 'Partial' : 'Unpaid'}
-          </Text>
+        <View style={dynamicStyles.summaryRow}>
+          <Text style={dynamicStyles.summaryLabel}>Total Pending:</Text>
+          <Text style={dynamicStyles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
         </View>
       </View>
 
-      {/* Fee History Table */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Fee Payment History</Text>
-
-        {/* Table Header */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Month/Year</Text>
-          <Text style={[styles.tableHeaderText, { flex: 2 }]}>Course</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Amount</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Status</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Due Date</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Paid Date</Text>
-        </View>
-
-        {/* Table Rows */}
-        {data.fees.map((fee, index) => (
-          <View key={fee.id} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-            <Text style={[styles.tableCell, { flex: 1 }]}>
-              {new Date(fee.year, fee.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-            </Text>
-            <Text style={[styles.tableCell, { flex: 2 }]}>{fee.courseName}</Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>${fee.amount.toFixed(2)}</Text>
-            <Text style={[styles.tableCell, { flex: 1, color: fee.status === 'PAID' ? '#059669' : '#dc2626' }]}>
-              {fee.status}
-            </Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>
-              {new Date(fee.dueDate).toLocaleDateString()}
-            </Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>
-              {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : '-'}
-            </Text>
+      {/* Fee Breakdown */}
+      {format.studentShowFeeBreakdown && (
+        <View style={dynamicStyles.section}>
+          <Text style={dynamicStyles.sectionTitle}>Fee Breakdown</Text>
+          <View style={dynamicStyles.table}>
+            <View style={dynamicStyles.tableHeader}>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Month/Year</Text>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 2 }]}>Course</Text>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Amount</Text>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Status</Text>
+              {format.studentShowPaymentTimeline && (
+                <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Paid Date</Text>
+              )}
+            </View>
+            {data.fees.map((fee, index) => (
+              <View key={fee.id} style={index % 2 === 0 ? dynamicStyles.tableRow : dynamicStyles.tableRowAlt}>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
+                  {new Date(fee.year, fee.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{fee.courseName}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${fee.amount.toFixed(2)}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{fee.status}</Text>
+                {format.studentShowPaymentTimeline && (
+                  <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
+                    {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : '-'}
+                  </Text>
+                )}
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </View>
+      )}
     </BaseTemplate>
   )
 }

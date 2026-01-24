@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { MonthlyReport, StudentReport, CourseReport, OverallReport } from '@/components/pdf'
+import { ReportType } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,12 +16,29 @@ export async function GET(request: NextRequest) {
 
     const generatedAt = new Date()
 
+    // Map report type to ReportType enum
+    const reportTypeMap = {
+      monthly: ReportType.MONTHLY,
+      student: ReportType.STUDENT,
+      course: ReportType.COURSE,
+      overall: ReportType.OVERALL
+    }
+
+    // Fetch the report format configuration
+    const reportFormat = await prisma.reportFormat.findUnique({
+      where: { reportType: reportTypeMap[type] }
+    })
+
+    if (!reportFormat) {
+      return NextResponse.json({ error: 'Report format not found' }, { status: 404 })
+    }
+
     let pdfBuffer: Buffer
 
     switch (type) {
       case 'monthly':
         const monthlyData = await generateMonthlyReport(month, year)
-        const monthlyDoc = <MonthlyReport data={monthlyData} generatedAt={generatedAt} />
+        const monthlyDoc = <MonthlyReport data={monthlyData} generatedAt={generatedAt} format={reportFormat} />
         pdfBuffer = await renderToBuffer(monthlyDoc)
         break
 
@@ -29,7 +47,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Student ID required' }, { status: 400 })
         }
         const studentData = await generateStudentReport(studentId)
-        const studentDoc = <StudentReport data={studentData} generatedAt={generatedAt} />
+        const studentDoc = <StudentReport data={studentData} generatedAt={generatedAt} format={reportFormat} />
         pdfBuffer = await renderToBuffer(studentDoc)
         break
 
@@ -38,13 +56,13 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Course ID required' }, { status: 400 })
         }
         const courseData = await generateCourseReport(courseId)
-        const courseDoc = <CourseReport data={courseData} generatedAt={generatedAt} />
+        const courseDoc = <CourseReport data={courseData} generatedAt={generatedAt} format={reportFormat} />
         pdfBuffer = await renderToBuffer(courseDoc)
         break
 
       case 'overall':
         const overallData = await generateOverallReport()
-        const overallDoc = <OverallReport data={overallData} generatedAt={generatedAt} />
+        const overallDoc = <OverallReport data={overallData} generatedAt={generatedAt} format={reportFormat} />
         pdfBuffer = await renderToBuffer(overallDoc)
         break
 

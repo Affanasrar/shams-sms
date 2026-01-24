@@ -240,3 +240,68 @@ model Result {
   student Student @relation(fields: [studentId], references: [id])
   course  Course  @relation(fields: [courseId], references: [id])
 }
+
+// --------------------------------------
+// 6. Report Format Configuration
+// --------------------------------------
+enum ReportType {
+  MONTHLY
+  STUDENT
+  COURSE
+  OVERALL
+}
+
+model ReportFormat {
+  id                String     @id @default(uuid())
+  reportType        ReportType @unique
+  name              String     // Display name for the format
+
+  // Layout & Structure
+  showLogo          Boolean    @default(true)
+  logoPosition      String     @default("top-left") // top-left, top-center, top-right
+  headerText        String?    // Custom header text
+  footerText        String?    // Custom footer text
+
+  // Typography
+  titleFontSize     Int        @default(24)
+  titleFontFamily   String     @default("Helvetica-Bold")
+  subtitleFontSize  Int        @default(16)
+  subtitleFontFamily String    @default("Helvetica")
+  bodyFontSize      Int        @default(12)
+  bodyFontFamily    String     @default("Helvetica")
+
+  // Colors
+  primaryColor      String     @default("#1f2937") // Gray-800
+  secondaryColor    String     @default("#6b7280") // Gray-500
+  accentColor       String     @default("#3b82f6") // Blue-500
+  backgroundColor   String     @default("#ffffff") // White
+
+  // Layout
+  pageOrientation   String     @default("portrait") // portrait, landscape
+  pageSize          String     @default("A4") // A4, A3, Letter, Legal
+  marginTop         Int        @default(50)
+  marginBottom      Int        @default(50)
+  marginLeft        Int        @default(50)
+  marginRight       Int        @default(50)
+
+  // Content Structure
+  showGeneratedDate Boolean    @default(true)
+  showPageNumbers   Boolean    @default(true)
+  showInstitutionInfo Boolean  @default(true)
+  institutionName   String     @default("Shams Computer Institute")
+  institutionAddress String?   // Optional address
+  institutionPhone  String?   // Optional phone
+  institutionEmail  String?   // Optional email
+
+  // Report-specific settings
+  monthlyShowStudentDetails Boolean @default(true)
+  monthlyShowPaymentHistory Boolean @default(true)
+  studentShowFeeBreakdown  Boolean @default(true)
+  studentShowPaymentTimeline Boolean @default(true)
+  courseShowStudentList    Boolean @default(true)
+  overallShowCharts        Boolean @default(false)
+  overallShowMonthlyTrends Boolean @default(true)
+
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+}

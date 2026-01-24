@@ -1,165 +1,210 @@
 // components/pdf/base-template.tsx
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer'
 
-// Register fonts (optional - using default fonts for now)
-Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2', fontWeight: 400 },
-    { src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fAZ9hiJ-Ek-_EeA.woff2', fontWeight: 600 },
-  ]
-})
-
-const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontFamily: 'Inter',
-    fontSize: 10,
-  },
-  header: {
-    marginBottom: 20,
-    borderBottom: 2,
-    borderBottomColor: '#2563eb',
-    paddingBottom: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 10,
-  },
-  metadata: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  metadataItem: {
-    fontSize: 9,
-    color: '#374151',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 10,
-    backgroundColor: '#f3f4f6',
-    padding: 8,
-    borderRadius: 4,
-  },
-  table: {
-    marginBottom: 15,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#2563eb',
-    padding: 8,
-    marginBottom: 2,
-  },
-  tableHeaderText: {
-    color: 'white',
-    fontSize: 9,
-    fontWeight: 'bold',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    padding: 6,
-    backgroundColor: '#f9fafb',
-    marginBottom: 1,
-  },
-  tableRowAlt: {
-    flexDirection: 'row',
-    padding: 6,
-    backgroundColor: '#ffffff',
-    marginBottom: 1,
-  },
-  tableCell: {
-    fontSize: 8,
-    color: '#374151',
-  },
-  summary: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 4,
-  },
-  summaryTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontSize: 9,
-    color: '#6b7280',
-  },
-  summaryValue: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#1f2937',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 30,
-    right: 30,
-    textAlign: 'center',
-    fontSize: 8,
-    color: '#9ca3af',
-    borderTop: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 10,
-  },
-})
+type ReportFormat = {
+  id: string
+  reportType: string
+  name: string
+  showLogo: boolean
+  logoPosition: string
+  headerText?: string | null
+  footerText?: string | null
+  titleFontSize: number
+  titleFontFamily: string
+  subtitleFontSize: number
+  subtitleFontFamily: string
+  bodyFontSize: number
+  bodyFontFamily: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor: string
+  pageOrientation: string
+  pageSize: string
+  marginTop: number
+  marginBottom: number
+  marginLeft: number
+  marginRight: number
+  showGeneratedDate: boolean
+  showPageNumbers: boolean
+  showInstitutionInfo: boolean
+  institutionName: string
+  institutionAddress?: string | null
+  institutionPhone?: string | null
+  institutionEmail?: string | null
+}
 
 interface BaseTemplateProps {
   title: string
   subtitle?: string
   generatedAt: Date
+  format: ReportFormat
   children: React.ReactNode
 }
 
-export function BaseTemplate({ title, subtitle, generatedAt, children }: BaseTemplateProps) {
+export function BaseTemplate({ title, subtitle, generatedAt, format, children }: BaseTemplateProps) {
+  // Create dynamic styles based on format
+  const dynamicStyles = StyleSheet.create({
+    page: {
+      backgroundColor: format.backgroundColor,
+      paddingTop: format.marginTop,
+      paddingBottom: format.marginBottom,
+      paddingLeft: format.marginLeft,
+      paddingRight: format.marginRight,
+      fontFamily: format.bodyFontFamily,
+      fontSize: format.bodyFontSize,
+    },
+    header: {
+      marginBottom: 20,
+      borderBottom: 2,
+      borderBottomColor: format.accentColor,
+      paddingBottom: 10,
+      flexDirection: 'row',
+      justifyContent: format.logoPosition.includes('right') ? 'space-between' : 'flex-start',
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: format.titleFontSize,
+      fontFamily: format.titleFontFamily,
+      color: format.primaryColor,
+      marginBottom: 5,
+    },
+    subtitle: {
+      fontSize: format.subtitleFontSize,
+      fontFamily: format.subtitleFontFamily,
+      color: format.secondaryColor,
+      marginBottom: 10,
+    },
+    metadata: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 15,
+    },
+    metadataItem: {
+      fontSize: format.bodyFontSize - 1,
+      color: format.secondaryColor,
+    },
+    section: {
+      marginBottom: 20,
+    },
+    sectionTitle: {
+      fontSize: format.subtitleFontSize,
+      fontFamily: format.subtitleFontFamily,
+      color: format.primaryColor,
+      marginBottom: 10,
+      fontWeight: 'bold',
+    },
+    footer: {
+      position: 'absolute',
+      bottom: format.marginBottom,
+      left: format.marginLeft,
+      right: format.marginRight,
+      textAlign: 'center',
+      fontSize: format.bodyFontSize - 2,
+      color: format.secondaryColor,
+      borderTop: 1,
+      borderTopColor: format.secondaryColor,
+      paddingTop: 10,
+    },
+    institutionInfo: {
+      textAlign: 'center',
+      marginBottom: 15,
+    },
+    institutionName: {
+      fontSize: format.titleFontSize - 2,
+      fontFamily: format.titleFontFamily,
+      color: format.primaryColor,
+      marginBottom: 5,
+    },
+    institutionDetail: {
+      fontSize: format.bodyFontSize - 1,
+      color: format.secondaryColor,
+      marginBottom: 2,
+    },
+    logo: {
+      width: 60,
+      height: 60,
+      marginRight: format.logoPosition.includes('left') ? 15 : 0,
+      marginLeft: format.logoPosition.includes('right') ? 15 : 0,
+    }
+  })
+
+  // Page size mapping
+  const pageSizeMap = {
+    'A4': 'A4',
+    'A3': 'A3',
+    'Letter': 'LETTER',
+    'Legal': 'LEGAL'
+  }
+
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-          <View style={styles.metadata}>
-            <Text style={styles.metadataItem}>
-              Generated: {generatedAt.toLocaleDateString()} at {generatedAt.toLocaleTimeString()}
-            </Text>
-            <Text style={styles.metadataItem}>
-              Shams SMS - Fee Management System
-            </Text>
+      <Page
+        size={format.pageSize as any}
+        orientation={format.pageOrientation as 'portrait' | 'landscape'}
+        style={dynamicStyles.page}
+      >
+        {/* Institution Info */}
+        {format.showInstitutionInfo && (
+          <View style={dynamicStyles.institutionInfo}>
+            <Text style={dynamicStyles.institutionName}>{format.institutionName}</Text>
+            {format.institutionAddress && (
+              <Text style={dynamicStyles.institutionDetail}>{format.institutionAddress}</Text>
+            )}
+            {format.institutionPhone && (
+              <Text style={dynamicStyles.institutionDetail}>Phone: {format.institutionPhone}</Text>
+            )}
+            {format.institutionEmail && (
+              <Text style={dynamicStyles.institutionDetail}>Email: {format.institutionEmail}</Text>
+            )}
           </View>
+        )}
+
+        {/* Header */}
+        <View style={dynamicStyles.header}>
+          {format.showLogo && format.logoPosition.includes('left') && (
+            <Image
+              src="/assets/images/logo.png"
+              style={dynamicStyles.logo}
+            />
+          )}
+
+          <View style={{ flex: 1 }}>
+            <Text style={dynamicStyles.title}>{format.headerText || title}</Text>
+            {subtitle && <Text style={dynamicStyles.subtitle}>{subtitle}</Text>}
+          </View>
+
+          {format.showLogo && format.logoPosition.includes('right') && (
+            <Image
+              src="/assets/images/logo.png"
+              style={dynamicStyles.logo}
+            />
+          )}
         </View>
 
-        {/* Content */}
+        {/* Metadata */}
+        {format.showGeneratedDate && (
+          <View style={dynamicStyles.metadata}>
+            <Text style={dynamicStyles.metadataItem}>
+              Generated: {generatedAt.toLocaleDateString()} {generatedAt.toLocaleTimeString()}
+            </Text>
+            <Text style={dynamicStyles.metadataItem}>
+              Report: {format.name}
+            </Text>
+          </View>
+        )}
+
+        {/* Main Content */}
         {children}
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text>Generated by Shams SMS • Confidential Document</Text>
-        </View>
+        {format.footerText && (
+          <View style={dynamicStyles.footer}>
+            <Text>{format.footerText}</Text>
+          </View>
+        )}
       </Page>
     </Document>
   )
 }
-
-export { styles }

@@ -1,6 +1,7 @@
 // app/admin/settings/page.tsx
 import prisma from '@/lib/prisma'
 import { SettingsForms } from './settings-forms'
+import { ReportFormatConfig } from './report-format-config'
 import Link from 'next/link'
 import { PageLayout, PageHeader } from '@/components/ui'
 export const dynamic = 'force-dynamic'
@@ -19,13 +20,18 @@ export default async function SettingsPage() {
 
   // 👇 NEW: Fetch all users who are TEACHERS (or ADMINS who teach)
   const teachers = await prisma.user.findMany({
-    where: { 
+    where: {
       OR: [
         { role: 'TEACHER' },
         { role: 'ADMIN' }
       ]
     },
     orderBy: { firstName: 'asc' }
+  })
+
+  // Fetch report formats
+  const reportFormats = await prisma.reportFormat.findMany({
+    orderBy: { reportType: 'asc' }
   })
 
   return (
@@ -37,8 +43,13 @@ export default async function SettingsPage() {
         backLabel="Back to Dashboard"
       />
 
-      {/* Pass 'teachers' to the form */}
-      <SettingsForms rooms={rooms} courses={courses} slots={slots} teachers={teachers} />
+      <div className="space-y-8">
+        {/* Pass 'teachers' to the form */}
+        <SettingsForms rooms={rooms} courses={courses} slots={slots} teachers={teachers} />
+
+        {/* Report Format Configuration */}
+        <ReportFormatConfig formats={reportFormats} />
+      </div>
     </PageLayout>
   )
 }

@@ -1,7 +1,47 @@
 // components/pdf/course-report.tsx
 import React from 'react'
-import { Text, View } from '@react-pdf/renderer'
-import { BaseTemplate, styles } from './base-template'
+import { Text, View, StyleSheet } from '@react-pdf/renderer'
+import { BaseTemplate } from './base-template'
+
+type ReportFormat = {
+  id: string
+  reportType: string
+  name: string
+  showLogo: boolean
+  logoPosition: string
+  headerText?: string | null
+  footerText?: string | null
+  titleFontSize: number
+  titleFontFamily: string
+  subtitleFontSize: number
+  subtitleFontFamily: string
+  bodyFontSize: number
+  bodyFontFamily: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor: string
+  pageOrientation: string
+  pageSize: string
+  marginTop: number
+  marginBottom: number
+  marginLeft: number
+  marginRight: number
+  showGeneratedDate: boolean
+  showPageNumbers: boolean
+  showInstitutionInfo: boolean
+  institutionName: string
+  institutionAddress?: string | null
+  institutionPhone?: string | null
+  institutionEmail?: string | null
+  monthlyShowStudentDetails: boolean
+  monthlyShowPaymentHistory: boolean
+  studentShowFeeBreakdown: boolean
+  studentShowPaymentTimeline: boolean
+  courseShowStudentList: boolean
+  overallShowCharts: boolean
+  overallShowMonthlyTrends: boolean
+}
 
 interface CourseReportData {
   course: {
@@ -28,99 +68,178 @@ interface CourseReportData {
 interface CourseReportProps {
   data: CourseReportData
   generatedAt: Date
+  format: ReportFormat
 }
 
-export function CourseReport({ data, generatedAt }: CourseReportProps) {
+export function CourseReport({ data, generatedAt, format }: CourseReportProps) {
+  // Create dynamic styles based on format
+  const dynamicStyles = StyleSheet.create({
+    section: {
+      marginBottom: 20,
+    },
+    sectionTitle: {
+      fontSize: format.subtitleFontSize,
+      fontFamily: format.subtitleFontFamily,
+      color: format.primaryColor,
+      marginBottom: 10,
+      fontWeight: 'bold',
+      backgroundColor: format.secondaryColor + '20',
+      padding: 8,
+      borderRadius: 4,
+    },
+    infoGrid: {
+      flexDirection: 'row',
+      marginBottom: 10,
+    },
+    infoColumn: {
+      flex: 1,
+    },
+    infoLabel: {
+      fontSize: format.bodyFontSize - 1,
+      color: format.secondaryColor,
+      marginBottom: 2,
+    },
+    infoValue: {
+      fontSize: format.bodyFontSize,
+      fontFamily: format.bodyFontFamily,
+      fontWeight: 'bold',
+      color: format.primaryColor,
+      marginBottom: 5,
+    },
+    summary: {
+      marginTop: 20,
+      padding: 15,
+      backgroundColor: format.secondaryColor + '20',
+      borderRadius: 4,
+    },
+    summaryTitle: {
+      fontSize: format.subtitleFontSize,
+      fontFamily: format.subtitleFontFamily,
+      fontWeight: 'bold',
+      color: format.primaryColor,
+      marginBottom: 8,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    summaryLabel: {
+      fontSize: format.bodyFontSize - 1,
+      fontFamily: format.bodyFontFamily,
+      color: format.secondaryColor,
+    },
+    summaryValue: {
+      fontSize: format.bodyFontSize,
+      fontFamily: format.bodyFontFamily,
+      fontWeight: 'bold',
+      color: format.primaryColor,
+    },
+    table: {
+      marginBottom: 15,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      backgroundColor: format.accentColor,
+      padding: 8,
+      marginBottom: 2,
+    },
+    tableHeaderText: {
+      color: 'white',
+      fontSize: format.bodyFontSize - 1,
+      fontFamily: format.bodyFontFamily,
+      fontWeight: 'bold',
+    },
+    tableRow: {
+      flexDirection: 'row',
+      padding: 6,
+      backgroundColor: format.backgroundColor === '#ffffff' ? '#f9fafb' : format.secondaryColor + '10',
+      marginBottom: 1,
+    },
+    tableRowAlt: {
+      flexDirection: 'row',
+      padding: 6,
+      backgroundColor: format.backgroundColor,
+      marginBottom: 1,
+    },
+    tableCell: {
+      fontSize: format.bodyFontSize - 2,
+      fontFamily: format.bodyFontFamily,
+      color: format.primaryColor,
+    },
+  })
+
   return (
     <BaseTemplate
       title={`Course Fee Report - ${data.course.name}`}
       subtitle={`Fee collection summary for all enrolled students`}
       generatedAt={generatedAt}
+      format={format}
     >
       {/* Course Information */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Course Information</Text>
-        <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Course Name:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 5 }}>{data.course.name}</Text>
+      <View style={dynamicStyles.section}>
+        <Text style={dynamicStyles.sectionTitle}>Course Information</Text>
+        <View style={dynamicStyles.infoGrid}>
+          <View style={dynamicStyles.infoColumn}>
+            <Text style={dynamicStyles.infoLabel}>Course Name:</Text>
+            <Text style={dynamicStyles.infoValue}>{data.course.name}</Text>
 
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Duration:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{data.course.durationMonths} months</Text>
+            <Text style={dynamicStyles.infoLabel}>Duration:</Text>
+            <Text style={dynamicStyles.infoValue}>{data.course.durationMonths} months</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Base Fee:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold', marginBottom: 5 }}>${data.course.baseFee.toFixed(2)}</Text>
+          <View style={dynamicStyles.infoColumn}>
+            <Text style={dynamicStyles.infoLabel}>Base Fee:</Text>
+            <Text style={dynamicStyles.infoValue}>${data.course.baseFee.toFixed(2)}</Text>
 
-            <Text style={{ fontSize: 9, color: '#6b7280', marginBottom: 2 }}>Fee Type:</Text>
-            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>{data.course.feeType}</Text>
+            <Text style={dynamicStyles.infoLabel}>Fee Type:</Text>
+            <Text style={dynamicStyles.infoValue}>{data.course.feeType}</Text>
           </View>
         </View>
       </View>
 
-      {/* Summary Section */}
-      <View style={styles.summary}>
-        <Text style={styles.summaryTitle}>Collection Summary</Text>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Total Students:</Text>
-          <Text style={styles.summaryValue}>{data.totalStudents}</Text>
+      {/* Course Summary */}
+      <View style={dynamicStyles.summary}>
+        <Text style={dynamicStyles.summaryTitle}>Course Summary</Text>
+        <View style={dynamicStyles.summaryRow}>
+          <Text style={dynamicStyles.summaryLabel}>Total Students:</Text>
+          <Text style={dynamicStyles.summaryValue}>{data.totalStudents}</Text>
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Total Collected:</Text>
-          <Text style={styles.summaryValue}>${data.totalCollected.toFixed(2)}</Text>
+        <View style={dynamicStyles.summaryRow}>
+          <Text style={dynamicStyles.summaryLabel}>Total Collected:</Text>
+          <Text style={dynamicStyles.summaryValue}>${data.totalCollected.toFixed(2)}</Text>
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Total Pending:</Text>
-          <Text style={styles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Average per Student:</Text>
-          <Text style={styles.summaryValue}>
-            ${data.totalStudents > 0 ? (data.totalCollected / data.totalStudents).toFixed(2) : '0.00'}
-          </Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Collection Rate:</Text>
-          <Text style={styles.summaryValue}>
-            {data.totalStudents > 0 ? ((data.totalCollected / (data.totalCollected + data.totalPending)) * 100).toFixed(1) : 0}%
-          </Text>
+        <View style={dynamicStyles.summaryRow}>
+          <Text style={dynamicStyles.summaryLabel}>Total Pending:</Text>
+          <Text style={dynamicStyles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
         </View>
       </View>
 
-      {/* Students Table */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Student Fee Details</Text>
-
-        {/* Table Header */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Student ID</Text>
-          <Text style={[styles.tableHeaderText, { flex: 2 }]}>Student Name</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Paid</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Pending</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Status</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1 }]}>Last Payment</Text>
-        </View>
-
-        {/* Table Rows */}
-        {data.students.map((student, index) => (
-          <View key={student.id} style={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-            <Text style={[styles.tableCell, { flex: 1 }]}>{student.studentId}</Text>
-            <Text style={[styles.tableCell, { flex: 2 }]}>
-              {student.name}
-              {'\n'}
-              <Text style={{ fontSize: 7, color: '#6b7280' }}>{student.fatherName}</Text>
-            </Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>${student.totalPaid.toFixed(2)}</Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>${student.totalPending.toFixed(2)}</Text>
-            <Text style={[styles.tableCell, { flex: 1, color: student.totalPending === 0 ? '#059669' : student.totalPaid > 0 ? '#d97706' : '#dc2626' }]}>
-              {student.totalPending === 0 ? 'Paid' : student.totalPaid > 0 ? 'Partial' : 'Unpaid'}
-            </Text>
-            <Text style={[styles.tableCell, { flex: 1 }]}>
-              {student.lastPayment ? new Date(student.lastPayment).toLocaleDateString() : '-'}
-            </Text>
+      {/* Student List */}
+      {format.courseShowStudentList && (
+        <View style={dynamicStyles.section}>
+          <Text style={dynamicStyles.sectionTitle}>Student Fee Details</Text>
+          <View style={dynamicStyles.table}>
+            <View style={dynamicStyles.tableHeader}>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Student ID</Text>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 2 }]}>Student Name</Text>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Total Paid</Text>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Total Pending</Text>
+              <Text style={[dynamicStyles.tableHeaderText, { flex: 1 }]}>Last Payment</Text>
+            </View>
+            {data.students.map((student, index) => (
+              <View key={student.id} style={index % 2 === 0 ? dynamicStyles.tableRow : dynamicStyles.tableRowAlt}>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{student.studentId}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{student.name}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${student.totalPaid.toFixed(2)}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${student.totalPending.toFixed(2)}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
+                  {student.lastPayment ? new Date(student.lastPayment).toLocaleDateString() : '-'}
+                </Text>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </View>
+      )}
     </BaseTemplate>
   )
 }
