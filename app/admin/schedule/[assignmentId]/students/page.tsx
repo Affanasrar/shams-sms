@@ -1,6 +1,6 @@
 // app/admin/schedule/[assignmentId]/students/page.tsx
 import prisma from '@/lib/prisma'
-import { ArrowLeft, Users, Calendar, Clock, MapPin, User } from 'lucide-react'
+import { ArrowLeft, Users, Calendar, Clock, MapPin, User, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -83,6 +83,15 @@ export default async function EnrolledStudentsPage({ params }: Props) {
 
   const totalStudents = assignment.enrollments.length
   const capacity = assignment.slot.room.capacity
+  const isFull = totalStudents >= capacity
+
+  // Find the Next Vacancy
+  const today = new Date()
+  const nextGraduation = assignment.enrollments
+    .map(e => e.endDate)
+    // Filter out nulls and future dates
+    .filter((d): d is Date => d !== null && new Date(d) >= today)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -141,6 +150,27 @@ export default async function EnrolledStudentsPage({ params }: Props) {
             <User size={16} className="text-gray-500" />
             <span>Teacher: {assignment.teacher.firstName} {assignment.teacher.lastName}</span>
           </div>
+        )}
+
+        {/* First Seat Available Info */}
+        {isFull && nextGraduation ? (
+          <div className="bg-red-50 p-3 rounded border border-red-100 text-sm text-red-700 flex items-start gap-2 mt-4">
+            <LogOut size={16} className="mt-0.5 shrink-0"/>
+            <div>
+              <div className="font-medium">First Seat Available</div>
+              <div>Seat opens: <strong>{new Date(nextGraduation).toLocaleDateString()}</strong></div>
+            </div>
+          </div>
+        ) : (
+          !isFull && (
+            <div className="bg-green-50 p-3 rounded border border-green-100 text-sm text-green-700 flex items-start gap-2 mt-4">
+              <Users size={16} className="mt-0.5 shrink-0"/>
+              <div>
+                <div className="font-medium">Seats Available Now</div>
+                <div>+{capacity - totalStudents} seats available for enrollment</div>
+              </div>
+            </div>
+          )
         )}
       </div>
 
