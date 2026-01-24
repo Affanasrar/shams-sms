@@ -56,8 +56,8 @@ export function SlotCard({ data, teachers }: Props) {
             {data.course.name}
           </h3>
           <p className="text-xs text-gray-500">
-            {new Date(data.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})} - 
-            {new Date(data.slot.endTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}
+            {new Date(data.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} -
+            {new Date(data.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
           </p>
           <p className="text-xs text-gray-500">
             {data.slot.days}

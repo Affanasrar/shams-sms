@@ -212,17 +212,16 @@ export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
                         </div>
                         <div className="text-right">
                           <div className="font-mono">
-                            <DollarSign className="inline" size={14} />
-                            {Number(fee.finalAmount).toLocaleString()}
+                            PKR {Number(fee.finalAmount).toLocaleString()}
                           </div>
                           {Number(fee.paidAmount) > 0 && (
                             <div className="text-sm text-green-600">
-                              Paid: {Number(fee.paidAmount).toLocaleString()}
+                              Paid: PKR {Number(fee.paidAmount).toLocaleString()}
                             </div>
                           )}
                           {Number(fee.finalAmount) - Number(fee.paidAmount) > 0 && (
                             <div className="text-sm text-red-600">
-                              Due: {(Number(fee.finalAmount) - Number(fee.paidAmount)).toLocaleString()}
+                              Due: PKR {(Number(fee.finalAmount) - Number(fee.paidAmount)).toLocaleString()}
                             </div>
                           )}
                         </div>

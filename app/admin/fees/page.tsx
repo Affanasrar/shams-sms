@@ -104,12 +104,12 @@ export default async function FeesPage() {
                     <div>PKR {Number(fee.finalAmount).toLocaleString()}</div>
                     {Number(fee.paidAmount) > 0 && (
                       <div className="text-xs text-green-600">
-                        Paid: {Number(fee.paidAmount).toLocaleString()}
+                        Paid: PKR {Number(fee.paidAmount).toLocaleString()}
                       </div>
                     )}
                     {Number(fee.finalAmount) - Number(fee.paidAmount) > 0 && (
                       <div className="text-xs text-red-600 font-medium">
-                        Due: {(Number(fee.finalAmount) - Number(fee.paidAmount)).toLocaleString()}
+                        Due: PKR {(Number(fee.finalAmount) - Number(fee.paidAmount)).toLocaleString()}
                       </div>
                     )}
                   </td>

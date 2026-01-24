@@ -73,7 +73,7 @@ export default async function AdminDashboard() {
         />
         <MetricCard
           title="Overdue Fees"
-          value={`$${Number(overdueFees._sum.amount || 0)}`}
+          value={`PKR ${Number(overdueFees._sum.amount || 0).toLocaleString()}`}
           icon={AlertTriangle}
           iconColor="text-red-600"
           valueColor="text-red-600"

@@ -117,7 +117,7 @@ export default async function TeacherDashboard() {
                 <div className="flex items-center justify-between text-sm border-t pt-4 mt-2">
                   <div className="flex items-center gap-1.5 font-mono text-gray-600">
                     <Clock size={16}/>
-                    {new Date(cls.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}
+                    {new Date(cls.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </div>
 
                   <div className="flex items-center gap-1.5 text-gray-600">

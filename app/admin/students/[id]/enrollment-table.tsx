@@ -71,7 +71,7 @@ export function EnrollmentTable({ enrollments }: EnrollmentTableProps) {
                   <td className="p-4 font-medium">{enr.courseOnSlot.course.name}</td>
                   <td className="p-4 text-gray-500">
                     {enr.courseOnSlot.slot.days} <br/>
-                    {new Date(enr.courseOnSlot.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}
+                    {new Date(enr.courseOnSlot.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </td>
                   <td className="p-4 text-sm">
                     {joiningDate.toLocaleDateString()}

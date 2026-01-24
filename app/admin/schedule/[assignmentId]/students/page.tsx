@@ -131,8 +131,8 @@ export default async function EnrolledStudentsPage({ params }: Props) {
           <div className="flex items-center gap-2">
             <Clock size={16} className="text-gray-500" />
             <span>
-              {new Date(assignment.slot.startTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} -
-              {new Date(assignment.slot.endTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+              {new Date(assignment.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} -
+              {new Date(assignment.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
             </span>
           </div>
           <div className="flex items-center gap-2">

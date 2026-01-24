@@ -102,7 +102,7 @@ export function EnrollmentForm({ students, assignments }: any) {
           </option>
           {availableSlots.map((a: any) => (
             <option key={a.id} value={a.id}>
-              {a.slot.days} • {new Date(a.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})} 
+              {a.slot.days} • {new Date(a.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
               {' '}— {a.slot.room.name} (Cap: {a.slot.room.capacity})
             </option>
           ))}

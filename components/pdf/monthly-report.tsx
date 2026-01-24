@@ -166,11 +166,11 @@ export function MonthlyReport({ data, generatedAt, format }: MonthlyReportProps)
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Collected:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalCollected.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalCollected.toFixed(2)}</Text>
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Pending:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalPending.toFixed(2)}</Text>
         </View>
       </View>
 
@@ -194,7 +194,7 @@ export function MonthlyReport({ data, generatedAt, format }: MonthlyReportProps)
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{fee.studentId}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{fee.studentName}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{fee.courseName}</Text>
-                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${fee.amount.toFixed(2)}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {fee.amount.toFixed(2)}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{fee.status}</Text>
                 {format.monthlyShowPaymentHistory && (
                   <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>

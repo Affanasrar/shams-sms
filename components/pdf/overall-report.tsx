@@ -169,11 +169,11 @@ export function OverallReport({ data, generatedAt, format }: OverallReportProps)
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Collected:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalCollected.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalCollected.toFixed(2)}</Text>
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Pending:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalPending.toFixed(2)}</Text>
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Overall Collection Rate:</Text>
@@ -201,8 +201,8 @@ export function OverallReport({ data, generatedAt, format }: OverallReportProps)
           <View key={course.id} style={index % 2 === 0 ? dynamicStyles.tableRow : dynamicStyles.tableRowAlt}>
             <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{course.name}</Text>
             <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{course.studentCount}</Text>
-            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${course.collected.toFixed(2)}</Text>
-            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${course.pending.toFixed(2)}</Text>
+            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {course.collected.toFixed(2)}</Text>
+            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {course.pending.toFixed(2)}</Text>
             <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
               {course.studentCount > 0 ? ((course.collected / (course.collected + course.pending)) * 100).toFixed(1) : 0}%
             </Text>
@@ -228,8 +228,8 @@ export function OverallReport({ data, generatedAt, format }: OverallReportProps)
             <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
               {new Date(month.year, month.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </Text>
-            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${month.collected.toFixed(2)}</Text>
-            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${month.pending.toFixed(2)}</Text>
+            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {month.collected.toFixed(2)}</Text>
+            <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {month.pending.toFixed(2)}</Text>
             <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
               {((month.collected / (month.collected + month.pending)) * 100).toFixed(1)}%
             </Text>

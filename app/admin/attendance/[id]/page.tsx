@@ -45,7 +45,7 @@ export default async function AdminClassAttendance({ params }: { params: { id: s
         <div>
           <h1 className="text-2xl font-bold">{classData.course.name} - Attendance</h1>
           <p className="text-gray-500">
-            {classData.slot.days} • {new Date(classData.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {classData.slot.room.name}
+            {classData.slot.days} • {new Date(classData.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} • {classData.slot.room.name}
           </p>
         </div>
       </div>

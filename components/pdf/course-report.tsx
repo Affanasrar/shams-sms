@@ -190,7 +190,7 @@ export function CourseReport({ data, generatedAt, format }: CourseReportProps) {
           </View>
           <View style={dynamicStyles.infoColumn}>
             <Text style={dynamicStyles.infoLabel}>Base Fee:</Text>
-            <Text style={dynamicStyles.infoValue}>${data.course.baseFee.toFixed(2)}</Text>
+            <Text style={dynamicStyles.infoValue}>PKR {data.course.baseFee.toFixed(2)}</Text>
 
             <Text style={dynamicStyles.infoLabel}>Fee Type:</Text>
             <Text style={dynamicStyles.infoValue}>{data.course.feeType}</Text>
@@ -207,11 +207,11 @@ export function CourseReport({ data, generatedAt, format }: CourseReportProps) {
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Collected:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalCollected.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalCollected.toFixed(2)}</Text>
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Pending:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalPending.toFixed(2)}</Text>
         </View>
       </View>
 
@@ -231,8 +231,8 @@ export function CourseReport({ data, generatedAt, format }: CourseReportProps) {
               <View key={student.id} style={index % 2 === 0 ? dynamicStyles.tableRow : dynamicStyles.tableRowAlt}>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{student.studentId}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{student.name}</Text>
-                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${student.totalPaid.toFixed(2)}</Text>
-                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${student.totalPending.toFixed(2)}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {student.totalPaid.toFixed(2)}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {student.totalPending.toFixed(2)}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
                   {student.lastPayment ? new Date(student.lastPayment).toLocaleDateString() : '-'}
                 </Text>

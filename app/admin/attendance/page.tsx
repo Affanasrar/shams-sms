@@ -46,7 +46,7 @@ export default async function AdminAttendancePage() {
                 <Clock size={14} />
                 <span>{cls.slot.days}</span>
                 <span>•</span>
-                <span>{new Date(cls.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>{new Date(cls.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <MapPin size={14} />

@@ -208,15 +208,15 @@ export function StudentReport({ data, generatedAt, format }: StudentReportProps)
         <Text style={dynamicStyles.summaryTitle}>Fee Summary</Text>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Fees:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalFees.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalFees.toFixed(2)}</Text>
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Paid:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalPaid.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalPaid.toFixed(2)}</Text>
         </View>
         <View style={dynamicStyles.summaryRow}>
           <Text style={dynamicStyles.summaryLabel}>Total Pending:</Text>
-          <Text style={dynamicStyles.summaryValue}>${data.totalPending.toFixed(2)}</Text>
+          <Text style={dynamicStyles.summaryValue}>PKR {data.totalPending.toFixed(2)}</Text>
         </View>
       </View>
 
@@ -240,7 +240,7 @@ export function StudentReport({ data, generatedAt, format }: StudentReportProps)
                   {new Date(fee.year, fee.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{fee.courseName}</Text>
-                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>${fee.amount.toFixed(2)}</Text>
+                <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {fee.amount.toFixed(2)}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{fee.status}</Text>
                 {format.studentShowPaymentTimeline && (
                   <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
