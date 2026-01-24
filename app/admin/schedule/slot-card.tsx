@@ -1,9 +1,10 @@
 // app/admin/schedule/slot-card.tsx
 'use client'
 
-import { Users, LogOut, ChevronDown, ChevronUp, Edit, Trash2 } from 'lucide-react'
+import { Users, LogOut, Edit, Trash2, ExternalLink } from 'lucide-react'
 import { useState } from 'react'
 import { changeTeacherForm, deleteAssignmentForm } from '@/app/actions/settings'
+import Link from 'next/link'
 
 type Props = {
   data: {
@@ -30,7 +31,6 @@ type Props = {
 }
 
 export function SlotCard({ data, teachers }: Props) {
-  const [showStudents, setShowStudents] = useState(false)
   const [isEditingTeacher, setIsEditingTeacher] = useState(false)
   const totalStudents = data.enrollments.length
   const capacity = data.slot.room.capacity
@@ -130,36 +130,15 @@ export function SlotCard({ data, teachers }: Props) {
         )
       )}
 
-      {/* Toggle Students Button */}
+      {/* View Students Button */}
       {totalStudents > 0 && (
-        <button
-          onClick={() => setShowStudents(!showStudents)}
+        <Link
+          href={`/admin/schedule/${data.id}/students`}
           className="w-full mt-3 flex items-center justify-center gap-2 text-xs text-blue-600 hover:text-blue-800 font-medium py-2 border border-blue-200 rounded hover:bg-blue-50 transition-colors"
         >
-          {showStudents ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          {showStudents ? 'Hide' : 'Show'} Enrolled Students ({totalStudents})
-        </button>
-      )}
-
-      {/* Enrolled Students List */}
-      {showStudents && totalStudents > 0 && (
-        <div className="mt-3 border-t pt-3">
-          <h4 className="text-sm font-semibold text-gray-800 mb-2">Enrolled Students:</h4>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {data.enrollments.map((enrollment, index) => (
-              <div key={enrollment.student.id} className="bg-gray-50 p-2 rounded text-xs">
-                <div className="font-medium text-gray-900">{enrollment.student.name}</div>
-                <div className="text-gray-600">Father: {enrollment.student.fatherName}</div>
-                <div className="text-gray-600">Phone: {enrollment.student.phone}</div>
-                {enrollment.endDate && (
-                  <div className="text-gray-500 mt-1">
-                    Ends: {new Date(enrollment.endDate).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+          <ExternalLink size={14} />
+          View Enrolled Students ({totalStudents})
+        </Link>
       )}
 
       {/* Teacher Edit Modal */}
