@@ -1,7 +1,8 @@
 // app/admin/attendance/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { Calendar, Users, Clock, MapPin, Edit, ArrowLeft } from 'lucide-react'
+import { Calendar, Users, Clock, MapPin, Edit } from 'lucide-react'
+import { PageLayout, PageHeader } from '@/components/ui'
 
 export default async function AdminAttendancePage() {
   // Fetch all active classes with their enrollments
@@ -16,23 +17,13 @@ export default async function AdminAttendancePage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/admin" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </Link>
-      </div>
-      
-      <div className="flex items-center gap-3 mb-8">
-        <div className="p-3 bg-blue-100 text-blue-700 rounded-lg">
-          <Calendar size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance Management</h1>
-          <p className="text-gray-500">View and manage student attendance across all classes.</p>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Attendance Management"
+        description="View and manage student attendance across all classes"
+        backHref="/admin"
+        backLabel="Back to Dashboard"
+      />
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {classes.map((cls) => (
@@ -83,6 +74,6 @@ export default async function AdminAttendancePage() {
           <p className="text-gray-500">There are no active classes to manage attendance for.</p>
         </div>
       )}
-    </div>
+    </PageLayout>
   )
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import { Clock, Users, MapPin, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { PageLayout, PageHeader } from '@/components/ui'
 
 export default async function TeacherDashboard() {
   const { userId } = await auth()
@@ -72,8 +73,7 @@ export default async function TeacherDashboard() {
   })
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      
+    <PageLayout>
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-8 rounded-2xl text-white shadow-lg">
         <h1 className="text-3xl font-bold">Hello, {dbUser.firstName || "Teacher"}! 👋</h1>
@@ -119,7 +119,7 @@ export default async function TeacherDashboard() {
                     <Clock size={16}/>
                     {new Date(cls.slot.startTime).toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}
                   </div>
-                  
+
                   <div className="flex items-center gap-1.5 text-gray-600">
                     <Users size={16}/>
                     {cls._count.enrollments} Students
@@ -127,7 +127,7 @@ export default async function TeacherDashboard() {
                 </div>
 
                 {/* Quick Action Button */}
-                <Link 
+                <Link
                   href={`/teacher/attendance/${cls.id}`}
                   className="mt-4 w-full bg-gray-900 text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity"
                 >
@@ -138,8 +138,7 @@ export default async function TeacherDashboard() {
           )}
         </div>
       </div>
-
-    </div>
+    </PageLayout>
   )
 }
 

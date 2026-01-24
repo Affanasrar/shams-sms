@@ -1,8 +1,8 @@
 // app/admin/page.tsx
 import prisma from '@/lib/prisma'
-import { Card } from '@/components/ui/card' // Assuming you have shadcn cards, or use div
 import Link from 'next/link'
-import { UserPlus, Users, DollarSign, Calendar, FileText, GraduationCap } from 'lucide-react'
+import { Users, GraduationCap, CheckCircle, AlertTriangle, UserPlus, DollarSign, Calendar, FileText } from 'lucide-react'
+import { PageHeader, MetricCard, ActionCard, PageLayout } from '@/components/ui'
 
 export default async function AdminDashboard() {
   // Parallel Data Fetching for Performance
@@ -26,114 +26,108 @@ export default async function AdminDashboard() {
   ])
 
   return (
-    <div className="space-y-8">
-      <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
-      
-      {/* Metric Cards */}
+    <PageLayout>
+      <PageHeader
+        title="Dashboard Overview"
+        description="Comprehensive school management and monitoring"
+        actions={
+          <>
+            <Link
+              href="/admin/enrollment/new"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+            >
+              <GraduationCap size={16} />
+              New Enrollment
+            </Link>
+            <Link
+              href="/admin/students/new"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+            >
+              <UserPlus size={16} />
+              New Admission
+            </Link>
+          </>
+        }
+      />
+
+      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Students" value={totalStudents} icon="👥" />
-        <StatCard title="Active Enrollments" value={activeEnrollments} icon="📚" />
-        <StatCard title="Present Today" value={todaysAttendance} icon="✅" />
-        <StatCard title="Overdue Fees" value={`$${overdueFees._sum.amount || 0}`} icon="⚠️" isAlert />
+        <MetricCard
+          title="Total Students"
+          value={totalStudents}
+          icon={Users}
+          iconColor="text-blue-600"
+        />
+        <MetricCard
+          title="Active Enrollments"
+          value={activeEnrollments}
+          icon={GraduationCap}
+          iconColor="text-green-600"
+        />
+        <MetricCard
+          title="Present Today"
+          value={todaysAttendance}
+          icon={CheckCircle}
+          iconColor="text-green-600"
+          valueColor="text-green-600"
+        />
+        <MetricCard
+          title="Overdue Fees"
+          value={`$${Number(overdueFees._sum.amount || 0)}`}
+          icon={AlertTriangle}
+          iconColor="text-red-600"
+          valueColor="text-red-600"
+        />
       </div>
 
       {/* Quick Actions */}
       <div className="space-y-6">
         <h3 className="text-xl font-semibold">Quick Actions</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link
+          <ActionCard
+            title="New Enrollment"
+            description="Enroll students in courses"
+            icon={GraduationCap}
             href="/admin/enrollment/new"
-            className="flex items-center gap-4 p-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors group"
-          >
-            <div className="p-3 bg-blue-500 text-white rounded-lg group-hover:bg-blue-600 transition-colors">
-              <GraduationCap size={24} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">New Enrollment</h4>
-              <p className="text-sm text-gray-600">Enroll students in courses</p>
-            </div>
-          </Link>
-
-          <Link
+            colorScheme="blue"
+          />
+          <ActionCard
+            title="New Admission"
+            description="Add new students"
+            icon={UserPlus}
             href="/admin/students/new"
-            className="flex items-center gap-4 p-6 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors group"
-          >
-            <div className="p-3 bg-green-500 text-white rounded-lg group-hover:bg-green-600 transition-colors">
-              <UserPlus size={24} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">New Admission</h4>
-              <p className="text-sm text-gray-600">Add new students</p>
-            </div>
-          </Link>
-
-          <Link
+            colorScheme="green"
+          />
+          <ActionCard
+            title="Collect Fees"
+            description="Manage fee collection"
+            icon={DollarSign}
             href="/admin/fees"
-            className="flex items-center gap-4 p-6 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors group"
-          >
-            <div className="p-3 bg-purple-500 text-white rounded-lg group-hover:bg-purple-600 transition-colors">
-              <DollarSign size={24} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Collect Fees</h4>
-              <p className="text-sm text-gray-600">Manage fee collection</p>
-            </div>
-          </Link>
-
-          <Link
+            colorScheme="purple"
+          />
+          <ActionCard
+            title="Course Schedule"
+            description="View timetables & capacity"
+            icon={Calendar}
             href="/admin/schedule"
-            className="flex items-center gap-4 p-6 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors group"
-          >
-            <div className="p-3 bg-orange-500 text-white rounded-lg group-hover:bg-orange-600 transition-colors">
-              <Calendar size={24} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Course Schedule</h4>
-              <p className="text-sm text-gray-600">View timetables & capacity</p>
-            </div>
-          </Link>
-
-          <Link
+            colorScheme="orange"
+          />
+          <ActionCard
+            title="Manage Students"
+            description="View all students"
+            icon={Users}
             href="/admin/students"
-            className="flex items-center gap-4 p-6 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors group"
-          >
-            <div className="p-3 bg-indigo-500 text-white rounded-lg group-hover:bg-indigo-600 transition-colors">
-              <Users size={24} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Manage Students</h4>
-              <p className="text-sm text-gray-600">View all students</p>
-            </div>
-          </Link>
-
-          <Link
+            colorScheme="indigo"
+          />
+          <ActionCard
+            title="Reports"
+            description="Generate fee reports"
+            icon={FileText}
             href="/admin/fees/reports"
-            className="flex items-center gap-4 p-6 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors group"
-          >
-            <div className="p-3 bg-red-500 text-white rounded-lg group-hover:bg-red-600 transition-colors">
-              <FileText size={24} />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Reports</h4>
-              <p className="text-sm text-gray-600">Generate fee reports</p>
-            </div>
-          </Link>
+            colorScheme="red"
+          />
         </div>
       </div>
-    </div>
-  )
-}
-
-function StatCard({ title, value, icon, isAlert }: any) {
-  return (
-    <div className={`p-6 rounded-xl border shadow-sm bg-white ${isAlert ? 'border-red-200 bg-red-50' : ''}`}>
-      <div className="flex flex-row items-center justify-between pb-2">
-        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-        <span className="text-2xl">{icon}</span>
-      </div>
-      <div className={`text-2xl font-bold ${isAlert ? 'text-red-600' : ''}`}>
-        {value}
-      </div>
-    </div>
+    </PageLayout>
   )
 }

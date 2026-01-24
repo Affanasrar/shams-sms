@@ -1,7 +1,8 @@
 // app/admin/students/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { UserPlus, Search, ArrowLeft } from 'lucide-react'
+import { UserPlus, Search } from 'lucide-react'
+import { PageHeader, PageLayout } from '@/components/ui'
 
 // 👇 Define the props type correctly for Next.js 15+
 type Props = {
@@ -32,32 +33,31 @@ export default async function StudentList(props: Props) {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/admin" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </Link>
-      </div>
-      
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Student Directory</h2>
-        <Link 
-          href="/admin/students/new" 
-          className="bg-black text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-gray-800"
-        >
-          <UserPlus size={18} /> New Admission
-        </Link>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Student Directory"
+        description="Manage and view all students in the system"
+        backHref="/admin"
+        backLabel="Back to Dashboard"
+        actions={
+          <Link
+            href="/admin/students/new"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+          >
+            <UserPlus size={16} />
+            New Admission
+          </Link>
+        }
+      />
 
       <form method="GET" className="relative">
         <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-        <input 
-          type="text" 
+        <input
+          type="text"
           name="q"
-          placeholder="Search by name, student ID, phone, or father's name..." 
+          placeholder="Search by name, student ID, phone, or father's name..."
           defaultValue={searchQuery || ''}
-          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </form>
 
@@ -72,7 +72,7 @@ export default async function StudentList(props: Props) {
               )}
             </p>
             {searchQuery && (
-              <Link 
+              <Link
                 href="/admin/students"
                 className="text-sm text-blue-600 hover:text-blue-800 underline"
               >
@@ -97,11 +97,11 @@ export default async function StudentList(props: Props) {
                 <td className="px-6 py-4 font-mono text-xs text-blue-600 font-medium">
                   {student.studentId}
                 </td>
-                
+
                 {/* 👇 THIS IS THE UPDATED PART 👇 */}
                 <td className="px-6 py-4 font-medium text-gray-900">
-                  <Link 
-                    href={`/admin/students/${student.studentId}`} 
+                  <Link
+                    href={`/admin/students/${student.studentId}`}
                     className="hover:text-blue-600 hover:underline"
                   >
                     {student.name}
@@ -118,7 +118,7 @@ export default async function StudentList(props: Props) {
             ))}
           </tbody>
         </table>
-        
+
         {students.length === 0 && (
           <div className="px-6 py-12 text-center">
             <div className="text-gray-400 mb-2">
@@ -128,14 +128,14 @@ export default async function StudentList(props: Props) {
               {searchQuery ? 'No students found' : 'No students yet'}
             </h3>
             <p className="text-gray-500">
-              {searchQuery 
+              {searchQuery
                 ? `No students match "${searchQuery}". Try a different search term.`
                 : 'Get started by adding your first student.'
               }
             </p>
             {searchQuery && (
               <div className="mt-4">
-                <Link 
+                <Link
                   href="/admin/students"
                   className="text-blue-600 hover:text-blue-800 underline"
                 >
@@ -146,6 +146,6 @@ export default async function StudentList(props: Props) {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   )
 }

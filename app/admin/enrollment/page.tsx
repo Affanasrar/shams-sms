@@ -1,9 +1,10 @@
 // app/admin/enrollment/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { Plus, Trash2, ArrowLeft } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { dropStudent } from '@/app/actions/enrollment'
 import { EnrollmentFilters } from './enrollment-filters'
+import { PageLayout, PageHeader } from '@/components/ui'
 
 // 👇 Define the props type correctly for Next.js 15+
 type Props = {
@@ -60,23 +61,22 @@ export default async function EnrollmentIndex(props: Props) {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/admin" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </Link>
-      </div>
-      
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Active Enrollments</h2>
-        <Link 
-          href="/admin/enrollment/new" 
-          className="bg-black text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-gray-800 transition"
-        >
-          <Plus size={16} /> New Enrollment
-        </Link>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Active Enrollments"
+        description="Manage student enrollments across all courses and time slots"
+        backHref="/admin"
+        backLabel="Back to Dashboard"
+        actions={
+          <Link
+            href="/admin/enrollment/new"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+          >
+            <Plus size={16} />
+            New Enrollment
+          </Link>
+        }
+      />
 
       {/* Render the Filters */}
       <EnrollmentFilters courses={courses} slots={slots} />
@@ -86,7 +86,7 @@ export default async function EnrollmentIndex(props: Props) {
           <p className="text-sm text-gray-600">
             Showing <span className="font-semibold">{enrollments.length}</span> enrollment{enrollments.length !== 1 ? 's' : ''}
             {(courseId || slotId) && (
-              <span> • 
+              <span> •
                 {courseId && ` Course: ${courses.find(c => c.id === courseId)?.name}`}
                 {courseId && slotId && ' •'}
                 {slotId && ` Slot: ${slots.find(s => s.id === slotId)?.days}`}
@@ -139,17 +139,17 @@ export default async function EnrollmentIndex(props: Props) {
                 <td className="px-6 py-4 text-gray-600">
                   {new Date(record.joiningDate).toLocaleDateString()}
                 </td>
-                
+
                 <td className="px-6 py-4 text-right">
-                  <form 
+                  <form
                     action={async (formData) => {
                       "use server"
                       await dropStudent(formData)
                     }}
                   >
                     <input type="hidden" name="enrollmentId" value={record.id} />
-                    
-                    <button 
+
+                    <button
                       type="submit"
                       className="inline-flex items-center gap-1.5 text-red-600 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-red-700"
                       title="Drop Student from Class"
@@ -160,7 +160,7 @@ export default async function EnrollmentIndex(props: Props) {
                 </td>
               </tr>
             ))}
-            
+
             {enrollments.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
@@ -172,6 +172,6 @@ export default async function EnrollmentIndex(props: Props) {
           </tbody>
         </table>
       </div>
-    </div>
+    </PageLayout>
   )
 }

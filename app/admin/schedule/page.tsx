@@ -1,10 +1,11 @@
 // app/admin/schedule/page.tsx
 import prisma from '@/lib/prisma'
-import { SlotCard } from './slot-card' 
-import { CalendarDays, Settings, ArrowLeft } from 'lucide-react'
+import { SlotCard } from './slot-card'
+import { CalendarDays, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Course, FeeType } from '@prisma/client'
 import { ManagementPanel } from './management-panel'
+import { PageLayout, PageHeader } from '@/components/ui'
 
 // Force fresh data every time so capacity is accurate
 export const dynamic = 'force-dynamic'
@@ -103,31 +104,21 @@ export default async function SchedulePage() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div className="flex items-center gap-4">
-        <Link href="/admin" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={20} />
-          Back to Dashboard
-        </Link>
-      </div>
-      
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-black text-white rounded-lg">
-            <CalendarDays size={24} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Course Timetables & Capacity</h1>
-            <p className="text-gray-500">Monitor all courses, their schedules, capacity, and current enrollments.</p>
-          </div>
-        </div>
-        <ManagementPanel 
-          rooms={rooms} 
-          courses={courses} 
-          slots={slots} 
-          teachers={teachers} 
-        />
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Course Timetables & Capacity"
+        description="Monitor all courses, their schedules, capacity, and current enrollments"
+        backHref="/admin"
+        backLabel="Back to Dashboard"
+        actions={
+          <ManagementPanel
+            rooms={rooms}
+            courses={courses}
+            slots={slots}
+            teachers={teachers}
+          />
+        }
+      />
 
       <div className="space-y-8">
         {courses.map((course) => (
@@ -165,6 +156,6 @@ export default async function SchedulePage() {
           <p className="text-sm">Create courses first, then assign them to time slots.</p>
         </div>
       )}
-    </div>
+    </PageLayout>
   )
 }
