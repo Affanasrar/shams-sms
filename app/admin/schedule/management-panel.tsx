@@ -11,22 +11,17 @@ import {
   UserCheck,
   Edit,
   Trash2,
-  Plus,
   CheckCircle2,
   AlertCircle,
   X
 } from 'lucide-react'
 import {
-  createRoom,
   editRoom,
   deleteRoom,
-  createCourse,
   editCourse,
   deleteCourse,
-  createSlot,
   editSlot,
   deleteSlot,
-  assignCourseToSlot,
   changeTeacherForm,
   deleteAssignmentForm
 } from '@/app/actions/settings'
@@ -51,19 +46,15 @@ export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
   const [activeTab, setActiveTab] = useState<'rooms' | 'courses' | 'slots' | 'assignments'>('rooms')
 
   // Action states
-  const [roomState, roomAction, roomPending] = useActionState<ActionState, FormData>(createRoom, initialState)
   const [editRoomState, editRoomAction, editRoomPending] = useActionState<ActionState, FormData>(editRoom, initialState)
   const [deleteRoomState, deleteRoomAction, deleteRoomPending] = useActionState<ActionState, FormData>(deleteRoom, initialState)
 
-  const [courseState, courseAction, coursePending] = useActionState<ActionState, FormData>(createCourse, initialState)
   const [editCourseState, editCourseAction, editCoursePending] = useActionState<ActionState, FormData>(editCourse, initialState)
   const [deleteCourseState, deleteCourseAction, deleteCoursePending] = useActionState<ActionState, FormData>(deleteCourse, initialState)
 
-  const [slotState, slotAction, slotPending] = useActionState<ActionState, FormData>(createSlot, initialState)
   const [editSlotState, editSlotAction, editSlotPending] = useActionState<ActionState, FormData>(editSlot, initialState)
   const [deleteSlotState, deleteSlotAction, deleteSlotPending] = useActionState<ActionState, FormData>(deleteSlot, initialState)
 
-  const [assignState, assignAction, assignPending] = useActionState<ActionState, FormData>(assignCourseToSlot, initialState)
   const [changeTeacherState, changeTeacherAction, changeTeacherPending] = useActionState<ActionState, FormData>(
     async (prevState, formData) => {
       try {
@@ -139,9 +130,6 @@ export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
               {activeTab === 'rooms' && (
                 <RoomManagement
                   rooms={rooms}
-                  roomState={roomState}
-                  roomAction={roomAction}
-                  roomPending={roomPending}
                   editRoomState={editRoomState}
                   editRoomAction={editRoomAction}
                   editRoomPending={editRoomPending}
@@ -156,9 +144,6 @@ export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
               {activeTab === 'courses' && (
                 <CourseManagement
                   courses={courses}
-                  courseState={courseState}
-                  courseAction={courseAction}
-                  coursePending={coursePending}
                   editCourseState={editCourseState}
                   editCourseAction={editCourseAction}
                   editCoursePending={editCoursePending}
@@ -174,9 +159,6 @@ export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
                 <SlotManagement
                   slots={slots}
                   rooms={rooms}
-                  slotState={slotState}
-                  slotAction={slotAction}
-                  slotPending={slotPending}
                   editSlotState={editSlotState}
                   editSlotAction={editSlotAction}
                   editSlotPending={editSlotPending}
@@ -192,9 +174,6 @@ export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
                   courses={courses}
                   slots={slots}
                   teachers={teachers}
-                  assignState={assignState}
-                  assignAction={assignAction}
-                  assignPending={assignPending}
                   changeTeacherState={changeTeacherState}
                   changeTeacherAction={changeTeacherAction}
                   changeTeacherPending={changeTeacherPending}
@@ -211,79 +190,45 @@ export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
 }
 
 // Room Management Component
-function RoomManagement({ rooms, roomState, roomAction, roomPending, editRoomState, editRoomAction, editRoomPending, deleteRoomState, deleteRoomAction, deleteRoomPending, editingItem, setEditingItem }: any) {
+function RoomManagement({ rooms, editRoomState, editRoomAction, editRoomPending, deleteRoomState, deleteRoomAction, deleteRoomPending, editingItem, setEditingItem }: any) {
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Create New Room</h3>
-          <form action={roomAction} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Room Name</label>
-              <input
-                name="name"
-                type="text"
-                placeholder="e.g. Computer Lab 1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
-              <input
-                name="capacity"
-                type="number"
-                placeholder="20"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={roomPending}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {roomPending ? 'Creating...' : 'Create Room'}
-            </button>
-            <StatusAlert state={roomState} />
-          </form>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Existing Rooms</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {rooms.map((room: any) => (
-              <div key={room.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <span className="font-medium">{room.name}</span>
-                  <span className="text-sm text-gray-500 ml-2">(Capacity: {room.capacity})</span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingItem(room)}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <form action={deleteRoomAction} className="inline">
-                    <input type="hidden" name="id" value={room.id} />
-                    <button
-                      type="submit"
-                      disabled={deleteRoomPending}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      onClick={(e) => {
-                        if (!confirm('Are you sure you want to delete this room?')) {
-                          e.preventDefault()
-                        }
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </form>
-                </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Existing Rooms</h3>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {rooms.map((room: any) => (
+            <div key={room.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <span className="font-medium">{room.name}</span>
+                <span className="text-sm text-gray-500 ml-2">(Capacity: {room.capacity})</span>
               </div>
-            ))}
-          </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingItem(room)}
+                  className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                  title="Edit Room"
+                >
+                  <Edit size={16} />
+                </button>
+                <form action={deleteRoomAction} className="inline">
+                  <input type="hidden" name="id" value={room.id} />
+                  <button
+                    type="submit"
+                    disabled={deleteRoomPending}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                    title="Delete Room"
+                    onClick={(e) => {
+                      if (!confirm('Are you sure you want to delete this room?')) {
+                        e.preventDefault()
+                      }
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -339,93 +284,47 @@ function RoomManagement({ rooms, roomState, roomAction, roomPending, editRoomSta
 }
 
 // Course Management Component
-function CourseManagement({ courses, courseState, courseAction, coursePending, editCourseState, editCourseAction, editCoursePending, deleteCourseState, deleteCourseAction, deleteCoursePending, editingItem, setEditingItem }: any) {
+function CourseManagement({ courses, editCourseState, editCourseAction, editCoursePending, deleteCourseState, deleteCourseAction, deleteCoursePending, editingItem, setEditingItem }: any) {
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Create New Course</h3>
-          <form action={courseAction} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course Name</label>
-              <input
-                name="name"
-                type="text"
-                placeholder="e.g. Graphic Design"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Existing Courses</h3>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {courses.map((course: any) => (
+            <div key={course.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fee (PKR)</label>
-                <input
-                  name="fee"
-                  type="number"
-                  placeholder="2000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <span className="font-medium">{course.name}</span>
+                <span className="text-sm text-gray-500 ml-2">
+                  ({course.durationMonths} months, PKR {course.baseFee})
+                </span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Months</label>
-                <input
-                  name="duration"
-                  type="number"
-                  placeholder="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={coursePending}
-              className="w-full bg-emerald-600 text-white py-2 px-4 rounded-md hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {coursePending ? 'Creating...' : 'Create Course'}
-            </button>
-            <StatusAlert state={courseState} />
-          </form>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Existing Courses</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {courses.map((course: any) => (
-              <div key={course.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <span className="font-medium">{course.name}</span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({course.durationMonths} months, PKR {course.baseFee})
-                  </span>
-                </div>
-                <div className="flex gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingItem(course)}
+                  className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                  title="Edit Course"
+                >
+                  <Edit size={16} />
+                </button>
+                <form action={deleteCourseAction} className="inline">
+                  <input type="hidden" name="id" value={course.id} />
                   <button
-                    onClick={() => setEditingItem(course)}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                    type="submit"
+                    disabled={deleteCoursePending}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                    title="Delete Course"
+                    onClick={(e) => {
+                      if (!confirm('Are you sure you want to delete this course?')) {
+                        e.preventDefault()
+                      }
+                    }}
                   >
-                    <Edit size={16} />
+                    <Trash2 size={16} />
                   </button>
-                  <form action={deleteCourseAction} className="inline">
-                    <input type="hidden" name="id" value={course.id} />
-                    <button
-                      type="submit"
-                      disabled={deleteCoursePending}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      onClick={(e) => {
-                        if (!confirm('Are you sure you want to delete this course?')) {
-                          e.preventDefault()
-                        }
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </form>
-                </div>
+                </form>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -491,106 +390,48 @@ function CourseManagement({ courses, courseState, courseAction, coursePending, e
 }
 
 // Slot Management Component
-function SlotManagement({ slots, rooms, slotState, slotAction, slotPending, editSlotState, editSlotAction, editSlotPending, deleteSlotState, deleteSlotAction, deleteSlotPending, editingItem, setEditingItem }: any) {
+function SlotManagement({ slots, rooms, editSlotState, editSlotAction, editSlotPending, deleteSlotState, deleteSlotAction, deleteSlotPending, editingItem, setEditingItem }: any) {
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Create New Slot</h3>
-          <form action={slotAction} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
-              <select
-                name="roomId"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                {rooms.map((room: any) => (
-                  <option key={room.id} value={room.id}>
-                    {room.name} (Capacity: {room.capacity})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Days</label>
-              <input
-                name="days"
-                type="text"
-                placeholder="Mon, Wed, Fri"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Existing Slots</h3>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {slots.map((slot: any) => (
+            <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                <input
-                  name="startTime"
-                  type="time"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+                <span className="font-medium">{slot.room.name}</span>
+                <span className="text-sm text-gray-500 ml-2">
+                  {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <span className="text-sm text-gray-500 ml-2">({slot.days})</span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                <input
-                  name="endTime"
-                  type="time"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={slotPending}
-              className="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700 disabled:opacity-50"
-            >
-              {slotPending ? 'Creating...' : 'Create Slot'}
-            </button>
-            <StatusAlert state={slotState} />
-          </form>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Existing Slots</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {slots.map((slot: any) => (
-              <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <span className="font-medium">{slot.room.name}</span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span className="text-sm text-gray-500 ml-2">({slot.days})</span>
-                </div>
-                <div className="flex gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingItem(slot)}
+                  className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                  title="Edit Slot"
+                >
+                  <Edit size={16} />
+                </button>
+                <form action={deleteSlotAction} className="inline">
+                  <input type="hidden" name="id" value={slot.id} />
                   <button
-                    onClick={() => setEditingItem(slot)}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                    type="submit"
+                    disabled={deleteSlotPending}
+                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                    title="Delete Slot"
+                    onClick={(e) => {
+                      if (!confirm('Are you sure you want to delete this slot?')) {
+                        e.preventDefault()
+                      }
+                    }}
                   >
-                    <Edit size={16} />
+                    <Trash2 size={16} />
                   </button>
-                  <form action={deleteSlotAction} className="inline">
-                    <input type="hidden" name="id" value={slot.id} />
-                    <button
-                      type="submit"
-                      disabled={deleteSlotPending}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      onClick={(e) => {
-                        if (!confirm('Are you sure you want to delete this slot?')) {
-                          e.preventDefault()
-                        }
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </form>
-                </div>
+                </form>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -671,103 +512,48 @@ function SlotManagement({ slots, rooms, slotState, slotAction, slotPending, edit
 }
 
 // Assignment Management Component
-function AssignmentManagement({ courses, slots, teachers, assignState, assignAction, assignPending, changeTeacherState, changeTeacherAction, changeTeacherPending, handleDeleteAssignment, editingItem, setEditingItem }: any) {
+function AssignmentManagement({ courses, slots, teachers, changeTeacherState, changeTeacherAction, changeTeacherPending, handleDeleteAssignment, editingItem, setEditingItem }: any) {
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Create New Assignment</h3>
-          <form action={assignAction} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
-              <select
-                name="courseId"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                {courses.map((course: any) => (
-                  <option key={course.id} value={course.id}>{course.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time Slot</label>
-              <select
-                name="slotId"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                {slots.map((slot: any) => (
-                  <option key={slot.id} value={slot.id}>
-                    {slot.room.name} — {slot.days} ({new Date(slot.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
-              <select
-                name="teacherId"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">-- Choose Teacher --</option>
-                {teachers.map((teacher: any) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {teacher.firstName} {teacher.lastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="submit"
-              disabled={assignPending}
-              className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:opacity-50"
-            >
-              {assignPending ? 'Creating...' : 'Create Assignment'}
-            </button>
-            <StatusAlert state={assignState} />
-          </form>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Existing Assignments</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {courses.map((course: any) =>
-              course.slotAssignments?.map((assignment: any) => (
-                <div key={assignment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <span className="font-medium">{course.name}</span>
-                    <span className="text-sm text-gray-500 ml-2">
-                      {assignment.slot.room.name} • {assignment.teacher?.firstName || 'No Teacher'}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingItem({ ...assignment, courseName: course.name })}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <form action={handleDeleteAssignment} className="inline">
-                      <input type="hidden" name="id" value={assignment.id} />
-                      <button
-                        type="submit"
-                        className="p-1 text-red-600 hover:bg-red-50 rounded"
-                        onClick={(e) => {
-                          if (!confirm('Are you sure you want to delete this assignment?')) {
-                            e.preventDefault()
-                          }
-                        }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </form>
-                  </div>
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Existing Assignments</h3>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {courses.map((course: any) =>
+            course.slotAssignments?.map((assignment: any) => (
+              <div key={assignment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <span className="font-medium">{course.name}</span>
+                  <span className="text-sm text-gray-500 ml-2">
+                    {assignment.slot.room.name} • {assignment.teacher?.firstName || 'No Teacher'}
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingItem({ ...assignment, courseName: course.name })}
+                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                    title="Change Teacher"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <form action={handleDeleteAssignment} className="inline">
+                    <input type="hidden" name="id" value={assignment.id} />
+                    <button
+                      type="submit"
+                      className="p-1 text-red-600 hover:bg-red-50 rounded"
+                      title="Delete Assignment"
+                      onClick={(e) => {
+                        if (!confirm('Are you sure you want to delete this assignment?')) {
+                          e.preventDefault()
+                        }
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
