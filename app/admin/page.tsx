@@ -16,7 +16,8 @@ export default async function AdminDashboard() {
     prisma.enrollment.count({ where: { status: 'ACTIVE' } }),
     prisma.attendance.count({ 
       where: { 
-        date: { gte: new Date(new Date().setHours(0,0,0,0)) } 
+        date: { gte: new Date(new Date().setHours(0,0,0,0)) },
+        status: 'PRESENT'
       }
     }),
     prisma.fee.aggregate({
