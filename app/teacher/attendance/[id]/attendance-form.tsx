@@ -59,7 +59,8 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-gray-900 truncate">{enr.student.name}</p>
-                <p className="text-xs text-gray-500">ID: {enr.student.id.slice(0,6)}</p>
+                <p className="text-sm text-blue-600 font-medium">ID: {enr.student.studentId}</p>
+                <p className="text-xs text-gray-500">Father: {enr.student.fatherName}</p>
               </div>
             </div>
 

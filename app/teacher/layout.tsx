@@ -13,7 +13,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     <div className="flex min-h-screen bg-gray-50">
       
       {/* Teacher Sidebar - Desktop */}
-      <aside className="w-64 bg-white border-r hidden md:block fixed h-full z-10">
+      <aside className="w-64 bg-white border-r md:block hidden fixed h-full z-10">
         <div className="p-6 border-b flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
             T
@@ -55,16 +55,23 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="bg-white w-64 h-full p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-8">
+        <>
+          {/* Backdrop */}
+          <div 
+            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30" 
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          
+          {/* Mobile Menu */}
+          <div className="md:hidden fixed top-0 left-0 w-64 h-full bg-white z-40 shadow-lg">
+            <div className="p-6 border-b flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
                 T
               </div>
               <span className="font-bold text-lg">Teacher Portal</span>
             </div>
             
-            <nav className="space-y-2">
+            <nav className="p-4 space-y-2">
               <MobileNavLink href="/teacher" icon={<LayoutDashboard size={20}/>} label="Dashboard" onClick={() => setIsMobileMenuOpen(false)} />
               <MobileNavLink href="/teacher/attendance" icon={<CheckSquare size={20}/>} label="Mark Attendance" onClick={() => setIsMobileMenuOpen(false)} />
               <MobileNavLink href="/teacher/results" icon={<GraduationCap size={20}/>} label="Exam Results" onClick={() => setIsMobileMenuOpen(false)} />
@@ -78,7 +85,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Main Content Area */}
