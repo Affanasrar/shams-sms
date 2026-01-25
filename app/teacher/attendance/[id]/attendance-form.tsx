@@ -33,7 +33,7 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
       <input type="hidden" name="teacherId" value={teacherId} />
       
       {/* Date Header */}
-      <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+      <div className="p-4 border-b bg-gray-50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
           <CalendarIcon size={16}/> 
           Date:
@@ -41,7 +41,7 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
             type="date" 
             name="date" 
             defaultValue={today} 
-            className="bg-transparent border-none focus:ring-0 p-0 text-gray-900 font-bold"
+            className="bg-transparent border-none focus:ring-0 p-0 text-gray-900 font-bold text-sm sm:text-base"
           />
         </div>
         <div className="text-sm text-gray-500">
@@ -52,35 +52,35 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
       {/* Student List */}
       <div className="divide-y max-h-[60vh] overflow-y-auto">
         {enrollments.map((enr) => (
-          <div key={enr.student.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+          <div key={enr.student.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-gray-50 transition">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
                 {enr.student.name.charAt(0)}
               </div>
-              <div>
-                <p className="font-bold text-gray-900">{enr.student.name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-gray-900 truncate">{enr.student.name}</p>
                 <p className="text-xs text-gray-500">ID: {enr.student.id.slice(0,6)}</p>
               </div>
             </div>
 
             {/* Status Radio Buttons */}
-            <div className="flex bg-gray-100 p-1 rounded-lg">
+            <div className="flex bg-gray-100 p-1 rounded-lg self-end sm:self-center">
               <label className="cursor-pointer">
                 <input type="radio" name={`status_${enr.student.id}`} value="PRESENT" defaultChecked className="peer sr-only" />
-                <span className="block px-3 py-1 rounded-md text-xs font-bold text-gray-500 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-sm transition-all">
-                  P
+                <span className="block px-4 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-sm transition-all">
+                  Present
                 </span>
               </label>
               <label className="cursor-pointer">
                 <input type="radio" name={`status_${enr.student.id}`} value="ABSENT" className="peer sr-only" />
-                <span className="block px-3 py-1 rounded-md text-xs font-bold text-gray-500 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm transition-all">
-                  A
+                <span className="block px-4 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm transition-all">
+                  Absent
                 </span>
               </label>
               <label className="cursor-pointer">
                 <input type="radio" name={`status_${enr.student.id}`} value="LATE" className="peer sr-only" />
-                <span className="block px-3 py-1 rounded-md text-xs font-bold text-gray-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">
-                  L
+                <span className="block px-4 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">
+                  Late
                 </span>
               </label>
             </div>
@@ -89,23 +89,23 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
       </div>
 
       {/* Submit Footer */}
-      <div className="p-4 bg-gray-50 border-t flex flex-col items-end gap-3">
+      <div className="p-4 bg-gray-50 border-t flex flex-col gap-3">
         
         {/* Success/Error Messages */}
         {state?.message && (
-          <div className="flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-            <CheckCircle2 size={14} /> {state.message}
+          <div className="flex items-center gap-2 text-sm font-bold text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-100">
+            <CheckCircle2 size={16} /> {state.message}
           </div>
         )}
         {state?.error && (
-          <div className="flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-100">
-            <AlertCircle size={14} /> {state.error}
+          <div className="flex items-center gap-2 text-sm font-bold text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
+            <AlertCircle size={16} /> {state.error}
           </div>
         )}
 
         <button 
           disabled={isPending}
-          className="bg-black text-white px-6 py-2 rounded-lg font-bold hover:bg-gray-800 transition flex items-center gap-2 disabled:opacity-50"
+          className="bg-black text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-800 transition flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto sm:self-end"
         >
           {isPending ? 'Saving...' : <><UserCheck size={18} /> Save Attendance</>}
         </button>

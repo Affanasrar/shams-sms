@@ -75,13 +75,13 @@ export default async function TeacherDashboard() {
   return (
     <PageLayout>
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-8 rounded-2xl text-white shadow-lg">
-        <h1 className="text-3xl font-bold">Hello, {dbUser.firstName || "Teacher"}! 👋</h1>
-        <p className="text-blue-100 mt-2">Ready to inspire some minds today?</p>
+      <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-4 md:p-8 rounded-2xl text-white shadow-lg">
+        <h1 className="text-2xl md:text-3xl font-bold">Hello, {dbUser.firstName || "Teacher"}! 👋</h1>
+        <p className="text-blue-100 mt-2 text-sm md:text-base">Ready to inspire some minds today?</p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="My Classes" value={myClasses.length} />
         <StatCard label="Active Students" value={myClasses.reduce((acc, c) => acc + c._count.enrollments, 0)} />
         <StatCard label="Pending Exams" value="0" />
@@ -93,28 +93,28 @@ export default async function TeacherDashboard() {
           <Clock className="text-blue-600"/> My Teaching Schedule
         </h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid gap-4 md:gap-6">
           {myClasses.length === 0 ? (
-            <div className="col-span-2 text-center p-12 bg-white rounded-xl border border-dashed border-gray-300">
+            <div className="text-center p-8 md:p-12 bg-white rounded-xl border border-dashed border-gray-300">
               <p className="text-gray-500 italic mb-2">No classes assigned to you yet.</p>
               <p className="text-sm text-blue-600">Admin needs to assign classes in Configuration.</p>
             </div>
           ) : (
             myClasses.map((cls) => (
-              <div key={cls.id} className="bg-white border hover:border-blue-500 rounded-xl p-6 shadow-sm transition-all group">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
+              <div key={cls.id} className="bg-white border hover:border-blue-500 rounded-xl p-4 md:p-6 shadow-sm transition-all group">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-2">
+                  <div className="flex-1">
                     <h3 className="font-bold text-lg text-gray-900">{cls.course.name}</h3>
                     <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                       <MapPin size={16}/> {cls.slot.room.name}
                     </div>
                   </div>
-                  <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                  <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase self-start">
                     {cls.slot.days}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm border-t pt-4 mt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm border-t pt-4 mt-2 gap-2">
                   <div className="flex items-center gap-1.5 font-mono text-gray-600">
                     <Clock size={16}/>
                     {new Date(cls.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
@@ -129,7 +129,7 @@ export default async function TeacherDashboard() {
                 {/* Quick Action Button */}
                 <Link
                   href={`/teacher/attendance/${cls.id}`}
-                  className="mt-4 w-full bg-gray-900 text-white py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="mt-4 w-full bg-gray-900 text-white py-3 md:py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100 md:group-hover:bg-gray-800"
                 >
                   Mark Attendance <ArrowRight size={16} />
                 </Link>
@@ -144,8 +144,8 @@ export default async function TeacherDashboard() {
 
 function StatCard({ label, value }: { label: string, value: string | number }) {
   return (
-    <div className="bg-white p-6 rounded-xl border shadow-sm text-center">
-      <div className="text-3xl font-bold text-blue-600 mb-1">{value}</div>
+    <div className="bg-white p-4 md:p-6 rounded-xl border shadow-sm text-center">
+      <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">{value}</div>
       <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">{label}</div>
     </div>
   )

@@ -37,32 +37,32 @@ export default async function AttendanceSelectionPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mark Attendance</h1>
-          <p className="text-gray-500">Select a class to take attendance for today.</p>
+          <p className="text-gray-500 text-sm md:text-base">Select a class to take attendance for today.</p>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid gap-4">
         {classes.map((cls) => (
           <Link 
             key={cls.id} 
             href={`/teacher/attendance/${cls.id}`} // Links to the marking page
-            className="group bg-white border hover:border-blue-500 hover:shadow-md transition-all p-6 rounded-xl flex justify-between items-center"
+            className="group bg-white border hover:border-blue-500 hover:shadow-md transition-all p-4 md:p-6 rounded-xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
           >
-            <div>
+            <div className="flex-1">
               <h3 className="font-bold text-lg">{cls.course.name}</h3>
-              <div className="flex items-center gap-3 text-sm text-gray-500 mt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-gray-500 mt-2">
                 <span className="flex items-center gap-1"><Clock size={14}/> {cls.slot.days}</span>
                 <span className="flex items-center gap-1"><MapPin size={14}/> {cls.slot.room.name}</span>
               </div>
             </div>
-            <div className="h-10 w-10 bg-gray-50 group-hover:bg-blue-600 group-hover:text-white rounded-full flex items-center justify-center transition-colors">
+            <div className="h-10 w-10 bg-gray-50 group-hover:bg-blue-600 group-hover:text-white rounded-full flex items-center justify-center transition-colors self-end sm:self-center">
               <ArrowRight size={20} />
             </div>
           </Link>
         ))}
 
         {classes.length === 0 && (
-          <div className="col-span-2 text-center py-12 bg-white rounded-xl border border-dashed">
+          <div className="text-center py-8 md:py-12 bg-white rounded-xl border border-dashed">
             <p className="text-gray-400">No classes found assigned to you.</p>
           </div>
         )}
