@@ -114,6 +114,7 @@ export default async function SchedulePage() {
           <ManagementPanel
             rooms={rooms}
             courses={allCourses}
+            coursesWithAssignments={courses}
             slots={slots}
             teachers={teachers}
           />

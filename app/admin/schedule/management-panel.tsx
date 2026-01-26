@@ -65,12 +65,13 @@ const initialState: ActionState = { success: false }
 
 type Props = {
   rooms: any[]
-  courses: any[]
+  courses: any[] // Raw courses for course management
+  coursesWithAssignments: any[] // Courses with assignment data for assignment management
   slots: any[]
   teachers: any[]
 }
 
-export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
+export function ManagementPanel({ rooms, courses, coursesWithAssignments, slots, teachers }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'rooms' | 'courses' | 'slots' | 'assignments'>('rooms')
 
@@ -200,7 +201,7 @@ export function ManagementPanel({ rooms, courses, slots, teachers }: Props) {
               )}
 
                 <AssignmentManagement
-                  courses={courses}
+                  courses={coursesWithAssignments}
                   slots={slots}
                   teachers={teachers}
                   changeTeacherState={changeTeacherState}
