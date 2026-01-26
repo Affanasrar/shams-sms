@@ -133,10 +133,17 @@ export async function createSlot(prevState: any, formData: FormData) {
   const startStr = formData.get('startTime') as string // "09:00"
   const endStr = formData.get('endTime') as string     // "10:00"
 
-  // Convert "09:00" to a Date object (Date part doesn't matter, only Time)
+  // Convert "09:00" to a Date object treating it as Pakistan local time (UTC+5)
+  // Since we display times in Pakistan timezone, we need to store them as UTC
+  // by subtracting the Pakistan offset (5 hours)
   const baseDate = "1970-01-01T"
-  const startTime = new Date(`${baseDate}${startStr}:00Z`)
-  const endTime = new Date(`${baseDate}${endStr}:00Z`)
+  const startTimeLocal = new Date(`${baseDate}${startStr}:00`)
+  const endTimeLocal = new Date(`${baseDate}${endStr}:00`)
+
+  // Convert to UTC by subtracting Pakistan timezone offset (UTC+5)
+  const pakistanOffsetMs = 5 * 60 * 60 * 1000 // 5 hours in milliseconds
+  const startTime = new Date(startTimeLocal.getTime() - pakistanOffsetMs)
+  const endTime = new Date(endTimeLocal.getTime() - pakistanOffsetMs)
 
   try {
     await prisma.slot.create({
@@ -163,9 +170,15 @@ export async function editSlot(prevState: any, formData: FormData) {
   const startStr = formData.get('startTime') as string
   const endStr = formData.get('endTime') as string
 
+  // Convert to Pakistan local time (UTC+5) then to UTC for storage
   const baseDate = "1970-01-01T"
-  const startTime = new Date(`${baseDate}${startStr}:00Z`)
-  const endTime = new Date(`${baseDate}${endStr}:00Z`)
+  const startTimeLocal = new Date(`${baseDate}${startStr}:00`)
+  const endTimeLocal = new Date(`${baseDate}${endStr}:00`)
+
+  // Convert to UTC by subtracting Pakistan timezone offset (UTC+5)
+  const pakistanOffsetMs = 5 * 60 * 60 * 1000 // 5 hours in milliseconds
+  const startTime = new Date(startTimeLocal.getTime() - pakistanOffsetMs)
+  const endTime = new Date(endTimeLocal.getTime() - pakistanOffsetMs)
 
   try {
     await prisma.slot.update({

@@ -500,7 +500,7 @@ function SlotManagement({ slots, rooms, editSlotState, editSlotAction, editSlotP
                 <input
                   name="startTime"
                   type="time"
-                  defaultValue={new Date(editingItem.startTime).toTimeString().slice(0, 5)}
+                  defaultValue={new Date(new Date(editingItem.startTime).getTime() + (5 * 60 * 60 * 1000)).toTimeString().slice(0, 5)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -510,7 +510,7 @@ function SlotManagement({ slots, rooms, editSlotState, editSlotAction, editSlotP
                 <input
                   name="endTime"
                   type="time"
-                  defaultValue={new Date(editingItem.endTime).toTimeString().slice(0, 5)}
+                  defaultValue={new Date(new Date(editingItem.endTime).getTime() + (5 * 60 * 60 * 1000)).toTimeString().slice(0, 5)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
