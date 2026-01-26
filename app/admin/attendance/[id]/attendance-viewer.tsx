@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarIcon, UserCheck, Edit, Save, X, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { CalendarIcon, UserCheck, Edit, Save, X, AlertCircle, CheckCircle2, FileText, Download } from 'lucide-react'
 import { updateAttendance } from '@/app/actions/attendance-admin'
 
 type Enrollment = {
@@ -38,6 +38,7 @@ export function AttendanceViewer({ classId, adminId, enrollments }: Props) {
   const [editing, setEditing] = useState<string | null>(null)
   const [editStatus, setEditStatus] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [generatingReport, setGeneratingReport] = useState(false)
 
   // Fetch attendance for selected date
   const fetchAttendance = async (date: string) => {
@@ -88,6 +89,55 @@ export function AttendanceViewer({ classId, adminId, enrollments }: Props) {
     }
   }
 
+  const generateMonthlyReport = async () => {
+    setGeneratingReport(true)
+    try {
+      const reportDate = new Date(selectedDate)
+      const month = reportDate.getMonth() + 1
+      const year = reportDate.getFullYear()
+
+      const response = await fetch(`/api/admin/attendance/reports?classId=${classId}&month=${month}&year=${year}`)
+      if (response.ok) {
+        const reportData = await response.json()
+
+        // Generate PDF
+        const pdfResponse = await fetch('/api/admin/reports/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'attendance',
+            data: reportData,
+            formatId: 'default' // You might want to get this from settings
+          })
+        })
+
+        if (pdfResponse.ok) {
+          const blob = await pdfResponse.blob()
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `attendance-report-${reportData.course.name}-${reportData.monthName}-${reportData.year}.pdf`
+          document.body.appendChild(a)
+          a.click()
+          window.URL.revokeObjectURL(url)
+          document.body.removeChild(a)
+
+          setMessage({ type: 'success', text: 'Report generated successfully!' })
+          setTimeout(() => setMessage(null), 3000)
+        } else {
+          setMessage({ type: 'error', text: 'Failed to generate PDF report' })
+        }
+      } else {
+        setMessage({ type: 'error', text: 'Failed to fetch report data' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to generate report' })
+    }
+    setGeneratingReport(false)
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PRESENT': return 'bg-green-100 text-green-800'
@@ -112,17 +162,37 @@ export function AttendanceViewer({ classId, adminId, enrollments }: Props) {
     <div className="space-y-6">
       {/* Date Selector */}
       <div className="bg-white p-6 rounded-lg border shadow-sm">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <CalendarIcon size={20} className="text-gray-600" />
-            <label className="font-medium text-gray-700">Select Date:</label>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <CalendarIcon size={20} className="text-gray-600" />
+              <label className="font-medium text-gray-700">Select Date:</label>
+            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+
+          <button
+            onClick={generateMonthlyReport}
+            disabled={generatingReport}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            {generatingReport ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText size={16} />
+                Generate Monthly Report
+              </>
+            )}
+          </button>
         </div>
 
         <div className="text-sm text-gray-600">
