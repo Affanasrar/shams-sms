@@ -430,7 +430,7 @@ function SlotManagement({ slots, rooms, editSlotState, editSlotAction, editSlotP
               <div>
                 <span className="font-medium">{slot.room.name}</span>
                 <span className="text-sm text-gray-500 ml-2">
-                  {new Date(slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {new Date(slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} - {new Date(slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
                 </span>
                 <span className="text-sm text-gray-500 ml-2">({slot.days})</span>
               </div>

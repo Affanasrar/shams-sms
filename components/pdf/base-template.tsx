@@ -232,7 +232,7 @@ export function BaseTemplate({ title, subtitle, generatedAt, format, children }:
         {format.showGeneratedDate && (
           <View style={dynamicStyles.metadata}>
             <Text style={dynamicStyles.metadataItem}>
-              Generated: {generatedAt.toLocaleDateString()} {generatedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              Generated: {generatedAt.toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })} {generatedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
             </Text>
             <Text style={dynamicStyles.metadataItem}>
               Report: {format.name}

@@ -201,12 +201,13 @@ export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
                       <div className="flex items-center gap-4">
                         <div>
                           <div className="font-medium">
-                            Due: {new Date(fee.dueDate).toLocaleDateString()}
+                            Due: {new Date(fee.dueDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                           </div>
                           <div className="text-sm text-gray-600">
                             Cycle: {new Date(fee.cycleDate).toLocaleDateString('en-US', {
                               year: 'numeric',
-                              month: 'long'
+                              month: 'long',
+                              timeZone: 'Asia/Karachi'
                             })}
                           </div>
                         </div>

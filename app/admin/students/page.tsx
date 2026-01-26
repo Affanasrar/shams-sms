@@ -112,7 +112,7 @@ export default async function StudentList(props: Props) {
                 <td className="px-6 py-4 text-gray-600">{student.fatherName}</td>
                 <td className="px-6 py-4 font-mono text-gray-600">{student.phone}</td>
                 <td className="px-6 py-4 text-gray-500">
-                  {new Date(student.admission).toLocaleDateString()}
+                  {new Date(student.admission).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                 </td>
               </tr>
             ))}

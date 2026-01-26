@@ -234,7 +234,7 @@ export function CourseReport({ data, generatedAt, format }: CourseReportProps) {
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {student.totalPaid.toFixed(2)}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {student.totalPending.toFixed(2)}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
-                  {student.lastPayment ? new Date(student.lastPayment).toLocaleDateString() : '-'}
+                  {student.lastPayment ? new Date(student.lastPayment).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' }) : '-'}
                 </Text>
               </View>
             ))}

@@ -198,7 +198,7 @@ export function StudentReport({ data, generatedAt, format }: StudentReportProps)
             <Text style={dynamicStyles.infoValue}>{data.student.phone}</Text>
 
             <Text style={dynamicStyles.infoLabel}>Admission Date:</Text>
-            <Text style={dynamicStyles.infoValue}>{new Date(data.student.admission).toLocaleDateString()}</Text>
+            <Text style={dynamicStyles.infoValue}>{new Date(data.student.admission).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</Text>
           </View>
         </View>
       </View>
@@ -237,14 +237,14 @@ export function StudentReport({ data, generatedAt, format }: StudentReportProps)
             {data.fees.map((fee, index) => (
               <View key={fee.id} style={index % 2 === 0 ? dynamicStyles.tableRow : dynamicStyles.tableRowAlt}>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
-                  {new Date(fee.year, fee.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  {new Date(fee.year, fee.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Karachi' })}
                 </Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 2 }]}>{fee.courseName}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {fee.amount.toFixed(2)}</Text>
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{fee.status}</Text>
                 {format.studentShowPaymentTimeline && (
                   <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
-                    {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : '-'}
+                    {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' }) : '-'}
                   </Text>
                 )}
               </View>

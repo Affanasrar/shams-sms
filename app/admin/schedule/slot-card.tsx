@@ -56,8 +56,8 @@ export function SlotCard({ data, teachers }: Props) {
             {data.course.name}
           </h3>
           <p className="text-xs text-gray-500">
-            {new Date(data.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} -
-            {new Date(data.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+            {new Date(data.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} -
+            {new Date(data.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
           </p>
           <p className="text-xs text-gray-500">
             {data.slot.days}
@@ -119,7 +119,7 @@ export function SlotCard({ data, teachers }: Props) {
         <div className="bg-white/50 p-2 rounded border border-red-100 text-xs text-red-700 flex items-start gap-2">
           <LogOut size={12} className="mt-0.5 shrink-0"/>
           <span>
-            Seat opens: <strong>{new Date(nextGraduation).toLocaleDateString()}</strong>
+            Seat opens: <strong>{new Date(nextGraduation).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</strong>
           </span>
         </div>
       ) : (

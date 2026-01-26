@@ -200,7 +200,8 @@ export function AttendanceViewer({ classId, adminId, enrollments }: Props) {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
+            timeZone: 'Asia/Karachi'
           })}
         </div>
       </div>

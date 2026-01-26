@@ -70,7 +70,7 @@ interface MonthlyReportProps {
 }
 
 export function MonthlyReport({ data, generatedAt, format }: MonthlyReportProps) {
-  const monthName = new Date(data.year, data.month - 1).toLocaleDateString('en-US', { month: 'long' })
+  const monthName = new Date(data.year, data.month - 1).toLocaleDateString('en-US', { month: 'long', timeZone: 'Asia/Karachi' })
 
   // Create dynamic styles based on format
   const dynamicStyles = StyleSheet.create({
@@ -198,7 +198,7 @@ export function MonthlyReport({ data, generatedAt, format }: MonthlyReportProps)
                 <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>{fee.status}</Text>
                 {format.monthlyShowPaymentHistory && (
                   <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
-                    {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : '-'}
+                    {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' }) : '-'}
                   </Text>
                 )}
               </View>

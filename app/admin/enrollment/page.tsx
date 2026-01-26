@@ -131,13 +131,13 @@ export default async function EnrollmentIndex(props: Props) {
                 <td className="px-6 py-4 text-gray-600">
                   <div className="font-medium text-gray-900">{record.courseOnSlot.slot.days}</div>
                   <div className="flex items-center gap-1 text-xs">
-                    {new Date(record.courseOnSlot.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {new Date(record.courseOnSlot.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
                     <span>•</span>
                     <span className="text-gray-500">{record.courseOnSlot.slot.room.name}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-gray-600">
-                  {new Date(record.joiningDate).toLocaleDateString()}
+                  {new Date(record.joiningDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                 </td>
 
                 <td className="px-6 py-4 text-right">

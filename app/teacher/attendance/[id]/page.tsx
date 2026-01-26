@@ -42,7 +42,7 @@ export default async function MarkClassAttendance({ params }: { params: { id: st
       
       <div className="mb-8">
         <h1 className="text-2xl font-bold">{classData.course.name}</h1>
-        <p className="text-gray-500">Marking attendance for {new Date().toLocaleDateString()}</p>
+        <p className="text-gray-500">Marking attendance for {new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</p>
       </div>
 
       {/* 👇 Render the Client Component with the data */}

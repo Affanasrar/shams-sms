@@ -54,7 +54,7 @@ export function EnrollmentFilters({ courses, slots }: Props) {
         <option value="">All Slots / Rooms</option>
         {slots.map(s => (
           <option key={s.id} value={s.id}>
-            {s.days} • {new Date(s.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} ({s.room.name})
+            {s.days} • {new Date(s.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} ({s.room.name})
           </option>
         ))}
       </select>

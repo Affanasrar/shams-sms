@@ -249,7 +249,7 @@ export function AttendanceReport({ data, generatedAt, format }: AttendanceReport
           <View style={dynamicStyles.infoColumn}>
             <Text style={dynamicStyles.infoLabel}>Schedule:</Text>
             <Text style={dynamicStyles.infoValue}>
-              {data.slot.days} • {new Date(data.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(data.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              {data.slot.days} • {new Date(data.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} - {new Date(data.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
             </Text>
             <Text style={dynamicStyles.infoLabel}>Room:</Text>
             <Text style={dynamicStyles.infoValue}>{data.slot.room.name}</Text>

@@ -71,13 +71,13 @@ export function EnrollmentTable({ enrollments }: EnrollmentTableProps) {
                   <td className="p-4 font-medium">{enr.courseOnSlot.course.name}</td>
                   <td className="p-4 text-gray-500">
                     {enr.courseOnSlot.slot.days} <br/>
-                    {new Date(enr.courseOnSlot.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {new Date(enr.courseOnSlot.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
                   </td>
                   <td className="p-4 text-sm">
-                    {joiningDate.toLocaleDateString()}
+                    {joiningDate.toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                   </td>
                   <td className="p-4 text-sm">
-                    {actualEndDate.toLocaleDateString()}
+                    {actualEndDate.toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                     {enr.extendedDays > 0 && (
                       <span className="text-orange-600 text-xs block">
                         +{enr.extendedDays} days extended

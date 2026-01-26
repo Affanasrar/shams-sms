@@ -92,7 +92,7 @@ export default async function FeesPage() {
               return (
                 <tr key={fee.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 font-bold text-red-600">
-                    {new Date(fee.dueDate).toLocaleDateString()}
+                    {new Date(fee.dueDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                   </td>
                   <td className="px-6 py-4 font-medium">{fee.student.name}</td>
                   

@@ -163,7 +163,7 @@ export function SettingsForms({ rooms, courses, slots, teachers }: Props) {
                     {slots.map(s => (
                       <option key={s.id} value={s.id}>
                         {/* 👇 FIXED: Force US English Locale for Time Formatting */}
-                        {s.room.name} — {s.days} ({new Date(s.startTime).toLocaleTimeString('en-US',{hour:'2-digit', minute:'2-digit', hour12: true})})
+                        {s.room.name} — {s.days} ({new Date(s.startTime).toLocaleTimeString('en-US',{hour:'2-digit', minute:'2-digit', hour12: true, timeZone: 'Asia/Karachi'})})
                       </option>
                     ))}
                   </select>

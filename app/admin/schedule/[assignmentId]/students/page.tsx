@@ -131,8 +131,8 @@ export default async function EnrolledStudentsPage({ params }: Props) {
           <div className="flex items-center gap-2">
             <Clock size={16} className="text-gray-500" />
             <span>
-              {new Date(assignment.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} -
-              {new Date(assignment.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              {new Date(assignment.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} -
+              {new Date(assignment.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -158,7 +158,7 @@ export default async function EnrolledStudentsPage({ params }: Props) {
             <LogOut size={16} className="mt-0.5 shrink-0"/>
             <div>
               <div className="font-medium">First Seat Available</div>
-              <div>Seat opens: <strong>{new Date(nextGraduation).toLocaleDateString()}</strong></div>
+              <div>Seat opens: <strong>{new Date(nextGraduation).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</strong></div>
             </div>
           </div>
         ) : (
@@ -225,11 +225,11 @@ export default async function EnrolledStudentsPage({ params }: Props) {
                   )}
                   <div className="pt-2 border-t">
                     <div className="text-xs text-gray-500">
-                      Joined: {new Date(enrollment.joiningDate).toLocaleDateString()}
+                      Joined: {new Date(enrollment.joiningDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                     </div>
                     {enrollment.endDate && (
                       <div className="text-xs text-gray-500">
-                        End: {new Date(enrollment.endDate).toLocaleDateString()}
+                        End: {new Date(enrollment.endDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                       </div>
                     )}
                   </div>

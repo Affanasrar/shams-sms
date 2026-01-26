@@ -226,7 +226,7 @@ export function OverallReport({ data, generatedAt, format }: OverallReportProps)
         {data.monthlyData.map((month, index) => (
           <View key={`${month.month}-${month.year}`} style={index % 2 === 0 ? dynamicStyles.tableRow : dynamicStyles.tableRowAlt}>
             <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>
-              {new Date(month.year, month.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              {new Date(month.year, month.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Karachi' })}
             </Text>
             <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {month.collected.toFixed(2)}</Text>
             <Text style={[dynamicStyles.tableCell, { flex: 1 }]}>PKR {month.pending.toFixed(2)}</Text>

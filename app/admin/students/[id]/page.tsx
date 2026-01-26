@@ -39,7 +39,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
           <div className="flex gap-4 mt-4 text-sm text-gray-600 font-mono">
             <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">ID: {student.studentId}</span>
             <span>📱 {student.phone}</span>
-            <span>📅 Joined: {new Date(student.admission).toLocaleDateString()}</span>
+            <span>📅 Joined: {new Date(student.admission).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</span>
           </div>
         </div>
         
@@ -133,7 +133,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                     
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-500">
-                        Due: {new Date(fee.dueDate).toLocaleDateString()}
+                        Due: {new Date(fee.dueDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                       </span>
                       
                       {fee.status === 'PAID' ? (
@@ -153,7 +153,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                     
                     {fee.transactions.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-dashed text-xs text-gray-400">
-                        Paid on {new Date(fee.transactions[0].date).toLocaleDateString()}
+                        Paid on {new Date(fee.transactions[0].date).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                       </div>
                     )}
                   </div>
