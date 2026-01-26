@@ -20,10 +20,18 @@ export default async function AdminDashboard() {
         status: 'PRESENT'
       }
     }),
-    prisma.fee.aggregate({
-      where: { status: 'UNPAID', dueDate: { lt: new Date() } },
-      _sum: { amount: true }
-    })
+    // Calculate overdue fees: sum of unpaid amounts for overdue fees
+    // For UNPAID fees: finalAmount - paidAmount (should be finalAmount)
+    // For PARTIAL fees: finalAmount - paidAmount
+    prisma.fee.findMany({
+      where: { 
+        status: { in: ['UNPAID', 'PARTIAL'] }, 
+        dueDate: { lt: new Date() } 
+      },
+      select: { finalAmount: true, paidAmount: true }
+    }).then(fees => 
+      fees.reduce((sum, fee) => sum + Number(fee.finalAmount) - Number(fee.paidAmount), 0)
+    )
   ])
 
   return (
@@ -74,7 +82,7 @@ export default async function AdminDashboard() {
         />
         <MetricCard
           title="Overdue Fees"
-          value={`PKR ${Number(overdueFees._sum.amount || 0).toLocaleString()}`}
+          value={`PKR ${Number(overdueFees || 0).toLocaleString()}`}
           icon={AlertTriangle}
           iconColor="text-red-600"
           valueColor="text-red-600"
