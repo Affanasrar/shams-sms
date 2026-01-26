@@ -113,7 +113,7 @@ export default async function SchedulePage() {
         actions={
           <ManagementPanel
             rooms={rooms}
-            courses={courses}
+            courses={allCourses}
             slots={slots}
             teachers={teachers}
           />

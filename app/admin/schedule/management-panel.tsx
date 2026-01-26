@@ -324,7 +324,7 @@ function CourseManagement({ courses, editCourseState, editCourseAction, editCour
               <div>
                 <span className="font-medium">{course.name}</span>
                 <span className="text-sm text-gray-500 ml-2">
-                  ({course.durationMonths} months, PKR {course.baseFee})
+                  ({course.durationMonths} months, PKR {Number(course.baseFee).toLocaleString()})
                 </span>
               </div>
               <div className="flex gap-2">
@@ -378,7 +378,7 @@ function CourseManagement({ courses, editCourseState, editCourseAction, editCour
                 <input
                   name="fee"
                   type="number"
-                  defaultValue={editingItem.baseFee}
+                  defaultValue={Number(editingItem.baseFee)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
