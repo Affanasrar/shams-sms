@@ -30,11 +30,17 @@ type Props = {
   teachers: any[]
 }
 
-export function SlotCard({ data, teachers }: Props & { slotOccupancy?: number }) {
+export function SlotCard({ data, teachers, slotOccupancy }: Props & { slotOccupancy?: number }) {
   const [isEditingTeacher, setIsEditingTeacher] = useState(false)
-  // If a shared slot occupancy is passed, use it so capacity is treated across all assignments in the same slot
-  const totalStudents = (arguments[0] as any)?.slotOccupancy ?? data.enrollments.length
-  const capacity = data.slot.room.capacity
+  
+  // Calculate shared capacity: effective capacity for this course is room capacity minus enrollments in other courses
+  const enrollmentsInThisCourse = data.enrollments.length
+  const totalEnrollmentsInSlot = slotOccupancy ?? enrollmentsInThisCourse
+  const enrollmentsInOtherCourses = totalEnrollmentsInSlot - enrollmentsInThisCourse
+  const effectiveCapacity = data.slot.room.capacity - enrollmentsInOtherCourses
+  
+  const totalStudents = enrollmentsInThisCourse
+  const capacity = effectiveCapacity
   const isFull = totalStudents >= capacity
   
   const occupancyPercent = Math.min((totalStudents / capacity) * 100, 100)
