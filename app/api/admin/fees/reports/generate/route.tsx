@@ -122,11 +122,11 @@ async function generateMonthlyReport(month: number, year: number) {
   // Calculate totals
   const totalCollected = fees
     .filter(f => f.status === 'PAID')
-    .reduce((sum, f) => sum + Number(f.amount), 0)
+    .reduce((sum, f) => sum + Number(f.finalAmount), 0)
 
   const totalPending = fees
     .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
-    .reduce((sum, f) => sum + Number(f.amount), 0)
+    .reduce((sum, f) => sum + (Number(f.finalAmount) - Number(f.paidAmount)), 0)
 
   const totalStudents = new Set(fees.map(f => f.studentId)).size
 
@@ -142,7 +142,7 @@ async function generateMonthlyReport(month: number, year: number) {
       studentName: fee.student.name,
       fatherName: fee.student.fatherName,
       courseName: fee.enrollment?.courseOnSlot?.course?.name || 'Unknown Course',
-      amount: Number(fee.amount),
+      amount: Number(fee.finalAmount),
       status: fee.status,
       dueDate: fee.dueDate,
       paidDate: fee.transactions[0]?.date
@@ -188,11 +188,11 @@ async function generateStudentReport(studentId: string) {
   // Calculate totals
   const totalPaid = fees
     .filter(f => f.status === 'PAID')
-    .reduce((sum, f) => sum + Number(f.amount), 0)
+    .reduce((sum, f) => sum + Number(f.finalAmount), 0)
 
   const totalPending = fees
     .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
-    .reduce((sum, f) => sum + Number(f.amount), 0)
+    .reduce((sum, f) => sum + (Number(f.finalAmount) - Number(f.paidAmount)), 0)
 
   const totalFees = totalPaid + totalPending
 
@@ -262,11 +262,11 @@ async function generateCourseReport(courseId: string) {
 
       const totalPaid = fees
         .filter(f => f.status === 'PAID')
-        .reduce((sum, f) => sum + Number(f.amount), 0)
+        .reduce((sum, f) => sum + Number(f.finalAmount), 0)
 
       const totalPending = fees
         .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
-        .reduce((sum, f) => sum + Number(f.amount), 0)
+        .reduce((sum, f) => sum + (Number(f.finalAmount) - Number(f.paidAmount)), 0)
 
       const lastPayment = fees
         .filter(f => f.transactions.length > 0)
@@ -379,11 +379,11 @@ async function generateOverallReport() {
 
     const collected = fees
       .filter(f => f.status === 'PAID')
-      .reduce((sum, f) => sum + Number(f.amount), 0)
+      .reduce((sum, f) => sum + Number(f.finalAmount), 0)
 
     const pending = fees
       .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
-      .reduce((sum, f) => sum + Number(f.amount), 0)
+      .reduce((sum, f) => sum + (Number(f.finalAmount) - Number(f.paidAmount)), 0)
 
     monthlyData.push({ month, year, collected, pending })
   }
