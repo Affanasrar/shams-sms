@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         showGeneratedDate: true,
         showPageNumbers: true,
         showInstitutionInfo: true,
-        institutionName: 'School Management System',
+        institutionName: 'SHAMS COMMERCIAL INSTITUTE',
         institutionAddress: null,
         institutionPhone: null,
         institutionEmail: null,
