@@ -21,6 +21,7 @@ export default async function MarkClassAttendance({ params }: { params: { id: st
     where: { id },
     include: {
       course: true,
+      slot: { include: { room: true } },
       enrollments: {
         where: { status: 'ACTIVE' },
         include: { student: true },
@@ -43,6 +44,11 @@ export default async function MarkClassAttendance({ params }: { params: { id: st
       <div className="mb-8">
         <h1 className="text-2xl font-bold">{classData.course.name}</h1>
         <p className="text-gray-500">Marking attendance for {new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</p>
+        <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
+          <span>🕐 {new Date(classData.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} - {new Date(classData.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}</span>
+          <span>📅 {classData.slot.days}</span>
+          <span>🏫 {classData.slot.room.name}</span>
+        </div>
       </div>
 
       {/* 👇 Render the Client Component with the data */}

@@ -51,6 +51,7 @@ export default async function AttendanceSelectionPage() {
             <div className="flex-1">
               <h3 className="font-bold text-lg">{cls.course.name}</h3>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-gray-500 mt-2">
+                <span className="flex items-center gap-1"><Clock size={14}/> {new Date(cls.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} - {new Date(cls.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}</span>
                 <span className="flex items-center gap-1"><Clock size={14}/> {cls.slot.days}</span>
                 <span className="flex items-center gap-1"><MapPin size={14}/> {cls.slot.room.name}</span>
               </div>
