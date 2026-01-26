@@ -85,7 +85,15 @@ export default async function SchedulePage() {
   })
 
   const courses: CourseWithAssignments[] = Array.from(coursesMap.values())
-
+ 
+  // Compute occupancy per slot across all assignments (shared capacity)
+  const slotOccupancyMap = new Map<string, number>()
+  assignments.forEach(a => {
+    const slotId = a.slot?.id || a.slotId || ''
+    const count = (a.enrollments || []).length
+    if (!slotId) return
+    slotOccupancyMap.set(slotId, (slotOccupancyMap.get(slotId) || 0) + count)
+  })
   // Fetch additional data for management
   const rooms = await prisma.room.findMany()
   const allCourses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
@@ -139,7 +147,12 @@ export default async function SchedulePage() {
             {course.slotAssignments.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {course.slotAssignments.map((assignment) => (
-                  <SlotCard key={assignment.id} data={assignment} teachers={teachers} />
+                  <SlotCard
+                    key={assignment.id}
+                    data={assignment}
+                    teachers={teachers}
+                    slotOccupancy={slotOccupancyMap.get((assignment as any).slot?.id || (assignment as any).slotId)}
+                  />
                 ))}
               </div>
             ) : (

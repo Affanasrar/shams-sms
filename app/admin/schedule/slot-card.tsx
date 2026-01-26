@@ -30,9 +30,10 @@ type Props = {
   teachers: any[]
 }
 
-export function SlotCard({ data, teachers }: Props) {
+export function SlotCard({ data, teachers }: Props & { slotOccupancy?: number }) {
   const [isEditingTeacher, setIsEditingTeacher] = useState(false)
-  const totalStudents = data.enrollments.length
+  // If a shared slot occupancy is passed, use it so capacity is treated across all assignments in the same slot
+  const totalStudents = (arguments[0] as any)?.slotOccupancy ?? data.enrollments.length
   const capacity = data.slot.room.capacity
   const isFull = totalStudents >= capacity
   
