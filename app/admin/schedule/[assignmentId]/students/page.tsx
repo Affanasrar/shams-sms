@@ -49,6 +49,7 @@ export default async function EnrolledStudentsPage({ params }: Props) {
             student: {
               select: {
                 id: true,
+                studentId: true,
                 name: true,
                 phone: true,
                 fatherName: true,
