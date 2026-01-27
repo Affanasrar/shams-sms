@@ -221,7 +221,33 @@ export default async function EnrolledStudentsPage({ params }: Props) {
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           Enrolled Students ({totalStudents})
         </h2>
-        <div>Students list here</div>
+        {assignment.enrollments.length > 0 ? (
+          <div className="space-y-4">
+            {assignment.enrollments.map((enrollment) => (
+              <div key={enrollment.id} className="bg-gray-50 border rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{enrollment.student.name}</h3>
+                    <p className="text-sm text-gray-600">ID: {enrollment.student.studentId}</p>
+                    <p className="text-sm text-gray-600">Father: {enrollment.student.fatherName}</p>
+                    <p className="text-sm text-gray-600">Phone: {enrollment.student.phone}</p>
+                    <p className="text-sm text-gray-600">Address: {enrollment.student.address}</p>
+                  </div>
+                  <div className="text-right text-sm text-gray-500">
+                    <p>Joined: {enrollment.joiningDate.toLocaleDateString()}</p>
+                    {enrollment.endDate && <p>Ends: {enrollment.endDate.toLocaleDateString()}</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Users size={48} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Enrolled</h3>
+            <p className="text-gray-600">No students are currently enrolled in this course.</p>
+          </div>
+        )}
       </div>
     </div>
   );
