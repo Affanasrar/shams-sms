@@ -1,4 +1,3 @@
-// components/pdf/attendance-report.tsx
 import React from 'react'
 import { Text, View, StyleSheet } from '@react-pdf/renderer'
 import { BaseTemplate } from './base-template'
@@ -94,7 +93,6 @@ interface AttendanceReportProps {
 }
 
 export function AttendanceReport({ data, generatedAt, format }: AttendanceReportProps) {
-  // Create dynamic styles based on format
   const dynamicStyles = StyleSheet.create({
     section: {
       marginBottom: 20,
@@ -125,10 +123,6 @@ export function AttendanceReport({ data, generatedAt, format }: AttendanceReport
       fontSize: format.bodyFontSize,
       color: format.primaryColor,
       marginBottom: 5,
-    },
-    table: {
-      marginTop: 10,
-      marginBottom: 20,
     },
     tableHeader: {
       flexDirection: 'row',
@@ -200,7 +194,6 @@ export function AttendanceReport({ data, generatedAt, format }: AttendanceReport
     },
   })
 
-  // Get all dates in the month that have attendance records
   const allDates = new Set<string>()
   data.students.forEach(student => {
     Object.keys(student.attendance).forEach(date => allDates.add(date))
@@ -282,10 +275,11 @@ export function AttendanceReport({ data, generatedAt, format }: AttendanceReport
 
         {/* Table Header */}
         <View style={dynamicStyles.tableHeader}>
-          <View style={{ width: 60 }}>
+          {/* Increased margin and fixed width for the gap */}
+          <View style={{ width: 80, marginRight: 20 }}>
             <Text style={dynamicStyles.tableHeaderText}>ID</Text>
           </View>
-          <View style={{ width: 120 }}>
+          <View style={{ width: 140 }}>
             <Text style={dynamicStyles.tableHeaderText}>Student Name</Text>
           </View>
           <View style={{ width: 100 }}>
@@ -309,10 +303,11 @@ export function AttendanceReport({ data, generatedAt, format }: AttendanceReport
         {/* Table Rows */}
         {data.students.map((student, index) => (
           <View key={student.id} style={[dynamicStyles.tableRow, index % 2 === 1 ? dynamicStyles.tableRowAlt : {}]}>
-            <View style={{ width: 60 }}>
+            {/* Matches Header spacing for alignment */}
+            <View style={{ width: 80, marginRight: 20 }}>
               <Text style={dynamicStyles.tableCell}>{student.studentId}</Text>
             </View>
-            <View style={{ width: 120 }}>
+            <View style={{ width: 140 }}>
               <Text style={dynamicStyles.tableCell}>{student.name}</Text>
             </View>
             <View style={{ width: 100 }}>

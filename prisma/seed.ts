@@ -12,50 +12,24 @@ async function main() {
 
   const studentsData = [
     {
-      name: 'Madni',
-      fatherName: 'Muhammad Munir',
-      address: 'Jilani Masjid Garden West',
-      phone: '0331-3625246',
+      name: 'M Huzaifa',
+      fatherName: 'Haji Tahir',
+      address: 'Mirza adam khan road ',
+      phone: '03102778695',
       enrollmentDate: new Date('2025-12-15'), // Day 15
       admissionDate: new Date('2025-12-15'),
       courseOnSlotId: defaultCourseOnSlotId,
     },
     {
-      name: 'Furhan',
-      fatherName: 'R. Salman',
-      address: 'Garden Police Headquarter',
-      phone: '0336-9227007',
+      name: 'Muhammad Khalid',
+      fatherName: 'Akhter Hussain',
+      address: 'Ramsuwami Brush Wali Gali Al Khaleej Garden',
+      phone: '03231397131',
       enrollmentDate: new Date('2025-12-08'), // Day 8
       admissionDate: new Date('2025-12-08'),
       courseOnSlotId: defaultCourseOnSlotId,
     },
-    {
-      name: 'Safi',
-      fatherName: 'Arif',
-      address: 'Jilani Masjid Building Aisha',
-      phone: '0324-5111841',
-      enrollmentDate: new Date('2025-12-04'), // Day 4
-      admissionDate: new Date('2025-12-04'),
-      courseOnSlotId: defaultCourseOnSlotId,
-    },
-    {
-      name: 'Ayan',
-      fatherName: 'Mustafa',
-      address: 'Shoe-market Al Sadiq-e-center',
-      phone: '0312-2942810',
-      enrollmentDate: new Date('2025-12-05'), // Day 5
-      admissionDate: new Date('2025-12-05'),
-      courseOnSlotId: defaultCourseOnSlotId,
-    },
-    {
-      name: 'Hani',
-      fatherName: 'M. Adnan',
-      address: 'Shoe-market mama road',
-      phone: '0315-2467316',
-      enrollmentDate: new Date('2025-12-06'), // Day 6
-      admissionDate: new Date('2025-12-06'),
-      courseOnSlotId: defaultCourseOnSlotId,
-    }
+    
   ]
 
   // Logic to calculate studentId starting from the last known record in Dec 2025
