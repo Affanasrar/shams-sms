@@ -194,3 +194,117 @@ export async function extendCourse(prevState: any, formData: FormData) {
     return { success: false, error: "Failed to extend course" }
   }
 }
+
+/**
+ * Change student's course timing (slot) without affecting:
+ * - Course start date (joiningDate)
+ * - Course end date (endDate)
+ * - Fees and other enrollment details
+ */
+export async function changeEnrollmentTiming(
+  enrollmentId: string,
+  newCourseOnSlotId: string
+) {
+  try {
+    console.log(`⚡ Attempting to change timing for Enrollment ${enrollmentId} to Slot ${newCourseOnSlotId}`)
+
+    return await prisma.$transaction(async (tx) => {
+      // 1. Get current enrollment details
+      const currentEnrollment = await tx.enrollment.findUnique({
+        where: { id: enrollmentId },
+        include: {
+          courseOnSlot: {
+            include: { course: true, slot: { include: { room: true } } }
+          },
+          student: true
+        }
+      })
+
+      if (!currentEnrollment) {
+        throw new Error("Enrollment not found")
+      }
+
+      // 2. Verify student is still active in current course
+      if (currentEnrollment.status !== 'ACTIVE') {
+        throw new Error("Can only change timing for active enrollments")
+      }
+
+      // 3. Get the new slot assignment details
+      const newCourseOnSlot = await tx.courseOnSlot.findUnique({
+        where: { id: newCourseOnSlotId },
+        include: {
+          course: true,
+          slot: { include: { room: true } }
+        }
+      })
+
+      if (!newCourseOnSlot) {
+        throw new Error("Invalid new slot selection")
+      }
+
+      // 4. Verify it's the same course (same course name)
+      if (currentEnrollment.courseOnSlot.course.id !== newCourseOnSlot.course.id) {
+        throw new Error("Can only change timing within the same course")
+      }
+
+      // 5. Check capacity in the new slot
+      const currentOccupancy = await tx.enrollment.count({
+        where: {
+          courseOnSlot: {
+            slotId: newCourseOnSlot.slotId
+          },
+          status: 'ACTIVE'
+        }
+      })
+
+      const newRoomCapacity = newCourseOnSlot.slot.room.capacity
+
+      if (currentOccupancy >= newRoomCapacity) {
+        throw new Error(
+          `New timing slot is full (${currentOccupancy}/${newRoomCapacity} seats occupied). Please choose a different timing.`
+        )
+      }
+
+      // 6. Update the enrollment with new courseOnSlotId
+      // All other fields (joiningDate, endDate, status, extendedDays) remain unchanged
+      const updatedEnrollment = await tx.enrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          courseOnSlotId: newCourseOnSlotId
+        },
+        include: {
+          courseOnSlot: {
+            include: { slot: { include: { room: true } }, course: true }
+          }
+        }
+      })
+
+      console.log(
+        `✅ Timing changed for ${currentEnrollment.student.name}: ${currentEnrollment.courseOnSlot.slot.days} → ${updatedEnrollment.courseOnSlot.slot.days}`
+      )
+
+      // Revalidate relevant pages
+      revalidatePath(`/admin/students/${currentEnrollment.studentId}`)
+      revalidatePath(`/admin/schedule`)
+
+      return {
+        success: true,
+        message: `Timing changed successfully from ${currentEnrollment.courseOnSlot.slot.days} to ${updatedEnrollment.courseOnSlot.slot.days}`,
+        enrollment: {
+          id: updatedEnrollment.id,
+          courseName: updatedEnrollment.courseOnSlot.course.name,
+          days: updatedEnrollment.courseOnSlot.slot.days,
+          room: updatedEnrollment.courseOnSlot.slot.room.name,
+          joiningDate: updatedEnrollment.joiningDate,
+          endDate: updatedEnrollment.endDate
+        }
+      }
+    })
+  } catch (error) {
+    console.error("Change Timing Error:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to change course timing"
+    }
+  }
+}

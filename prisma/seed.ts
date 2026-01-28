@@ -10,14 +10,27 @@ async function main() {
   // Replace this with your actual CourseOnSlot ID
   const defaultCourseOnSlotId = '4d529452-613e-4bac-a4f9-b5226fc5c4e5' 
 
+  // Fetch the CourseOnSlot to get course duration
+  const courseOnSlot = await prisma.courseOnSlot.findUnique({
+    where: { id: defaultCourseOnSlotId },
+    include: { course: true }
+  })
+
+  if (!courseOnSlot) {
+    console.error('❌ CourseOnSlot not found!')
+    return
+  }
+
+  const courseDurationMonths = courseOnSlot.course.durationMonths
+
   const studentsData = [
     {
       name: 'M Huzaifa',
       fatherName: 'Haji Tahir',
       address: 'Mirza adam khan road ',
       phone: '03102778695',
-      enrollmentDate: new Date('2025-12-15'), // Day 15
-      admissionDate: new Date('2025-12-15'),
+      enrollmentDate: new Date('2025-12-12'), // Day 15
+      admissionDate: new Date('2025-12-12'),
       courseOnSlotId: defaultCourseOnSlotId,
     },
     {
@@ -25,8 +38,8 @@ async function main() {
       fatherName: 'Akhter Hussain',
       address: 'Ramsuwami Brush Wali Gali Al Khaleej Garden',
       phone: '03231397131',
-      enrollmentDate: new Date('2025-12-08'), // Day 8
-      admissionDate: new Date('2025-12-08'),
+      enrollmentDate: new Date('2025-12-03'), // Day 8
+      admissionDate: new Date('2025-12-03'),
       courseOnSlotId: defaultCourseOnSlotId,
     },
     
@@ -68,6 +81,7 @@ async function main() {
         courseOnSlotId: studentData.courseOnSlotId,
         joiningDate: studentData.enrollmentDate,
         status: 'ACTIVE',
+        endDate: new Date(studentData.enrollmentDate.getFullYear(), studentData.enrollmentDate.getMonth() + courseDurationMonths, studentData.enrollmentDate.getDate()),
       },
     })
     
