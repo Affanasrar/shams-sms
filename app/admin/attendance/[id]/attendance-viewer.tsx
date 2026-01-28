@@ -174,6 +174,15 @@ export function AttendanceViewer({ classId, adminId, enrollments }: Props) {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+            {/* Indicator showing if today's attendance is marked */}
+            {selectedDate === new Date().toISOString().split('T')[0] && attendance.length > 0 && (
+              <div className="flex items-center gap-2 ml-4 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle2 size={16} className="text-green-600" />
+                <span className="text-sm font-medium text-green-700">
+                  Today's Attendance Marked ({attendance.length}/{enrollments.length})
+                </span>
+              </div>
+            )}
           </div>
 
           <button
@@ -219,10 +228,20 @@ export function AttendanceViewer({ classId, adminId, enrollments }: Props) {
       {/* Attendance Table */}
       <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b bg-gray-50">
-          <h3 className="font-semibold text-gray-900">Student Attendance</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            {attendance.length} of {enrollments.length} students marked
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-900">Student Attendance</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {attendance.length} of {enrollments.length} students marked
+              </p>
+            </div>
+            {attendance.length > 0 && selectedDate === new Date().toISOString().split('T')[0] && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <CheckCircle2 size={18} className="text-blue-600 animate-pulse" />
+                <span className="text-sm font-semibold text-blue-700">Updated</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? (
