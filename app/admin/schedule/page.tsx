@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Course, FeeType } from '@prisma/client'
 import { ManagementPanel } from './management-panel'
 import { PageLayout, PageHeader } from '@/components/ui'
+import { ScheduleFilters } from './schedule-filters'
 
 // Force fresh data every time so capacity is accurate
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,7 @@ type CourseWithAssignments = {
     id: string
     course: { name: string; durationMonths: number }
     slot: { 
+      id: string
       startTime: Date
       endTime: Date
       days: string
@@ -129,47 +131,7 @@ export default async function SchedulePage() {
         }
       />
 
-      <div className="space-y-8">
-        {courses.map((course) => (
-          <div key={course.id} className="bg-white border rounded-lg p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{course.name}</h2>
-                <p className="text-sm text-gray-600">
-                  Duration: {course.durationMonths} months • Fee: ${course.baseFee.toString()} ({course.feeType})
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Total Slots: {course.slotAssignments.length}</p>
-              </div>
-            </div>
-
-            {course.slotAssignments.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {course.slotAssignments.map((assignment) => (
-                  <SlotCard
-                    key={assignment.id}
-                    data={assignment}
-                    teachers={teachers}
-                    slotOccupancy={slotOccupancyMap.get((assignment as any).slot?.id || (assignment as any).slotId)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No slots assigned to this course yet.</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {courses.length === 0 && (
-        <div className="text-center py-20 bg-white border border-dashed rounded-xl">
-          <p className="text-gray-500">No courses found.</p>
-          <p className="text-sm">Create courses first, then assign them to time slots.</p>
-        </div>
-      )}
+      <ScheduleFilters courses={courses} teachers={teachers} slots={slots} />
     </PageLayout>
   )
 }
