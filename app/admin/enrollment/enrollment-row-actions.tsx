@@ -105,7 +105,9 @@ export function EnrollmentRowActions({
         </button>
 
         <form
-          action={dropStudent}
+          action={async (formData) => {
+            await dropStudent(formData)
+          }}
         >
           <input type="hidden" name="enrollmentId" value={enrollmentId} />
           <button
