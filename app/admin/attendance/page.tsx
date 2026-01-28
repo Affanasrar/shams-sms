@@ -29,7 +29,7 @@ export default async function AdminAttendancePage() {
       date: new Date(today)
     },
     select: {
-      classId: true,
+      courseOnSlotId: true,
       studentId: true,
       status: true
     }
@@ -48,7 +48,7 @@ export default async function AdminAttendancePage() {
     }
     
     // Calculate present count for this class
-    const classAttendance = attendanceRecords.filter(r => r.classId === cls.id)
+    const classAttendance = attendanceRecords.filter(r => r.courseOnSlotId === cls.id)
     const presentCount = classAttendance.filter(r => r.status === 'PRESENT').length
     const totalEnrolled = cls.enrollments.length
     const isMarked = classAttendance.length > 0
