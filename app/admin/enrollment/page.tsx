@@ -17,6 +17,7 @@ export default async function EnrollmentIndex(props: Props) {
   
   const courseId = searchParams.courseId as string | undefined
   const slotId = searchParams.slotId as string | undefined
+  const searchQuery = searchParams.search as string | undefined
 
   // 2. Fetch Filter Options
   const courses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
@@ -43,6 +44,14 @@ export default async function EnrollmentIndex(props: Props) {
     } else {
       whereClause.courseOnSlot = { slotId: slotId }
     }
+  }
+
+  // If search query exists, filter by student name or ID
+  if (searchQuery && searchQuery.trim()) {
+    whereClause.OR = [
+      { student: { name: { contains: searchQuery, mode: 'insensitive' } } },
+      { student: { studentId: { contains: searchQuery, mode: 'insensitive' } } }
+    ]
   }
 
   // 4. Fetch Enrollments
@@ -104,15 +113,17 @@ export default async function EnrollmentIndex(props: Props) {
         <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
           <p className="text-sm text-gray-600">
             Showing <span className="font-semibold">{enrollments.length}</span> enrollment{enrollments.length !== 1 ? 's' : ''}
-            {(courseId || slotId) && (
+            {(courseId || slotId || searchQuery) && (
               <span> •
+                {searchQuery && ` Search: "${searchQuery}"`}
+                {searchQuery && (courseId || slotId) && ' •'}
                 {courseId && ` Course: ${courses.find(c => c.id === courseId)?.name}`}
                 {courseId && slotId && ' •'}
                 {slotId && ` Slot: ${slots.find(s => s.id === slotId)?.days}`}
               </span>
             )}
           </p>
-          {(courseId || slotId) && (
+          {(courseId || slotId || searchQuery) && (
             <Link
               href="/admin/enrollment"
               className="text-sm text-blue-600 hover:text-blue-800 underline"
