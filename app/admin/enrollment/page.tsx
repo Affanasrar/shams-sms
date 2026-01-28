@@ -1,9 +1,9 @@
 // app/admin/enrollment/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { Plus, Trash2 } from 'lucide-react'
-import { dropStudent } from '@/app/actions/enrollment'
+import { Plus } from 'lucide-react'
 import { EnrollmentFilters } from './enrollment-filters'
+import { EnrollmentRowActions } from './enrollment-row-actions'
 import { PageLayout, PageHeader } from '@/components/ui'
 
 // 👇 Define the props type correctly for Next.js 15+
@@ -58,6 +58,25 @@ export default async function EnrollmentIndex(props: Props) {
       }
     },
     orderBy: { joiningDate: 'desc' }
+  })
+
+  // 5. Fetch all slots with enrollment counts for each course
+  // This helps us show available timings when changing student slots
+  const slotsWithEnrollments = await prisma.courseOnSlot.findMany({
+    include: {
+      course: true,
+      slot: {
+        include: { room: true }
+      },
+      _count: {
+        select: {
+          enrollments: {
+            where: { status: 'ACTIVE' }
+          }
+        }
+      }
+    },
+    orderBy: { slot: { startTime: 'asc' } }
   })
 
   return (
@@ -141,29 +160,40 @@ export default async function EnrollmentIndex(props: Props) {
                 </td>
 
                 <td className="px-6 py-4 text-right">
-                  <form
-                    action={async (formData) => {
-                      "use server"
-                      await dropStudent(formData)
+                  <EnrollmentRowActions
+                    enrollmentId={record.id}
+                    studentId={record.student.id}
+                    studentName={record.student.name}
+                    courseName={record.courseOnSlot.course.name}
+                    currentSlotId={record.courseOnSlot.slot.id}
+                    currentCourseOnSlotId={record.courseOnSlot.id}
+                    currentTiming={{
+                      days: record.courseOnSlot.slot.days,
+                      startTime: record.courseOnSlot.slot.startTime,
+                      endTime: record.courseOnSlot.slot.endTime,
+                      room: record.courseOnSlot.slot.room.name
                     }}
-                  >
-                    <input type="hidden" name="enrollmentId" value={record.id} />
-
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-1.5 text-red-600 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-red-700"
-                      title="Drop Student from Class"
-                    >
-                      <Trash2 size={14} /> Drop
-                    </button>
-                  </form>
+                    availableSlotsForCourse={slotsWithEnrollments
+                      .filter(s => s.courseId === record.courseOnSlot.courseId)
+                      .map(s => ({
+                        id: s.id,
+                        days: s.slot.days,
+                        startTime: s.slot.startTime,
+                        endTime: s.slot.endTime,
+                        room: {
+                          name: s.slot.room.name,
+                          capacity: s.slot.room.capacity
+                        },
+                        enrollmentCount: s._count.enrollments
+                      }))}
+                  />
                 </td>
               </tr>
             ))}
 
             {enrollments.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                   <p className="mb-2 text-lg">No students found for this filter.</p>
                   <p className="text-sm">Try clearing filters or checking other classes.</p>
                 </td>
