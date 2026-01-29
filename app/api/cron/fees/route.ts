@@ -78,20 +78,41 @@ export async function GET() {
         dueDate = new Date(currentYear, currentMonth, lastDayOfMonth)
       }
 
-      // Create the current month fee
+      // 🔄 Calculate rollover amount from unpaid previous month fees
+      const previousMonthDate = new Date(currentYear, currentMonth - 1, 1)
+      const previousMonthFees = await prisma.fee.findMany({
+        where: {
+          enrollmentId: enrollment.id,
+          cycleDate: previousMonthDate,
+          status: { in: ['UNPAID', 'PARTIAL'] }
+        }
+      })
+
+      let rolloverAmount = 0
+      if (previousMonthFees.length > 0) {
+        // Calculate unpaid balance from previous month
+        const prevFee = previousMonthFees[0]
+        const unpaidBalance = Number(prevFee.finalAmount) - Number(prevFee.paidAmount)
+        rolloverAmount = Math.max(0, unpaidBalance) // Only positive balances roll over
+      }
+
+      // Create the current month fee with rollover
+      const totalAmount = Number(course.baseFee) + rolloverAmount
       await prisma.fee.create({
         data: {
           studentId: enrollment.studentId,
           enrollmentId: enrollment.id,
           amount: course.baseFee,
-          finalAmount: course.baseFee, // No discount applied yet
+          rolloverAmount: rolloverAmount, // Track previous month balance
+          finalAmount: totalAmount, // Total = current month + rollover
           dueDate: dueDate,
           cycleDate: cycleDate,
           status: 'UNPAID'
         }
       })
 
-      console.log(`✅ Created fee for ${enrollment.student.name} - Month ${monthNumber} - Due: ${dueDate.toISOString().split('T')[0]}`)
+      const rolloverInfo = rolloverAmount > 0 ? ` (+ PKR ${rolloverAmount} rollover from previous month)` : ''
+      console.log(`✅ Created fee for ${enrollment.student.name} - Month ${monthNumber} - Due: ${dueDate.toISOString().split('T')[0]} - Amount: PKR ${totalAmount}${rolloverInfo}`)
       feesCreated++
     }
 

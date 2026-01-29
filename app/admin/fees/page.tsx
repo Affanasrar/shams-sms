@@ -101,7 +101,12 @@ export default async function FeesPage() {
                   </td>
 
                   <td className="px-6 py-4 font-mono">
-                    <div>PKR {Number(fee.finalAmount).toLocaleString()}</div>
+                    <div className="font-bold">PKR {Number(fee.finalAmount).toLocaleString()}</div>
+                    {Number(fee.rolloverAmount) > 0 && (
+                      <div className="text-xs text-orange-600">
+                        (PKR {Number(fee.rolloverAmount).toLocaleString()} from previous month)
+                      </div>
+                    )}
                     {Number(fee.paidAmount) > 0 && (
                       <div className="text-xs text-green-600">
                         Paid: PKR {Number(fee.paidAmount).toLocaleString()}
