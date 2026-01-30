@@ -157,7 +157,13 @@ export function AttendanceFilters({ courses }: Props) {
                 <div className="p-6 border-t border-gray-100">
                   {course.classes.length > 0 ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {course.classes.map((cls) => (
+                      {course.classes
+                        .sort((a, b) => {
+                          const timeA = new Date(a.slot.startTime).getTime()
+                          const timeB = new Date(b.slot.startTime).getTime()
+                          return timeA - timeB
+                        })
+                        .map((cls) => (
                         <div
                           key={cls.id}
                           className={`p-5 rounded-lg border transition-all ${
