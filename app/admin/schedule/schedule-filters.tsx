@@ -216,7 +216,13 @@ export function ScheduleFilters({ courses, teachers, slots }: Props) {
                 <div className="p-6 border-t border-gray-100">
                   {course.slotAssignments.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {course.slotAssignments.map((assignment) => (
+                      {course.slotAssignments
+                        .sort((a, b) => {
+                          const timeA = new Date(a.slot.startTime).getTime()
+                          const timeB = new Date(b.slot.startTime).getTime()
+                          return timeA - timeB
+                        })
+                        .map((assignment) => (
                         <SlotCard
                           key={assignment.id}
                           data={assignment}
