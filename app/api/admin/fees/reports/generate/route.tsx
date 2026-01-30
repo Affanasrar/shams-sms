@@ -211,7 +211,7 @@ async function generateStudentReport(studentId: string) {
     fees: fees.map(fee => ({
       id: fee.id,
       courseName: fee.enrollment?.courseOnSlot?.course?.name || 'Unknown Course',
-      amount: Number(fee.amount),
+      amount: Number(fee.finalAmount),
       status: fee.status,
       dueDate: fee.dueDate,
       paidDate: fee.transactions[0]?.date,
@@ -341,11 +341,11 @@ async function generateOverallReport() {
 
       const collected = enrollments.flatMap(e => e.fees)
         .filter(f => f.status === 'PAID')
-        .reduce((sum, f) => sum + Number(f.amount), 0)
+        .reduce((sum, f) => sum + Number(f.finalAmount), 0)
 
       const pending = enrollments.flatMap(e => e.fees)
         .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
-        .reduce((sum, f) => sum + Number(f.amount), 0)
+        .reduce((sum, f) => sum + (Number(f.finalAmount) - Number(f.paidAmount)), 0)
 
       return {
         id: course.id,
