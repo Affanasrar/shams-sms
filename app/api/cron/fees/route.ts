@@ -78,6 +78,14 @@ export async function GET() {
         dueDate = new Date(currentYear, currentMonth, lastDayOfMonth)
       }
 
+      // ⭐ CRITICAL FIX: Only create fee if due date has already passed (or is today)
+      // Don't create fees for future due dates
+      if (dueDate > now) {
+        console.log(`⏩ Skipped ${enrollment.student.name} - Due date (${dueDate.toISOString().split('T')[0]}) is in the future`)
+        feesSkipped++
+        continue
+      }
+
       // 🔄 Calculate rollover amount from unpaid previous month fees
       const previousMonthDate = new Date(currentYear, currentMonth - 1, 1)
       const previousMonthFees = await prisma.fee.findMany({
