@@ -2,7 +2,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
-import { Clock, Users, MapPin, ArrowRight } from "lucide-react"
+import { Clock, Users, MapPin, ArrowRight, FileText } from "lucide-react"
 import Link from "next/link"
 import { PageLayout, PageHeader } from '@/components/ui'
 
@@ -85,6 +85,16 @@ export default async function TeacherDashboard() {
         <StatCard label="My Classes" value={myClasses.length} />
         <StatCard label="Active Students" value={myClasses.reduce((acc, c) => acc + c._count.enrollments, 0)} />
         <StatCard label="Pending Exams" value="0" />
+      </div>
+
+      <div className="mt-4">
+        <a
+          href="/teacher/reports"
+          className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition font-medium text-sm"
+        >
+          <FileText size={16} />
+          Reports
+        </a>
       </div>
 
       {/* Class List */}
