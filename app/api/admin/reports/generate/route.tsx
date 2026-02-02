@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import prisma from '@/lib/prisma'
-import { AttendanceReport } from '@/components/pdf'
+import { AttendanceReport, CourseReport } from '@/components/pdf'
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
     switch (type) {
       case 'attendance':
         pdfComponent = <AttendanceReport data={data} generatedAt={new Date()} format={format} />
+        break
+      case 'course':
+        pdfComponent = <CourseReport data={data} generatedAt={new Date()} format={format} />
         break
       default:
         return NextResponse.json({ error: 'Unsupported report type' }, { status: 400 })
