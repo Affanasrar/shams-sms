@@ -5,9 +5,17 @@ import { CollectButton } from './collect-button'
 import { EarlyFeeCollection } from './early-fee-collection'
 import { ArrowLeft } from 'lucide-react'
 
-export default async function FeesPage() {
+export default async function FeesPage({ searchParams }: { searchParams: { studentId?: string } }) {
+  const studentId = searchParams.studentId
+
+  // Build where clause
+  const whereClause: any = { status: 'UNPAID' }
+  if (studentId) {
+    whereClause.student = { id: studentId }
+  }
+
   const dueFees = await prisma.fee.findMany({
-    where: { status: 'UNPAID' },
+    where: whereClause,
     include: {
       student: true,
       enrollment: {
@@ -50,7 +58,12 @@ export default async function FeesPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">Fee Collection</h1>
-          <p className="text-gray-500 text-sm">View and collect fees from students</p>
+          <p className="text-gray-500 text-sm">
+            {studentId 
+              ? `Fees for ${dueFees.length > 0 ? dueFees[0].student.name : 'this student'}`
+              : 'View and collect fees from students'
+            }
+          </p>
         </div>
       </div>
 
