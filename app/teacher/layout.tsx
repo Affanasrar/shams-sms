@@ -2,105 +2,109 @@
 'use client'
 
 import { UserButton } from "@clerk/nextjs"
-import { LayoutDashboard, CheckSquare, GraduationCap, Calendar, Menu, X } from "lucide-react"
+import { LayoutDashboard, CheckSquare, GraduationCap, Calendar, Menu, X, FileText } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { usePathname } from 'next/navigation'
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      
-      {/* Teacher Sidebar - Desktop */}
-      <aside className="w-64 bg-white border-r md:block hidden fixed h-full z-10">
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-72 bg-white border-r fixed top-0 left-0 bottom-0 z-10">
         <div className="p-6 border-b flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-            T
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
+          <div>
+            <div className="font-bold text-lg">Teacher Portal</div>
+            <div className="text-xs text-gray-500">Easy classroom tools</div>
           </div>
-          <span className="font-bold text-lg">Teacher Portal</span>
         </div>
-        
-        <nav className="p-4 space-y-1">
-          <NavLink href="/teacher" icon={<LayoutDashboard size={20}/>} label="Dashboard" />
-          <NavLink href="/teacher/attendance" icon={<CheckSquare size={20}/>} label="Mark Attendance" />
-          <NavLink href="/teacher/results" icon={<GraduationCap size={20}/>} label="Exam Results" />
-          <NavLink href="/teacher/schedule" icon={<Calendar size={20}/>} label="My Schedule" />
+
+        <nav className="p-4 flex-1 space-y-1 overflow-auto" aria-label="Teacher navigation">
+          <NavLink href="/teacher" icon={<LayoutDashboard size={18}/>} label="Dashboard" active={pathname?.startsWith('/teacher') && pathname === '/teacher'} />
+          <NavLink href="/teacher/attendance" icon={<CheckSquare size={18}/>} label="Attendance" active={pathname?.startsWith('/teacher/attendance')} />
+          <NavLink href="/teacher/schedule" icon={<Calendar size={18}/>} label="Schedule" active={pathname?.startsWith('/teacher/schedule')} />
+          <NavLink href="/teacher/reports" icon={<FileText size={18}/>} label="Reports" active={pathname?.startsWith('/teacher/reports')} />
+          <NavLink href="/teacher/results" icon={<GraduationCap size={18}/>} label="Results" active={pathname?.startsWith('/teacher/results')} />
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 border-t bg-gray-50">
+        <div className="p-4 border-t bg-gray-50">
           <div className="flex items-center gap-3">
             <UserButton afterSignOutUrl="/" />
-            <span className="text-sm font-medium text-gray-600">My Account</span>
+            <div className="text-sm">
+              <div className="font-medium">My Account</div>
+              <div className="text-xs text-gray-500">Sign out available</div>
+            </div>
           </div>
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between fixed top-0 left-0 right-0 z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-            T
+      {/* Mobile Topbar */}
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-20">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
+            <div className="font-semibold">Teacher</div>
           </div>
-          <span className="font-bold text-lg">Teacher Portal</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 rounded-md hover:bg-gray-100"><Menu size={20} /></button>
+            <UserButton afterSignOutUrl="/" />
+          </div>
         </div>
-        
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-lg hover:bg-gray-100"
-        >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
+      </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Drawer */}
       {isMobileMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30" 
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          
-          {/* Mobile Menu */}
-          <div className="md:hidden fixed top-0 left-0 w-64 h-full bg-white z-40 shadow-lg">
-            <div className="p-6 border-b flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                T
-              </div>
-              <span className="font-bold text-lg">Teacher Portal</span>
-            </div>
-            
-            <nav className="p-4 space-y-2">
-              <MobileNavLink href="/teacher" icon={<LayoutDashboard size={20}/>} label="Dashboard" onClick={() => setIsMobileMenuOpen(false)} />
-              <MobileNavLink href="/teacher/attendance" icon={<CheckSquare size={20}/>} label="Mark Attendance" onClick={() => setIsMobileMenuOpen(false)} />
-              <MobileNavLink href="/teacher/results" icon={<GraduationCap size={20}/>} label="Exam Results" onClick={() => setIsMobileMenuOpen(false)} />
-              <MobileNavLink href="/teacher/schedule" icon={<Calendar size={20}/>} label="My Schedule" onClick={() => setIsMobileMenuOpen(false)} />
-            </nav>
-
-            <div className="absolute bottom-0 left-0 right-0 p-6 border-t bg-gray-50">
+        <div className="md:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setIsMobileMenuOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl p-4 overflow-auto">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <UserButton afterSignOutUrl="/" />
-                <span className="text-sm font-medium text-gray-600">My Account</span>
+                <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
+                <div className="font-bold">Teacher Portal</div>
               </div>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-md hover:bg-gray-100"><X size={20} /></button>
             </div>
+            <nav className="space-y-2" aria-label="Mobile teacher navigation">
+              <MobileNavLink href="/teacher" icon={<LayoutDashboard size={18}/>} label="Dashboard" onClick={() => setIsMobileMenuOpen(false)} active={pathname === '/teacher'} />
+              <MobileNavLink href="/teacher/attendance" icon={<CheckSquare size={18}/>} label="Attendance" onClick={() => setIsMobileMenuOpen(false)} active={pathname?.startsWith('/teacher/attendance')} />
+              <MobileNavLink href="/teacher/schedule" icon={<Calendar size={18}/>} label="Schedule" onClick={() => setIsMobileMenuOpen(false)} active={pathname?.startsWith('/teacher/schedule')} />
+              <MobileNavLink href="/teacher/reports" icon={<FileText size={18}/>} label="Reports" onClick={() => setIsMobileMenuOpen(false)} active={pathname?.startsWith('/teacher/reports')} />
+              <MobileNavLink href="/teacher/results" icon={<GraduationCap size={18}/>} label="Results" onClick={() => setIsMobileMenuOpen(false)} active={pathname?.startsWith('/teacher/results')} />
+            </nav>
           </div>
-        </>
+        </div>
       )}
 
+      {/* Mobile Bottom Nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-30" role="navigation" aria-label="Bottom navigation">
+        <div className="flex justify-between px-4 py-2">
+          <MobileIcon href="/teacher" label="Home" icon={<LayoutDashboard size={18} />} active={pathname === '/teacher'} />
+          <MobileIcon href="/teacher/attendance" label="Attend" icon={<CheckSquare size={18} />} active={pathname?.startsWith('/teacher/attendance')} />
+          <MobileIcon href="/teacher/schedule" label="Schedule" icon={<Calendar size={18} />} active={pathname?.startsWith('/teacher/schedule')} />
+          <MobileIcon href="/teacher/reports" label="Reports" icon={<FileText size={18} />} active={pathname?.startsWith('/teacher/reports')} />
+          <MobileIcon href="/teacher/results" label="Results" icon={<GraduationCap size={18} />} active={pathname?.startsWith('/teacher/results')} />
+        </div>
+      </nav>
+
       {/* Main Content Area */}
-      <main className="md:ml-64 flex-1 pt-16 md:pt-8 px-4 md:px-8 pb-8">
+      <main className="flex-1 md:ml-72 pt-20 md:pt-8 px-4 md:px-8 pb-24 md:pb-8">
         {children}
       </main>
     </div>
   )
 }
 
-function NavLink({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) {
+function NavLink({ href, icon, label, active }: { href: string, icon: React.ReactNode, label: string, active?: boolean }) {
   return (
     <Link 
       href={href} 
-      className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+      aria-current={active ? 'page' : undefined}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'}`}
     >
       {icon}
       <span>{label}</span>
@@ -108,15 +112,25 @@ function NavLink({ href, icon, label }: { href: string, icon: React.ReactNode, l
   )
 }
 
-function MobileNavLink({ href, icon, label, onClick }: { href: string, icon: React.ReactNode, label: string, onClick: () => void }) {
+function MobileNavLink({ href, icon, label, onClick, active }: { href: string, icon: React.ReactNode, label: string, onClick: () => void, active?: boolean }) {
   return (
     <Link 
       href={href} 
       onClick={onClick}
-      className="flex items-center gap-3 px-4 py-3 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium text-lg"
+        aria-current={active ? 'page' : undefined}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium text-lg ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'}`}
     >
       {icon}
       <span>{label}</span>
+    </Link>
+  )
+}
+
+function MobileIcon({ href, label, icon, active }: { href: string; label: string; icon: React.ReactNode; active?: boolean }) {
+  return (
+    <Link href={href} aria-current={active ? 'page' : undefined} className={`flex-1 flex flex-col items-center justify-center text-xs ${active ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}>
+      <div className="p-1">{icon}</div>
+      <div className="mt-0.5">{label}</div>
     </Link>
   )
 }

@@ -44,15 +44,25 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
             className="bg-transparent border-none focus:ring-0 p-0 text-gray-900 font-bold text-sm sm:text-base"
           />
         </div>
-        <div className="text-sm text-gray-500">
-          Total Students: {enrollments.length}
+        <div className="text-sm text-gray-500 flex items-center gap-3">
+          <div>Total Students: {enrollments.length}</div>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => {
+              const inputs = document.querySelectorAll<HTMLInputElement>(`input[name^=\"status_\"]`)
+              inputs.forEach(i => { if (i.value === 'PRESENT') i.checked = true })
+            }} className="px-3 py-1 bg-green-600 text-white rounded text-xs">All Present</button>
+            <button type="button" onClick={() => {
+              const inputs = document.querySelectorAll<HTMLInputElement>(`input[name^=\"status_\"]`)
+              inputs.forEach(i => { if (i.value === 'ABSENT') i.checked = true })
+            }} className="px-3 py-1 bg-red-600 text-white rounded text-xs">All Absent</button>
+          </div>
         </div>
       </div>
 
       {/* Student List */}
       <div className="divide-y max-h-[60vh] overflow-y-auto">
         {enrollments.map((enr) => (
-          <div key={enr.student.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-gray-50 transition">
+            <div key={enr.student.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-gray-50 transition">
             <div className="flex items-center gap-3 flex-1">
               <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
                 {enr.student.name.charAt(0)}
@@ -65,26 +75,26 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
             </div>
 
             {/* Status Radio Buttons */}
-            <div className="flex bg-gray-100 p-1 rounded-lg self-end sm:self-center">
-              <label className="cursor-pointer">
-                <input type="radio" name={`status_${enr.student.id}`} value="PRESENT" defaultChecked className="peer sr-only" />
-                <span className="block px-4 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-sm transition-all">
-                  Present
-                </span>
-              </label>
-              <label className="cursor-pointer">
-                <input type="radio" name={`status_${enr.student.id}`} value="ABSENT" className="peer sr-only" />
-                <span className="block px-4 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm transition-all">
-                  Absent
-                </span>
-              </label>
-              <label className="cursor-pointer">
-                <input type="radio" name={`status_${enr.student.id}`} value="LATE" className="peer sr-only" />
-                <span className="block px-4 py-2 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">
-                  Late
-                </span>
-              </label>
-            </div>
+              <div className="flex bg-gray-100 p-1 rounded-lg self-end sm:self-center">
+                <label className="cursor-pointer">
+                  <input type="radio" name={`status_${enr.student.id}`} value="PRESENT" defaultChecked className="peer sr-only" />
+                  <span className="block px-5 py-3 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-sm transition-all">
+                    Present
+                  </span>
+                </label>
+                <label className="cursor-pointer">
+                  <input type="radio" name={`status_${enr.student.id}`} value="ABSENT" className="peer sr-only" />
+                  <span className="block px-5 py-3 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm transition-all">
+                    Absent
+                  </span>
+                </label>
+                <label className="cursor-pointer">
+                  <input type="radio" name={`status_${enr.student.id}`} value="LATE" className="peer sr-only" />
+                  <span className="block px-5 py-3 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">
+                    Late
+                  </span>
+                </label>
+              </div>
           </div>
         ))}
       </div>
