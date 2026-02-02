@@ -59,6 +59,30 @@ export default async function FeesDashboardPage() {
   const pendingAmount = Number(totalFeesThisMonth._sum.finalAmount || 0) -
                        Number(paidFeesThisMonth._sum.paidAmount || 0)
 
+  // Get overdue fees count (30+ days)
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const overdueFeesCount = await prisma.fee.count({
+    where: {
+      status: { in: ['UNPAID', 'PARTIAL'] },
+      dueDate: { lt: thirtyDaysAgo }
+    }
+  })
+
+  // Get students with pending fees
+  const studentsWithPendingFees = await prisma.fee.findMany({
+    where: {
+      cycleDate: {
+        gte: new Date(currentYear, currentMonth - 1, 1),
+        lt: new Date(currentYear, currentMonth, 1)
+      },
+      status: { in: ['UNPAID', 'PARTIAL'] }
+    },
+    distinct: ['studentId'],
+    select: { studentId: true }
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -138,6 +162,45 @@ export default async function FeesDashboardPage() {
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-red-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Students with Pending Fees</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {studentsWithPendingFees.length}
+              </p>
+            </div>
+            <Users className="h-8 w-8 text-orange-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Overdue Fees (30+ days)</p>
+              <p className="text-2xl font-bold text-red-700">
+                {overdueFeesCount}
+              </p>
+            </div>
+            <DollarSign className="h-8 w-8 text-red-700" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Collection Rate</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {totalFeesThisMonth._sum.finalAmount ? 
+                  ((Number(paidFeesThisMonth._sum.paidAmount || 0) / Number(totalFeesThisMonth._sum.finalAmount)) * 100).toFixed(2) + '%'
+                  : '0%'
+                }
+              </p>
+            </div>
+            <DollarSign className="h-8 w-8 text-purple-600" />
           </div>
         </div>
       </div>

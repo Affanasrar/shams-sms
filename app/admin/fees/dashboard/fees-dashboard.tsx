@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarIcon, Search, Filter, Download, Eye } from 'lucide-react'
+import { CalendarIcon, Search, Filter, Download, Eye, X } from 'lucide-react'
 
 type Course = {
   id: string
@@ -21,6 +21,7 @@ type StudentFees = {
   pendingAmount: number
   status: string
   lastPayment?: string
+  daysOverdue?: number
 }
 
 type Props = {
@@ -31,9 +32,13 @@ export function FeesDashboard({ courses }: Props) {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedCourse, setSelectedCourse] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [feesData, setFeesData] = useState<StudentFees[]>([])
   const [loading, setLoading] = useState(false)
+  const [useCustomDateRange, setUseCustomDateRange] = useState(false)
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -45,12 +50,19 @@ export function FeesDashboard({ courses }: Props) {
   const fetchFeesData = async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({
-        month: selectedMonth.toString(),
-        year: selectedYear.toString(),
-        courseId: selectedCourse,
-        search: searchTerm
-      })
+      const params = new URLSearchParams()
+      
+      if (useCustomDateRange && startDate && endDate) {
+        params.append('startDate', startDate)
+        params.append('endDate', endDate)
+      } else {
+        params.append('month', selectedMonth.toString())
+        params.append('year', selectedYear.toString())
+      }
+      
+      if (selectedCourse) params.append('courseId', selectedCourse)
+      if (selectedStatus) params.append('status', selectedStatus)
+      if (searchTerm) params.append('search', searchTerm)
 
       const response = await fetch(`/api/admin/fees/dashboard?${params}`)
       if (response.ok) {
@@ -65,10 +77,21 @@ export function FeesDashboard({ courses }: Props) {
 
   useEffect(() => {
     fetchFeesData()
-  }, [selectedMonth, selectedYear, selectedCourse])
+  }, [selectedMonth, selectedYear, selectedCourse, selectedStatus, useCustomDateRange])
 
   const handleSearch = () => {
     fetchFeesData()
+  }
+
+  const handleClearFilters = () => {
+    setSelectedMonth(new Date().getMonth() + 1)
+    setSelectedYear(new Date().getFullYear())
+    setSelectedCourse('')
+    setSelectedStatus('')
+    setSearchTerm('')
+    setStartDate('')
+    setEndDate('')
+    setUseCustomDateRange(false)
   }
 
   const getStatusBadge = (status: string) => {
@@ -104,53 +127,130 @@ export function FeesDashboard({ courses }: Props) {
   const totalFees = feesData.reduce((sum, fee) => sum + fee.totalAmount, 0)
   const totalPaid = feesData.reduce((sum, fee) => sum + fee.paidAmount, 0)
   const totalPending = feesData.reduce((sum, fee) => sum + fee.pendingAmount, 0)
+  const totalStudentsWithPendingFees = feesData.filter(f => f.pendingAmount > 0).length
+  const paidStudents = feesData.filter(f => f.status === 'PAID').length
+  const partialStudents = feesData.filter(f => f.status === 'PARTIAL').length
+  const unpaidStudents = feesData.filter(f => f.status === 'UNPAID').length
+  const collectionPercentage = totalFees > 0 ? ((totalPaid / totalFees) * 100).toFixed(2) : 0
+  const overdueCount = feesData.filter(f => {
+    const dueDate = new Date(f.lastPayment || new Date())
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    return f.pendingAmount > 0 && dueDate < thirtyDaysAgo
+  }).length
 
   return (
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {months.map((month, index) => (
-                <option key={index + 1} value={index + 1}>{month}</option>
-              ))}
-            </select>
+        <div className="space-y-4">
+          {/* Filter Mode Selection */}
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                checked={!useCustomDateRange}
+                onChange={() => setUseCustomDateRange(false)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium">Month/Year</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                checked={useCustomDateRange}
+                onChange={() => setUseCustomDateRange(true)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium">Custom Date Range</span>
+            </label>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {years.map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
+          {/* Date Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {!useCustomDateRange ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {months.map((month, index) => (
+                      <option key={index + 1} value={index + 1}>{month}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {years.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="PAID">Paid</option>
+                <option value="PARTIAL">Partial</option>
+                <option value="UNPAID">Unpaid</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
+              <select
+                value={selectedCourse}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Courses</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>{course.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
+          {/* Search Bar */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
-            <select
-              value={selectedCourse}
-              onChange={(e) => setSelectedCourse(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Courses</option>
-              {courses.map(course => (
-                <option key={course.id} value={course.id}>{course.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Search Student</label>
             <div className="flex gap-2">
               <input
@@ -163,9 +263,17 @@ export function FeesDashboard({ courses }: Props) {
               />
               <button
                 onClick={handleSearch}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
               >
                 <Search size={16} />
+                Search
+              </button>
+              <button
+                onClick={handleClearFilters}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 flex items-center gap-2"
+              >
+                <X size={16} />
+                Clear
               </button>
             </div>
           </div>
@@ -173,12 +281,12 @@ export function FeesDashboard({ courses }: Props) {
       </div>
 
       {/* Summary for filtered data */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <div className="bg-white p-4 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Fees</p>
-              <p className="text-xl font-bold text-gray-900">PKR {totalFees.toLocaleString()}</p>
+              <p className="text-xs font-medium text-gray-600">Total Fees</p>
+              <p className="text-lg font-bold text-gray-900">PKR {totalFees.toLocaleString()}</p>
             </div>
             <CalendarIcon className="h-6 w-6 text-blue-600" />
           </div>
@@ -187,8 +295,8 @@ export function FeesDashboard({ courses }: Props) {
         <div className="bg-white p-4 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Collected</p>
-              <p className="text-xl font-bold text-green-600">PKR {totalPaid.toLocaleString()}</p>
+              <p className="text-xs font-medium text-gray-600">Collected</p>
+              <p className="text-lg font-bold text-green-600">PKR {totalPaid.toLocaleString()}</p>
             </div>
             <Download className="h-6 w-6 text-green-600" />
           </div>
@@ -197,11 +305,62 @@ export function FeesDashboard({ courses }: Props) {
         <div className="bg-white p-4 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Pending</p>
-              <p className="text-xl font-bold text-red-600">PKR {totalPending.toLocaleString()}</p>
+              <p className="text-xs font-medium text-gray-600">Pending</p>
+              <p className="text-lg font-bold text-red-600">PKR {totalPending.toLocaleString()}</p>
             </div>
             <Filter className="h-6 w-6 text-red-600" />
           </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Collection %</p>
+              <p className="text-lg font-bold text-purple-600">{collectionPercentage}%</p>
+            </div>
+            <div className="h-6 w-6 text-purple-600 font-bold">%</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Pending Students</p>
+              <p className="text-lg font-bold text-orange-600">{totalStudentsWithPendingFees}</p>
+            </div>
+            <Filter className="h-6 w-6 text-orange-600" />
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg border shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-gray-600">Overdue (30+ days)</p>
+              <p className="text-lg font-bold text-red-700">{overdueCount}</p>
+            </div>
+            <Filter className="h-6 w-6 text-red-700" />
+          </div>
+        </div>
+      </div>
+
+      {/* Status Breakdown */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm">
+          <p className="text-sm font-medium text-green-700">Paid</p>
+          <p className="text-2xl font-bold text-green-600">{paidStudents}</p>
+          <p className="text-xs text-gray-600 mt-1">Students with full payment</p>
+        </div>
+
+        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 shadow-sm">
+          <p className="text-sm font-medium text-yellow-700">Partial</p>
+          <p className="text-2xl font-bold text-yellow-600">{partialStudents}</p>
+          <p className="text-xs text-gray-600 mt-1">Students with partial payment</p>
+        </div>
+
+        <div className="bg-red-50 p-4 rounded-lg border border-red-200 shadow-sm">
+          <p className="text-sm font-medium text-red-700">Unpaid</p>
+          <p className="text-2xl font-bold text-red-600">{unpaidStudents}</p>
+          <p className="text-xs text-gray-600 mt-1">Students with no payment</p>
         </div>
       </div>
 

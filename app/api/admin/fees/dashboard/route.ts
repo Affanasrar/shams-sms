@@ -9,17 +9,35 @@ export async function GET(request: NextRequest) {
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
     const courseId = searchParams.get('courseId') || ''
     const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || ''
+    const startDateParam = searchParams.get('startDate')
+    const endDateParam = searchParams.get('endDate')
 
-    // Calculate date range for the month
-    const startDate = new Date(year, month - 1, 1)
-    const endDate = new Date(year, month, 1)
+    // Determine date range
+    let startDate, endDate
+    
+    if (startDateParam && endDateParam) {
+      // Use custom date range
+      startDate = new Date(startDateParam)
+      endDate = new Date(endDateParam)
+      endDate.setDate(endDate.getDate() + 1) // Include the end date
+    } else {
+      // Use month/year
+      startDate = new Date(year, month - 1, 1)
+      endDate = new Date(year, month, 1)
+    }
 
     // Build where clause
     const whereClause: any = {
-      cycleDate: {
+      dueDate: {
         gte: startDate,
         lt: endDate
       }
+    }
+
+    // Add status filter if provided
+    if (status) {
+      whereClause.status = status
     }
 
     if (courseId) {
