@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarIcon, Search, Filter, Download, Eye, X } from 'lucide-react'
+import { CalendarIcon, Search, Filter, Download, X } from 'lucide-react'
 
 type Course = {
   id: string
@@ -11,9 +11,11 @@ type Course = {
 
 type StudentFees = {
   studentId: string
+  studentDbId: string
   studentName: string
   fatherName: string
-  courseName: string
+  courses: { id: string; name: string }[]
+  dueDate: string | null
   month: string
   year: number
   totalAmount: number
@@ -116,11 +118,6 @@ export function FeesDashboard({ courses }: Props) {
     }
 
     window.open(`/api/admin/fees/reports/generate?${params}`, '_blank')
-  }
-
-  const handleViewStudent = (studentId: string) => {
-    // Navigate to student details or fees details
-    window.open(`/admin/students/${studentId}`, '_blank')
   }
 
   // Calculate summary statistics
@@ -391,13 +388,13 @@ export function FeesDashboard({ courses }: Props) {
                 <tr>
                   <th className="px-6 py-3">Student ID</th>
                   <th className="px-6 py-3">Student Name</th>
-                  <th className="px-6 py-3">Course</th>
+                  <th className="px-6 py-3">Courses</th>
+                  <th className="px-6 py-3">Due Date</th>
                   <th className="px-6 py-3">Total Amount</th>
                   <th className="px-6 py-3">Paid Amount</th>
                   <th className="px-6 py-3">Pending Amount</th>
                   <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Last Payment</th>
-                  <th className="px-6 py-3 text-right">Actions</th>
+                  <th className="px-6 py-3 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -411,7 +408,33 @@ export function FeesDashboard({ courses }: Props) {
                       <div className="text-xs text-gray-500">s/o {fee.fatherName}</div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">
-                      {fee.courseName}
+                      <div className="flex flex-col gap-1">
+                        {fee.courses.length > 2 ? (
+                          <>
+                            {fee.courses.slice(0, 2).map((course) => (
+                              <div key={course.id} className="text-xs bg-blue-50 px-2 py-1 rounded">
+                                {course.name}
+                              </div>
+                            ))}
+                            <div className="text-xs font-semibold text-blue-600">
+                              +{fee.courses.length - 2} more
+                            </div>
+                          </>
+                        ) : (
+                          fee.courses.map((course) => (
+                            <div key={course.id} className="text-xs bg-blue-50 px-2 py-1 rounded">
+                              {course.name}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-red-600">
+                      {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      }) : 'N/A'}
                     </td>
                     <td className="px-6 py-4 font-mono">
                       PKR {fee.totalAmount.toLocaleString()}
@@ -427,17 +450,13 @@ export function FeesDashboard({ courses }: Props) {
                         {fee.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-500">
-                      {fee.lastPayment || 'No payments'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => handleViewStudent(fee.studentId)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
-                        title="View student details"
+                    <td className="px-6 py-4 text-center">
+                      <a
+                        href={`/admin/fees?studentId=${fee.studentDbId}`}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium text-xs inline-block"
                       >
-                        <Eye size={16} />
-                      </button>
+                        Collect Fee
+                      </a>
                     </td>
                   </tr>
                 ))}

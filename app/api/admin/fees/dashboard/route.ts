@@ -80,19 +80,20 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    // Process and group fees by student
+    // Process and group fees by student only (not by course)
     const studentFeesMap = new Map()
 
     fees.forEach(fee => {
       const studentId = fee.student.studentId
-      const key = `${studentId}-${fee.enrollment?.courseOnSlot.course.name || 'General'}`
 
-      if (!studentFeesMap.has(key)) {
-        studentFeesMap.set(key, {
+      if (!studentFeesMap.has(studentId)) {
+        studentFeesMap.set(studentId, {
           studentId: fee.student.studentId,
+          studentDbId: fee.student.id,
           studentName: fee.student.name,
           fatherName: fee.student.fatherName,
-          courseName: fee.enrollment?.courseOnSlot.course.name || 'General Fee',
+          courses: [] as { id: string; name: string }[],
+          dueDate: null as string | null,
           month: new Date(startDate).toLocaleString('default', { month: 'long' }),
           year: year,
           totalAmount: 0,
@@ -103,10 +104,23 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      const studentFee = studentFeesMap.get(key)
+      const studentFee = studentFeesMap.get(studentId)
+      const courseName = fee.enrollment?.courseOnSlot.course.name || 'General Fee'
+      const courseId = fee.enrollment?.courseOnSlot.course.id
+      
+      // Add unique courses
+      if (courseId && !studentFee.courses.some((c: any) => c.id === courseId)) {
+        studentFee.courses.push({ id: courseId, name: courseName })
+      }
+
       studentFee.totalAmount += Number(fee.finalAmount)
       studentFee.paidAmount += Number(fee.paidAmount)
       studentFee.pendingAmount += Number(fee.finalAmount) - Number(fee.paidAmount)
+      
+      // Set the latest due date
+      if (!studentFee.dueDate || new Date(fee.dueDate) > new Date(studentFee.dueDate)) {
+        studentFee.dueDate = fee.dueDate.toISOString().split('T')[0]
+      }
 
       // Determine status
       if (studentFee.pendingAmount === 0) {
