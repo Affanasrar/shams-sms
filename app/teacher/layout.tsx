@@ -47,11 +47,13 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-20">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
+            <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="p-2 rounded-md hover:bg-gray-100 -ml-2">
+              <Menu size={20} />
+            </button>
             <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
             <div className="font-semibold">Teacher</div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 rounded-md hover:bg-gray-100"><Menu size={20} /></button>
             <UserButton afterSignOutUrl="/" />
           </div>
         </div>
