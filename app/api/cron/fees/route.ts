@@ -104,23 +104,52 @@ export async function GET() {
         rolloverAmount = Math.max(0, unpaidBalance) // Only positive balances roll over
       }
 
-      // Create the current month fee with rollover
-      const totalAmount = Number(course.baseFee) + rolloverAmount
+      // 🎯 Check for active discounts that apply to this month
+      const activeDiscounts = await prisma.studentDiscount.findMany({
+        where: {
+          enrollmentId: enrollment.id,
+          applicableFromMonth: { lte: monthNumber },
+          applicableToMonth: { gte: monthNumber }
+        }
+      })
+
+      // Calculate discount amount if any discount applies
+      let discountAmount = 0
+      let discountId: string | undefined
+      
+      if (activeDiscounts.length > 0) {
+        const discount = activeDiscounts[0] // Use the first matching discount
+        discountId = discount.id
+        
+        if (discount.discountType === 'FIXED') {
+          discountAmount = Number(discount.discountAmount)
+        } else if (discount.discountType === 'PERCENTAGE') {
+          discountAmount = Number(course.baseFee) * (Number(discount.discountAmount) / 100)
+        }
+      }
+
+      // Create the current month fee with rollover and discount applied
+      const baseAmount = Number(course.baseFee) - discountAmount
+      const totalAmount = baseAmount + rolloverAmount
+      
       await prisma.fee.create({
         data: {
           studentId: enrollment.studentId,
           enrollmentId: enrollment.id,
           amount: course.baseFee,
+          discountAmount: discountAmount,
           rolloverAmount: rolloverAmount, // Track previous month balance
-          finalAmount: totalAmount, // Total = current month + rollover
+          finalAmount: totalAmount, // Total = (current month - discount) + rollover
           dueDate: dueDate,
           cycleDate: cycleDate,
-          status: 'UNPAID'
+          status: 'UNPAID',
+          discountId: discountId
         }
       })
 
+      const discountInfo = discountAmount > 0 ? ` (- PKR ${discountAmount} discount)` : ''
       const rolloverInfo = rolloverAmount > 0 ? ` (+ PKR ${rolloverAmount} rollover from previous month)` : ''
-      console.log(`✅ Created fee for ${enrollment.student.name} - Month ${monthNumber} - Due: ${dueDate.toISOString().split('T')[0]} - Amount: PKR ${totalAmount}${rolloverInfo}`)
+      console.log(`✅ Created fee for ${enrollment.student.name} - Month ${monthNumber} - Due: ${dueDate.toISOString().split('T')[0]} - Amount: PKR ${totalAmount}${discountInfo}${rolloverInfo}`)
       feesCreated++
     }
 
