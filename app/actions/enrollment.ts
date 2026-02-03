@@ -69,7 +69,11 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
 
     // ---------------------------------------------------------
     // 6. 👇 NEW: GENERATE THE FIRST INVOICE IMMEDIATELY
+    // Normalize `cycleDate` to the first day of the month so
+    // it matches cron job expectations and avoids duplicates.
     // ---------------------------------------------------------
+    const cycleDate = new Date(today.getFullYear(), today.getMonth(), 1)
+
     await tx.fee.create({
       data: {
         studentId: studentId,
@@ -77,7 +81,7 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
         amount: courseFee,       // Charge the Course Fee
         finalAmount: courseFee,  // Same as amount initially (no discount)
         dueDate: today,          // Due Today
-        cycleDate: today,        // Billing cycle starts today
+        cycleDate: cycleDate,    // Billing cycle normalized to month start
         status: 'UNPAID'
       }
     })
