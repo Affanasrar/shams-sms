@@ -275,6 +275,41 @@ export async function changeTeacherForm(formData: FormData) {
   }
 }
 
+// Change Slot Room
+export async function changeSlotRoom(formData: FormData) {
+  const assignmentId = formData.get('assignmentId') as string
+  const slotId = formData.get('slotId') as string
+
+  if (!assignmentId || !slotId) {
+    throw new Error("Please select assignment and slot.")
+  }
+
+  try {
+    // Check if the new slot already has the same course assigned
+    const existingAssignment = await prisma.courseOnSlot.findFirst({
+      where: {
+        slotId: slotId,
+        courseId: (await prisma.courseOnSlot.findUnique({ where: { id: assignmentId } }))?.courseId
+      }
+    })
+
+    if (existingAssignment && existingAssignment.id !== assignmentId) {
+      throw new Error("This course is already assigned to the selected slot")
+    }
+
+    await prisma.courseOnSlot.update({
+      where: { id: assignmentId },
+      data: { slotId }
+    })
+    
+    revalidatePath('/admin/settings')
+    revalidatePath('/admin/schedule')
+  } catch (e) {
+    console.error(e)
+    throw new Error(e instanceof Error ? e.message : "Failed to change slot/room")
+  }
+}
+
 // Delete Assignment (for forms)
 export async function deleteAssignmentForm(formData: FormData) {
   const id = formData.get('id') as string

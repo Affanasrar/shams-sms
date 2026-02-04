@@ -23,6 +23,7 @@ import {
   editSlot,
   deleteSlot,
   changeTeacherForm,
+  changeSlotRoom,
   deleteAssignmentForm
 } from '@/app/actions/settings'
 import { FeeType } from '@prisma/client'
@@ -90,6 +91,18 @@ export function ManagementPanel({ rooms, courses, coursesWithAssignments, slots,
       try {
         await changeTeacherForm(formData)
         return { success: true, message: "Teacher changed successfully" }
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      }
+    },
+    initialState
+  )
+
+  const [changeRoomState, changeRoomAction, changeRoomPending] = useActionState<ActionState, FormData>(
+    async (prevState, formData) => {
+      try {
+        await changeSlotRoom(formData)
+        return { success: true, message: "Room changed successfully" }
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
       }
@@ -203,10 +216,14 @@ export function ManagementPanel({ rooms, courses, coursesWithAssignments, slots,
                 <AssignmentManagement
                   courses={coursesWithAssignments}
                   slots={slots}
+                  rooms={rooms}
                   teachers={teachers}
                   changeTeacherState={changeTeacherState}
                   changeTeacherAction={changeTeacherAction}
                   changeTeacherPending={changeTeacherPending}
+                  changeRoomState={changeRoomState}
+                  changeRoomAction={changeRoomAction}
+                  changeRoomPending={changeRoomPending}
                   handleDeleteAssignment={handleDeleteAssignment}
                   editingItem={editingItem}
                   setEditingItem={setEditingItem}
@@ -542,13 +559,17 @@ function SlotManagement({ slots, rooms, editSlotState, editSlotAction, editSlotP
 }
 
 // Assignment Management Component
-function AssignmentManagement({ courses, slots, teachers, changeTeacherState, changeTeacherAction, changeTeacherPending, handleDeleteAssignment, editingItem, setEditingItem }: {
+function AssignmentManagement({ courses, slots, rooms, teachers, changeTeacherState, changeTeacherAction, changeTeacherPending, changeRoomState, changeRoomAction, changeRoomPending, handleDeleteAssignment, editingItem, setEditingItem }: {
   courses: CourseWithAssignments[]
   slots: any[]
+  rooms: any[]
   teachers: any[]
   changeTeacherState: ActionState
   changeTeacherAction: any
   changeTeacherPending: boolean
+  changeRoomState: ActionState
+  changeRoomAction: any
+  changeRoomPending: boolean
   handleDeleteAssignment: any
   editingItem: any
   setEditingItem: any
@@ -642,6 +663,48 @@ function AssignmentManagement({ courses, slots, teachers, changeTeacherState, ch
               </button>
             </div>
             <StatusAlert state={changeTeacherState} />
+          </form>
+        </div>
+      )}
+
+      {editingItem && editingItem.courseName && (
+        <div className="border-t pt-6">
+          <h3 className="text-lg font-semibold mb-4">Change Room for {editingItem.courseName}</h3>
+          <form action={changeRoomAction} className="space-y-4">
+            <input type="hidden" name="assignmentId" value={editingItem.id} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">New Room</label>
+              <select
+                name="slotId"
+                defaultValue={editingItem.slotId || ''}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">-- Choose Room --</option>
+                {slots.map((slot: any) => (
+                  <option key={slot.id} value={slot.id}>
+                    {slot.room.name} • {slot.days}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={changeRoomPending}
+                className="bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700 disabled:opacity-50"
+              >
+                {changeRoomPending ? 'Changing...' : 'Change Room'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingItem(null)}
+                className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+            <StatusAlert state={changeRoomState} />
           </form>
         </div>
       )}
