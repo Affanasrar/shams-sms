@@ -27,12 +27,7 @@ export async function GET() {
             course: true
           }
         },
-        student: true,
-        fees: {
-          where: {
-            cycleDate: cycleDate
-          }
-        }
+        student: true
       }
     })
 
@@ -49,8 +44,19 @@ export async function GET() {
         continue
       }
 
-      // Check if fee already exists for this cycle
-      if (enrollment.fees.length > 0) {
+      // ⭐ CRITICAL: Check if fee already exists for this cycle
+      // Use a separate query with proper date comparison
+      const existingFee = await prisma.fee.findFirst({
+        where: {
+          enrollmentId: enrollment.id,
+          cycleDate: {
+            gte: cycleDate,
+            lt: new Date(cycleDate.getTime() + 86400000) // cycleDate + 1 day
+          }
+        }
+      })
+
+      if (existingFee) {
         feesSkipped++
         continue
       }
@@ -79,8 +85,12 @@ export async function GET() {
       }
 
       // ⭐ CRITICAL FIX: Only create fee if due date has already passed (or is today)
+      // Set time to midnight for proper date comparison
+      const nowAtMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const dueDateAtMidnight = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate())
+      
       // Don't create fees for future due dates
-      if (dueDate > now) {
+      if (dueDateAtMidnight > nowAtMidnight) {
         console.log(`⏩ Skipped ${enrollment.student.name} - Due date (${dueDate.toISOString().split('T')[0]}) is in the future`)
         feesSkipped++
         continue
