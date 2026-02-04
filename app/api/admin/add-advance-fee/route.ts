@@ -55,6 +55,25 @@ export async function POST(request: NextRequest) {
     // Set cycle date to current month
     const cycleDate = new Date(today.getFullYear(), today.getMonth(), 1)
 
+    // ⭐ CRITICAL: Check if fee already exists for this enrollment and cycle
+    // Prevent duplicate advance fees from being created multiple times
+    const existingAdvanceFee = await prisma.fee.findFirst({
+      where: {
+        enrollmentId: enrollmentId,
+        cycleDate: {
+          gte: cycleDate,
+          lt: new Date(cycleDate.getTime() + 86400000) // cycleDate + 1 day
+        }
+      }
+    })
+
+    if (existingAdvanceFee) {
+      return NextResponse.json(
+        { error: `Fee already exists for this student in ${cycleDate.toISOString().split('T')[0]}. Total fees for this month: PKR ${Number(existingAdvanceFee.finalAmount)}` },
+        { status: 400 }
+      )
+    }
+
     const newFee = await prisma.fee.create({
       data: {
         studentId: enrollment.studentId,
@@ -63,6 +82,7 @@ export async function POST(request: NextRequest) {
         discountAmount: 0,
         finalAmount: amount,
         paidAmount: 0,
+        rolloverAmount: 0,
         dueDate: dueDate,
         status: 'UNPAID',
         cycleDate: cycleDate

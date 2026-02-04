@@ -58,12 +58,25 @@ export async function applyStudentDiscount(prevState: any, formData: FormData) {
     })
 
     // Now update the fees for affected months
+    // Calculate the actual calendar dates based on enrollment joining date
+    const joiningDate = enrollment.joiningDate
+    const joiningMonth = joiningDate.getMonth() // 0-based
+    const joiningYear = joiningDate.getFullYear()
+    
+    // Calculate start date: joining date + (applicableFromMonth - 1) months
+    const startMonth = joiningMonth + (validated.data.applicableFromMonth - 1)
+    const startDate = new Date(joiningYear, startMonth, 1)
+    
+    // Calculate end date: joining date + (applicableToMonth) months
+    const endMonth = joiningMonth + applicableToMonth
+    const endDate = new Date(joiningYear, endMonth + 1, 0) // Last day of applicable month
+    
     const affectedFees = await prisma.fee.findMany({
       where: {
         enrollmentId: validated.data.enrollmentId,
         cycleDate: {
-          gte: new Date(new Date().getFullYear(), validated.data.applicableFromMonth - 1, 1),
-          lte: new Date(new Date().getFullYear(), applicableToMonth, 0)
+          gte: startDate,
+          lte: endDate
         }
       }
     })

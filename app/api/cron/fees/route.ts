@@ -73,6 +73,17 @@ export async function GET() {
         continue
       }
 
+      // ⭐ CRITICAL: Only process fees for the CURRENT MONTH
+      // Prevent fees from being created for past or future months
+      const expectedCycleMonth = new Date(joiningDate.getFullYear(), joiningDate.getMonth() + monthsDiff, 1)
+      
+      // Verify the calculated cycle date matches our current month processing
+      if (expectedCycleMonth.getFullYear() !== currentYear || expectedCycleMonth.getMonth() !== currentMonth) {
+        console.log(`⏭️ Skipped ${enrollment.student.name} - Not due this month (Month ${monthNumber} cycles in different month)`)
+        feesSkipped++
+        continue
+      }
+
       // Calculate due date based on student's joining date
       // Use the same day of month as joining date
       const joiningDay = joiningDate.getDate()
