@@ -47,6 +47,12 @@ export default function NewDiscountPage({ enrollments }: any) {
           </div>
         )}
 
+        <div className="mb-6 p-4 bg-blue-100 border border-blue-400 text-blue-800 rounded-lg">
+          <strong>Note:</strong> Discounts are only applied to unpaid or partially paid fees. 
+          If a student has already paid their fees in full, the discount will not affect those months. 
+          This ensures fair billing and prevents over-refunds.
+        </div>
+
         <form action={formAction} className="space-y-6">
           
           {/* Enrollment Selection */}

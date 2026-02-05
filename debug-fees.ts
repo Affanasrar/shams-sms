@@ -36,9 +36,11 @@ async function debugFees() {
   }
 
   // Show duplicates
+  let hasDuplicates = false
   for (const key in grouped) {
     const groupFees = grouped[key]
     if (groupFees.length > 1) {
+      hasDuplicates = true
       const first = groupFees[0]
       const student = studentMap.get(first.studentId)
       console.log(`⚠️ DUPLICATE FOUND: Enrollment ${first.enrollmentId}`)
@@ -46,10 +48,14 @@ async function debugFees() {
       console.log(`   Cycle Date: ${first.cycleDate.toISOString().split('T')[0]}`)
       console.log(`   Count: ${groupFees.length}`)
       groupFees.forEach((f, i) => {
-        console.log(`   [${i + 1}] Amount: ${f.finalAmount} | Discount: ${f.discountAmount}`)
+        console.log(`   [${i + 1}] ID: ${f.id} | Amount: ${f.finalAmount} | Discount: ${f.discountAmount} | Paid: ${f.paidAmount}`)
       })
       console.log()
     }
+  }
+
+  if (!hasDuplicates) {
+    console.log('✅ No duplicate fees found!')
   }
 
   // Show all fees with details

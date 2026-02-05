@@ -57,26 +57,40 @@ export async function applyStudentDiscount(prevState: any, formData: FormData) {
       }
     })
 
-    // Now update the fees for affected months
-    // Calculate the actual calendar dates based on enrollment joining date
+    // Calculate the actual cycle dates that match the cron job logic
+    // The cron job creates fees with cycleDate = new Date(year, month, 1) where month is based on joining date + monthsDiff
     const joiningDate = enrollment.joiningDate
-    const joiningMonth = joiningDate.getMonth() // 0-based
     const joiningYear = joiningDate.getFullYear()
+    const joiningMonth = joiningDate.getMonth() // 0-based
     
-    // Calculate start date: joining date + (applicableFromMonth - 1) months
-    const startMonth = joiningMonth + (validated.data.applicableFromMonth - 1)
-    const startDate = new Date(joiningYear, startMonth, 1)
+    // Calculate which month number this enrollment is currently in
+    const currentDate = new Date()
+    const currentYear = currentDate.getFullYear()
+    const currentMonth = currentDate.getMonth()
     
-    // Calculate end date: joining date + (applicableToMonth) months
-    const endMonth = joiningMonth + applicableToMonth
-    const endDate = new Date(joiningYear, endMonth + 1, 0) // Last day of applicable month
+    // For each applicable month, calculate the corresponding cycle date
+    const affectedCycleDates: Date[] = []
     
+    for (let monthNum = validated.data.applicableFromMonth; monthNum <= applicableToMonth; monthNum++) {
+      // Calculate the target month: joining month + (monthNum - 1)
+      const targetMonth = joiningMonth + (monthNum - 1)
+      const targetYear = joiningYear + Math.floor(targetMonth / 12)
+      const targetMonthNormalized = targetMonth % 12
+      
+      // Create cycle date (1st of the target month)
+      const cycleDate = new Date(targetYear, targetMonthNormalized, 1)
+      affectedCycleDates.push(cycleDate)
+    }
+    
+    // Find fees with these cycle dates (only unpaid or partially paid fees)
     const affectedFees = await prisma.fee.findMany({
       where: {
         enrollmentId: validated.data.enrollmentId,
         cycleDate: {
-          gte: startDate,
-          lte: endDate
+          in: affectedCycleDates
+        },
+        status: {
+          in: ['UNPAID', 'PARTIAL'] // Only apply discounts to fees that haven't been fully paid
         }
       }
     })
@@ -91,7 +105,7 @@ export async function applyStudentDiscount(prevState: any, formData: FormData) {
         discountAmount = Number(fee.amount) * (validated.data.discountAmount / 100)
       }
 
-      const finalAmount = Number(fee.amount) - discountAmount
+      const finalAmount = (Number(fee.amount) - discountAmount) + Number(fee.rolloverAmount)
 
       await prisma.fee.update({
         where: { id: fee.id },
@@ -123,9 +137,14 @@ export async function removeStudentDiscount(discountId: string) {
       return { success: false, error: 'Discount not found' }
     }
 
-    // Get the fees to revert
+    // Get the fees to revert (only unpaid or partially paid fees)
     const feesToRevert = await prisma.fee.findMany({
-      where: { discountId: discountId }
+      where: {
+        discountId: discountId,
+        status: {
+          in: ['UNPAID', 'PARTIAL'] // Only revert discounts on unpaid fees
+        }
+      }
     })
 
     // Revert each fee individually
@@ -135,7 +154,7 @@ export async function removeStudentDiscount(discountId: string) {
         data: {
           discountId: null,
           discountAmount: 0,
-          finalAmount: fee.amount // Reset to original amount
+          finalAmount: Number(fee.amount) + Number(fee.rolloverAmount) // Reset to original amount + rollover
         }
       })
     }

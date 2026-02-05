@@ -38,6 +38,14 @@ export default async function DiscountsPage() {
         Apply New Discount
       </Link>
 
+      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h3 className="text-sm font-medium text-blue-800 mb-1">Discount Policy</h3>
+        <p className="text-sm text-blue-700">
+          Discounts are only applied to unpaid or partially paid fees. Removing a discount will only affect 
+          unpaid fees to prevent billing inconsistencies. This ensures fair treatment for all students.
+        </p>
+      </div>
+
       {discounts.length > 0 ? (
         <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
           <table className="w-full text-sm text-left">
