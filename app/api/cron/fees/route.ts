@@ -45,14 +45,11 @@ export async function GET() {
       }
 
       // ⭐ CRITICAL: Check if fee already exists for this cycle
-      // Use a separate query with proper date comparison
+      // Use exact cycleDate match for this enrollment
       const existingFee = await prisma.fee.findFirst({
         where: {
           enrollmentId: enrollment.id,
-          cycleDate: {
-            gte: cycleDate,
-            lt: new Date(cycleDate.getTime() + 86400000) // cycleDate + 1 day
-          }
+          cycleDate: cycleDate
         }
       })
 
