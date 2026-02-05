@@ -21,7 +21,16 @@ export default async function EnrollmentIndex(props: Props) {
 
   // 2. Fetch Filter Options
   const courses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
+  
+  // Fetch slots - filter by course if one is selected
   const slots = await prisma.slot.findMany({
+    where: courseId ? {
+      courses: {
+        some: {
+          courseId: courseId
+        }
+      }
+    } : undefined,
     include: { room: true },
     orderBy: { startTime: 'asc' }
   })

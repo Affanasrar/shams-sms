@@ -24,6 +24,10 @@ export function EnrollmentFilters({ courses, slots }: Props) {
     const params = new URLSearchParams(searchParams.toString())
     if (value) {
       params.set(key, value)
+      // If changing course, clear slot selection since slots are filtered by course
+      if (key === 'courseId') {
+        params.delete('slotId')
+      }
     } else {
       params.delete(key)
     }
