@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-xs text-gray-400">Admin Console</p>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2 mt-4">
+        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
           <NavLink href="/admin" icon={<LayoutDashboard size={20}/>} label="Overview" />
           <NavLink href="/admin/students" icon={<Users size={20}/>} label="Students" />
           <NavLink href="/admin/students/cleanup" icon={<Trash2 size={20}/>} label="Fees Cleanup" />

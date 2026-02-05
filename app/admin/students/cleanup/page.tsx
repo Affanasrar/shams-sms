@@ -1,7 +1,7 @@
 // app/admin/students/cleanup/page.tsx
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useState, useTransition } from 'react'
 import { searchStudentAction, deleteStudentFeesAction } from '@/app/actions/student-cleanup'
 import { Trash2, Search, User, DollarSign, Calendar, CreditCard } from 'lucide-react'
 
@@ -58,25 +58,51 @@ interface StudentData {
 }
 
 export default function StudentCleanupPage() {
-  const [searchState, searchAction, searchPending] = useActionState(searchStudentAction, null)
-  const [deleteState, deleteAction, deletePending] = useActionState(deleteStudentFeesAction, null)
   const [studentData, setStudentData] = useState<StudentData | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [searchPending, startSearchTransition] = useTransition()
+  const [deletePending, startDeleteTransition] = useTransition()
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [deleteResult, setDeleteResult] = useState<any>(null)
 
-  // Update student data when search completes successfully
-  if (searchState?.success && searchState.data && !studentData) {
-    setStudentData(searchState.data)
+  const handleSearch = async (formData: FormData) => {
+    const studentId = formData.get('studentId') as string
+
+    if (!studentId || studentId.trim() === '') {
+      setSearchError('Student ID is required')
+      return
+    }
+
+    setSearchError(null)
+    startSearchTransition(async () => {
+      try {
+        const result = await searchStudentAction(null, formData)
+        if (result.success && result.data) {
+          setStudentData(result.data)
+        } else {
+          setSearchError(result.error || 'Student not found')
+          setStudentData(null)
+        }
+      } catch (error) {
+        setSearchError('An unexpected error occurred')
+        setStudentData(null)
+      }
+    })
   }
 
-  // Clear student data when delete completes
-  if (deleteState?.success) {
-    setStudentData(null)
-    setConfirmDelete(false)
-  }
-
-  const handleNewSearch = () => {
-    setStudentData(null)
-    setConfirmDelete(false)
+  const handleDelete = async (formData: FormData) => {
+    startDeleteTransition(async () => {
+      try {
+        const result = await deleteStudentFeesAction(null, formData)
+        setDeleteResult(result)
+        if (result.success) {
+          setStudentData(null)
+          setConfirmDelete(false)
+        }
+      } catch (error) {
+        setDeleteResult({ success: false, error: 'An unexpected error occurred' })
+      }
+    })
   }
 
   return (
@@ -96,7 +122,7 @@ export default function StudentCleanupPage() {
             <Search className="h-5 w-5" />
             Search Student
           </h2>
-          <form action={searchAction} className="space-y-4">
+          <form action={handleSearch} className="space-y-4">
             <div>
               <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-1">
                 Student ID
@@ -106,7 +132,6 @@ export default function StudentCleanupPage() {
                 name="studentId"
                 placeholder="e.g., SCI-2601-001"
                 required
-                onChange={handleNewSearch}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -119,9 +144,9 @@ export default function StudentCleanupPage() {
             </button>
           </form>
 
-          {searchState && !searchState.success && (
+          {searchError && (
             <div className="mt-4 p-4 border border-red-200 bg-red-50 rounded-md">
-              <p className="text-red-800">{searchState.error}</p>
+              <p className="text-red-800">{searchError}</p>
             </div>
           )}
         </div>
@@ -300,7 +325,7 @@ export default function StudentCleanupPage() {
               Total amount that will be removed: <strong>PKR {studentData.summary.totalAmount.toLocaleString()}</strong>
             </p>
 
-            <form action={deleteAction} className="space-y-4">
+            <form action={handleDelete} className="space-y-4">
               <input type="hidden" name="studentId" value={studentData.student.studentId} />
               <div className="flex gap-2">
                 <button
@@ -320,15 +345,15 @@ export default function StudentCleanupPage() {
               </div>
             </form>
 
-            {deleteState && !deleteState.success && 'error' in deleteState && (
+            {deleteResult && !deleteResult.success && 'error' in deleteResult && (
               <div className="mt-4 p-4 border border-red-200 bg-red-50 rounded-md">
-                <p className="text-red-800">{deleteState.error}</p>
+                <p className="text-red-800">{deleteResult.error}</p>
               </div>
             )}
 
-            {deleteState && deleteState.success && 'message' in deleteState && (
+            {deleteResult && deleteResult.success && 'message' in deleteResult && (
               <div className="mt-4 p-4 border border-green-200 bg-green-50 rounded-md">
-                <p className="text-green-800">{deleteState.message}</p>
+                <p className="text-green-800">{deleteResult.message}</p>
               </div>
             )}
           </div>
