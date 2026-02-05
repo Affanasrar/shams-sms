@@ -5,13 +5,24 @@ import { CollectButton } from './collect-button'
 import { EarlyFeeCollection } from './early-fee-collection'
 import { ArrowLeft } from 'lucide-react'
 
-export default async function FeesPage({ searchParams }: { searchParams: { studentId?: string } }) {
+export default async function FeesPage({ searchParams }: { searchParams: { studentId?: string, search?: string } }) {
   const studentId = searchParams.studentId
+  const search = searchParams.search
 
   // Build where clause
   const whereClause: any = { status: 'UNPAID' }
   if (studentId) {
     whereClause.student = { id: studentId }
+  }
+  if (search) {
+    whereClause.student = {
+      ...whereClause.student,
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { studentId: { contains: search, mode: 'insensitive' } },
+        { fatherName: { contains: search, mode: 'insensitive' } }
+      ]
+    }
   }
 
   const dueFees = await prisma.fee.findMany({
@@ -84,12 +95,32 @@ export default async function FeesPage({ searchParams }: { searchParams: { stude
 
       <EarlyFeeCollection adminId={adminId} />
 
+      <div className="bg-white border rounded-lg p-4 shadow-sm">
+        <form method="GET" className="flex gap-2">
+          <input
+            type="text"
+            name="search"
+            placeholder="Search by Student Name, ID, or Father Name"
+            defaultValue={search || ''}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+          >
+            Search
+          </button>
+        </form>
+      </div>
+
       <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
         <table className="w-full text-sm text-left">
           <thead className="bg-red-50 border-b text-red-900">
             <tr>
               <th className="px-6 py-3">Due Date</th>
+              <th className="px-6 py-3">Student ID</th>
               <th className="px-6 py-3">Student</th>
+              <th className="px-6 py-3">Father Name</th>
               <th className="px-6 py-3">Course</th>
               <th className="px-6 py-3">Fee Details</th>
               <th className="px-6 py-3 text-right">Action</th>
@@ -107,7 +138,9 @@ export default async function FeesPage({ searchParams }: { searchParams: { stude
                   <td className="px-6 py-4 font-bold text-red-600">
                     {new Date(fee.dueDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
                   </td>
+                  <td className="px-6 py-4 font-medium">{fee.student.studentId}</td>
                   <td className="px-6 py-4 font-medium">{fee.student.name}</td>
+                  <td className="px-6 py-4 font-medium">{fee.student.fatherName}</td>
                   
                   <td className="px-6 py-4 text-gray-500">
                     {courseName}
@@ -140,7 +173,7 @@ export default async function FeesPage({ searchParams }: { searchParams: { stude
             
             {dueFees.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-gray-500">
+                <td colSpan={7} className="p-8 text-center text-gray-500">
                   ✅ No pending fees. Good job!
                 </td>
               </tr>
