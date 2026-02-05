@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server"; // 👈 New Import
 import prisma from "@/lib/prisma";            // 👈 New Import
 import { redirect } from "next/navigation";   // 👈 New Import
 import Link from "next/link";
-import { LayoutDashboard, Users, Calendar, DollarSign, BookOpen, Settings, CheckSquare } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, DollarSign, BookOpen, Settings, CheckSquare, Trash2 } from "lucide-react";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // 1. Get the current User ID
@@ -38,6 +38,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <nav className="flex-1 px-4 space-y-2 mt-4">
           <NavLink href="/admin" icon={<LayoutDashboard size={20}/>} label="Overview" />
           <NavLink href="/admin/students" icon={<Users size={20}/>} label="Students" />
+          <NavLink href="/admin/students/cleanup" icon={<Trash2 size={20}/>} label="Fees Cleanup" />
           <NavLink href="/admin/enrollment" icon={<BookOpen size={20}/>} label="Enrollment" />
           <NavLink href="/admin/attendance" icon={<CheckSquare size={20}/>} label="Attendance" />
           <NavLink href="/admin/fees/dashboard" icon={<DollarSign size={20}/>} label="Fees Dashboard" />
