@@ -5,16 +5,23 @@ import { CollectButton } from './collect-button'
 import { EarlyFeeCollection } from './early-fee-collection'
 import { ArrowLeft } from 'lucide-react'
 
-export default async function FeesPage({ searchParams }: { searchParams: { studentId?: string, search?: string } }) {
-  const studentId = searchParams.studentId
-  const search = searchParams.search
+// 👇 Define the props type correctly for Next.js 15+
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function FeesPage(props: Props) {
+  // 1. 👇 AWAIT the searchParams
+  const searchParams = await props.searchParams
+  const studentId = searchParams.studentId as string | undefined
+  const search = searchParams.search as string | undefined
 
   // Build where clause
   const whereClause: any = { status: 'UNPAID' }
   
   if (studentId) {
     whereClause.student = { id: studentId }
-  } else if (search) {
+  } else if (search && search.trim()) {
     whereClause.OR = [
       { student: { name: { contains: search, mode: 'insensitive' } } },
       { student: { studentId: { contains: search, mode: 'insensitive' } } },
