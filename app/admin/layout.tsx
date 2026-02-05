@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-xs text-gray-400">Admin Console</p>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
+        <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto min-h-0">
           <NavLink href="/admin" icon={<LayoutDashboard size={20}/>} label="Overview" />
           <NavLink href="/admin/students" icon={<Users size={20}/>} label="Students" />
           <NavLink href="/admin/students/cleanup" icon={<Trash2 size={20}/>} label="Fees Cleanup" />
@@ -47,7 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <NavLink href="/admin/settings" icon={<Settings size={20}/>} label="Configuration" />
         </nav>
 
-        <div className="absolute bottom-0 w-64 p-6 border-t border-gray-800 bg-black">
+        <div className="p-6 border-t border-gray-800 bg-black flex-shrink-0">
            <div className="flex items-center gap-3">
              <UserButton afterSignOutUrl="/" />
              <span className="text-sm">My Profile</span>

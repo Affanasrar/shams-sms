@@ -11,18 +11,15 @@ export default async function FeesPage({ searchParams }: { searchParams: { stude
 
   // Build where clause
   const whereClause: any = { status: 'UNPAID' }
+  
   if (studentId) {
     whereClause.student = { id: studentId }
-  }
-  if (search) {
-    whereClause.student = {
-      ...whereClause.student,
-      OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { studentId: { contains: search, mode: 'insensitive' } },
-        { fatherName: { contains: search, mode: 'insensitive' } }
-      ]
-    }
+  } else if (search) {
+    whereClause.OR = [
+      { student: { name: { contains: search, mode: 'insensitive' } } },
+      { student: { studentId: { contains: search, mode: 'insensitive' } } },
+      { student: { fatherName: { contains: search, mode: 'insensitive' } } }
+    ]
   }
 
   const dueFees = await prisma.fee.findMany({
