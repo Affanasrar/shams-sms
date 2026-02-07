@@ -6,6 +6,8 @@ import { LayoutDashboard, CheckSquare, GraduationCap, Calendar, Menu, X, FileTex
 import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from 'next/navigation'
+import TeacherPWABanner from "./pwa-banner"
+import OfflineIndicator from "./offline-indicator"
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -13,9 +15,10 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      <OfflineIndicator />
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 bg-white border-r fixed top-0 left-0 bottom-0 z-10">
+      <aside className="hidden md:flex flex-col w-72 bg-white border-r fixed top-0 left-0 bottom-0 z-10 safe-padding">
         <div className="p-6 border-b flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
           <div>
@@ -44,7 +47,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       </aside>
 
       {/* Mobile Topbar */}
-      <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-20">
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-20 safe-padding pt-safe">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="p-2 rounded-md hover:bg-gray-100 -ml-2">
@@ -94,7 +97,8 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 pt-20 md:pt-8 px-4 md:px-8 pb-24 md:pb-8">
+      <main className="flex-1 md:ml-72 pt-20 md:pt-8 px-4 md:px-8 pb-24 md:pb-8 safe-padding-bottom">
+        <TeacherPWABanner />
         {children}
       </main>
     </div>
@@ -106,7 +110,7 @@ function NavLink({ href, icon, label, active }: { href: string, icon: React.Reac
     <Link 
       href={href} 
       aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'}`}
+      className={`flex items-center gap-3 px-4 py-3 min-h-12 rounded-lg transition-colors font-medium touch-target ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'}`}
     >
       {icon}
       <span>{label}</span>
@@ -120,7 +124,7 @@ function MobileNavLink({ href, icon, label, onClick, active }: { href: string, i
       href={href} 
       onClick={onClick}
         aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium text-lg ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'}`}
+      className={`flex items-center gap-3 px-4 py-3 min-h-12 rounded-lg transition-colors font-medium text-lg touch-target ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'}`}
     >
       {icon}
       <span>{label}</span>
@@ -130,7 +134,7 @@ function MobileNavLink({ href, icon, label, onClick, active }: { href: string, i
 
 function MobileIcon({ href, label, icon, active }: { href: string; label: string; icon: React.ReactNode; active?: boolean }) {
   return (
-    <Link href={href} aria-current={active ? 'page' : undefined} className={`flex-1 flex flex-col items-center justify-center text-xs ${active ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}>
+    <Link href={href} aria-current={active ? 'page' : undefined} className={`flex-1 flex flex-col items-center justify-center text-xs min-h-12 touch-target ${active ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}>
       <div className="p-1">{icon}</div>
       <div className="mt-0.5">{label}</div>
     </Link>
