@@ -26,12 +26,12 @@ export default function PWAInstaller() {
     // Log manifest status
     const manifestLink = document.querySelector('link[rel="manifest"]')
     if (manifestLink) {
-      fetch('/manifest.json')
+      fetch('/manifest')
         .then((res) => {
           if (res.ok) {
-            console.log('✓ Manifest.json is accessible')
+            console.log('✓ Manifest is accessible')
           } else {
-            console.error('✗ Manifest.json returned status:', res.status)
+            console.error('✗ Manifest returned status:', res.status)
           }
         })
         .catch((err) => {

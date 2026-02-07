@@ -12,12 +12,25 @@ export default function TeacherPWABanner() {
 
   useEffect(() => {
     const logs: string[] = []
+    console.log('🔵 TeacherPWABanner component mounted')
 
     // Check if PWA already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       logs.push('✓ App already installed (running in standalone mode)')
+      console.log('✓ Running in standalone mode')
     } else {
       logs.push('App not yet installed')
+      console.log('Not in standalone mode - dismiss check ignored')
+    }
+
+    // Check if dismissed (only honor if in standalone)
+    const dismissed = sessionStorage.getItem('pwa-banner-dismissed')
+    if (dismissed && window.matchMedia('(display-mode: standalone)').matches) {
+      logs.push('Banner previously dismissed (will honor in standalone mode)')
+      console.log('Banner was dismissed previously')
+    } else {
+      logs.push('Banner can be shown (not dismissed or not in standalone)')
+      console.log('Banner not dismissed or not applicable')
     }
 
     // Check if iOS
@@ -29,6 +42,13 @@ export default function TeacherPWABanner() {
     // Check manifest
     const manifestLink = document.querySelector('link[rel="manifest"]')
     logs.push(`Manifest found: ${manifestLink ? '✓' : '✗'}`)
+    if (manifestLink) {
+      const href = manifestLink.getAttribute('href')
+      console.log(`✓ Manifest link found: ${href}`)
+      logs.push(`Manifest link href: ${href}`)
+    } else {
+      console.log('✗ No manifest link found in DOM')
+    }
 
     // Check service worker support
     logs.push(`Service Worker support: ${navigator.serviceWorker ? '✓' : '✗'}`)
@@ -55,7 +75,10 @@ export default function TeacherPWABanner() {
         logs.push('⚠ No beforeinstallprompt after 5s - showing fallback banner')
         setDebugInfo(logs)
         if (!isiOS && !window.matchMedia('(display-mode: standalone)').matches) {
+          console.log('🟡 Showing fallback PWA banner (5s timeout)')
           setShowBanner(true)
+          // Clear dismissed flag so banner shows
+          sessionStorage.removeItem('pwa-banner-dismissed')
         }
       }
     }, 5000)
