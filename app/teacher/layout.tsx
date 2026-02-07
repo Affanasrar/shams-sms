@@ -6,7 +6,7 @@ import { LayoutDashboard, CheckSquare, GraduationCap, Calendar, Menu, X, FileTex
 import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from 'next/navigation'
-import TeacherPWABanner from "./pwa-banner"
+// PWA banner removed
 import OfflineIndicator from "./offline-indicator"
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
@@ -98,7 +98,6 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
       {/* Main Content Area */}
       <main className="flex-1 md:ml-72 pt-20 md:pt-8 px-4 md:px-8 pb-24 md:pb-8 safe-padding-bottom">
-        <TeacherPWABanner />
         {children}
       </main>
     </div>
