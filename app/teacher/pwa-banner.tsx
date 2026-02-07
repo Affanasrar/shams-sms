@@ -58,7 +58,10 @@ export default function TeacherPWABanner() {
       console.log('✓ beforeinstallprompt event fired')
       e.preventDefault()
       setDeferredPrompt(e)
-      setShowBanner(true)
+      // Only show if not dismissed previously
+      if (!sessionStorage.getItem('pwa-banner-dismissed')) {
+        setShowBanner(true)
+      }
       logs.push('✓ Install prompt available')
       setDebugInfo([...logs, '✓ beforeinstallprompt ready'])
     }
@@ -75,10 +78,10 @@ export default function TeacherPWABanner() {
         logs.push('⚠ No beforeinstallprompt after 5s - showing fallback banner')
         setDebugInfo(logs)
         if (!window.matchMedia('(display-mode: standalone)').matches) {
-          console.log('🟡 Showing fallback PWA banner (5s timeout)')
-          setShowBanner(true)
-          // Clear dismissed flag so banner shows
-          sessionStorage.removeItem('pwa-banner-dismissed')
+          if (!sessionStorage.getItem('pwa-banner-dismissed')) {
+            console.log('🟡 Showing fallback PWA banner (5s timeout)')
+            setShowBanner(true)
+          }
         }
       }
     }, 5000)

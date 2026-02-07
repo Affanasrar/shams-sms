@@ -7,7 +7,7 @@ export default function PWAInstaller() {
     // Register service worker with better error handling
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
-        .register('/sw.js', { scope: '/teacher/' })
+        .register('/sw.js', { scope: '/' })
         .then((registration) => {
           console.log('✓ Service Worker registered:', registration)
         })
@@ -26,7 +26,7 @@ export default function PWAInstaller() {
     // Log manifest status
     const manifestLink = document.querySelector('link[rel="manifest"]')
     if (manifestLink) {
-      fetch('/manifest')
+      fetch('/manifest.json')
         .then((res) => {
           if (res.ok) {
             console.log('✓ Manifest is accessible')

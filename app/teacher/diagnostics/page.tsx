@@ -28,7 +28,7 @@ export default function PWADiagnosticsPage() {
     try {
       const manifestLink = document.querySelector('link[rel="manifest"]')
       if (manifestLink) {
-        const res = await fetch('/manifest')
+        const res = await fetch('/manifest.json')
         newDiagnostics.manifest = res.ok
       }
     } catch (e) {

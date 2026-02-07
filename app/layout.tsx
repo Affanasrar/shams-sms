@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Shams SMS - School Management System",
   description: "Comprehensive school management system for teachers, students, and administrators",
-  manifest: "/manifest",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -57,7 +57,6 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="manifest" href="/manifest" />
         <link rel="icon" type="image/png" href="/icons/favicon-96x96.png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
