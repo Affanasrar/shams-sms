@@ -74,7 +74,7 @@ export default function TeacherPWABanner() {
       if (!deferredPrompt) {
         logs.push('⚠ No beforeinstallprompt after 5s - showing fallback banner')
         setDebugInfo(logs)
-        if (!isiOS && !window.matchMedia('(display-mode: standalone)').matches) {
+        if (!window.matchMedia('(display-mode: standalone)').matches) {
           console.log('🟡 Showing fallback PWA banner (5s timeout)')
           setShowBanner(true)
           // Clear dismissed flag so banner shows

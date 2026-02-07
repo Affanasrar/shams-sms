@@ -3,7 +3,7 @@
   "short_name": "Shams Teacher",
   "description": "Teacher dashboard for managing attendance, schedules, results, and reports",
   "start_url": "/teacher",
-  "scope": "/teacher/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
