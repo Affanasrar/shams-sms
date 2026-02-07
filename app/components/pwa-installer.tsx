@@ -1,54 +1,54 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 export default function PWAInstaller() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [showInstallBanner, setShowInstallBanner] = useState(false)
-
   useEffect(() => {
-    // Register service worker
+    // Register service worker with better error handling
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/teacher/' }).catch((error) => {
-        console.log('Service Worker registration failed:', error)
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/teacher/' })
+        .then((registration) => {
+          console.log('✓ Service Worker registered:', registration)
+        })
+        .catch((error) => {
+          console.error('✗ Service Worker registration failed:', error)
+        })
+
+      // Listen for service worker updates
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('✓ New service worker activated')
       })
+    } else {
+      console.warn('⚠ Service Worker not supported in this browser')
     }
 
-    // Listen for install prompt
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-      // Show install prompt only on teacher routes
-      if (window.location.pathname.startsWith('/teacher')) {
-        setShowInstallBanner(true)
-      }
+    // Log manifest status
+    const manifestLink = document.querySelector('link[rel="manifest"]')
+    if (manifestLink) {
+      fetch('/manifest.json')
+        .then((res) => {
+          if (res.ok) {
+            console.log('✓ Manifest.json is accessible')
+          } else {
+            console.error('✗ Manifest.json returned status:', res.status)
+          }
+        })
+        .catch((err) => {
+          console.error('✗ Failed to fetch manifest:', err)
+        })
+    } else {
+      console.warn('⚠ Manifest link not found in HTML head')
     }
 
-    const handleAppInstalled = () => {
-      setShowInstallBanner(false)
-      setDeferredPrompt(null)
-    }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    window.addEventListener('appinstalled', handleAppInstalled)
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-      window.removeEventListener('appinstalled', handleAppInstalled)
-    }
+    // Log PWA readiness
+    console.log('PWA Status:', {
+      serviceWorker: navigator.serviceWorker ? 'Supported' : 'Not supported',
+      standalone: window.matchMedia('(display-mode: standalone)').matches ? 'App mode' : 'Browser mode',
+      online: navigator.onLine ? 'Online' : 'Offline',
+      https: window.location.protocol === 'https:' ? 'Yes' : 'No (local ok)',
+    })
   }, [])
 
-  const handleInstall = async () => {
-    if (!deferredPrompt) return
-
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null)
-    }
-    setShowInstallBanner(false)
-  }
-
-  return null // No visible UI by default, banner can be shown in teacher layout if needed
+  return null
 }
