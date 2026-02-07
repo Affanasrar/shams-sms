@@ -216,6 +216,11 @@ export default function TeacherPWABanner() {
             {debugInfo.map((log, i) => (
               <div key={i}>{log}</div>
             ))}
+            <div className="mt-2 pt-2 border-t border-gray-700">
+              <a href="/teacher/diagnostics" className="text-blue-400 hover:underline block">
+                Open Full Diagnostics Page →
+              </a>
+            </div>
           </div>
         </div>
       )}
