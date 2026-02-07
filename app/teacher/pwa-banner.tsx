@@ -46,12 +46,54 @@ export default function TeacherPWABanner() {
       const href = manifestLink.getAttribute('href')
       console.log(`✓ Manifest link found: ${href}`)
       logs.push(`Manifest link href: ${href}`)
+
+      // Verify manifest accessibility (Common middleware issue)
+      if (href) {
+        fetch(href)
+          .then((res) => {
+            if (res.status === 200) {
+              const contentType = res.headers.get('content-type')
+              if (contentType?.includes('application/json') || contentType?.includes('application/manifest+json')) {
+                setDebugInfo((prev) => [...prev, '✓ Manifest file accessible (200 OK)'])
+              } else {
+                setDebugInfo((prev) => [
+                  ...prev,
+                  `⚠ Manifest returned ${contentType} (Middleware blocking?)`,
+                ])
+              }
+            } else {
+              setDebugInfo((prev) => [...prev, `✗ Manifest fetch failed: ${res.status}`])
+            }
+          })
+          .catch(() => {
+            setDebugInfo((prev) => [...prev, '✗ Manifest fetch error'])
+          })
+      }
     } else {
       console.log('✗ No manifest link found in DOM')
     }
 
     // Check service worker support
     logs.push(`Service Worker support: ${navigator.serviceWorker ? '✓' : '✗'}`)
+
+    // Check sw.js accessibility
+    fetch('/sw.js')
+      .then((res) => {
+        if (res.status === 200) {
+          const contentType = res.headers.get('content-type')
+          if (contentType?.includes('javascript')) {
+            setDebugInfo((prev) => [...prev, '✓ Service Worker file accessible'])
+          } else {
+            setDebugInfo((prev) => [
+              ...prev,
+              `⚠ sw.js returned ${contentType} (Middleware blocking?)`,
+            ])
+          }
+        } else {
+          setDebugInfo((prev) => [...prev, `✗ sw.js fetch failed: ${res.status}`])
+        }
+      })
+      .catch(() => {})
 
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: any) => {
