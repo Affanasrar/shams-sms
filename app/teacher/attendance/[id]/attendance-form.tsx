@@ -159,15 +159,6 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
         ))}
       </div>
 
-      {/* Floating Quick Actions */}
-      <div className="fixed bottom-16 left-4 right-4 md:right-auto md:left-auto md:bottom-20 z-40 max-w-3xl mx-auto flex justify-center">
-        <div className="bg-white p-3 rounded-xl shadow-lg flex gap-3">
-          <button type="button" onClick={() => setAll('PRESENT')} className="px-4 py-2 bg-green-600 text-white rounded">All Present</button>
-          <button type="button" onClick={() => setAll('ABSENT')} className="px-4 py-2 bg-red-600 text-white rounded">All Absent</button>
-          <button type="button" onClick={() => setAll('LATE')} className="px-4 py-2 bg-amber-500 text-white rounded">All Late</button>
-        </div>
-      </div>
-
       {/* Submit Footer */}
       <div className="p-4 bg-gray-50 border-t flex flex-col gap-3">
         
