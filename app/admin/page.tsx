@@ -85,7 +85,7 @@ export default async function AdminDashboard() {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const start = new Date(d.getFullYear(), d.getMonth(), 1)
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
-    months.push({ month: d.toLocaleString('default', { month: 'short' }), start, end })
+    months.push({ month: d.toLocaleString('en', { month: 'short' }), start, end })
   }
 
   const fees = await prisma.fee.findMany({
