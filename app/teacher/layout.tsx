@@ -14,11 +14,26 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [showInstall, setShowInstall] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // show a tiny skeleton on first load to feel native
+    const t = setTimeout(() => setIsLoading(false), 350)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     // detect standalone / iOS
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone
     if (isStandalone) return
+
+    // iOS Safari doesn't fire `beforeinstallprompt` — show a fallback banner
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    if (isIos && isSafari) {
+      setDeferredPrompt(null)
+      setShowInstall(true)
+    }
 
     const handler = (e: any) => {
       e.preventDefault()
@@ -66,7 +81,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       <header className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-20 safe-padding pt-safe">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsMobileMenuOpen(true)} aria-label="Open menu" className="p-2 rounded-md hover:bg-gray-100 -ml-2">
+            <button onClick={() => { setIsMobileMenuOpen(true); try { navigator.vibrate?.(8) } catch {} }} aria-label="Open menu" className="p-2 rounded-md hover:bg-gray-100 -ml-2">
               <Menu size={20} />
             </button>
             <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
@@ -114,21 +129,44 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
       {/* Main Content Area */}
       <main className="flex-1 md:ml-72 pt-20 md:pt-8 px-4 md:px-8 pb-24 md:pb-8 safe-padding-bottom">
-        {children}
+        {isLoading ? (
+          <div className="space-y-4">
+            <div className="h-6 w-3/5 bg-gray-200 rounded animate-pulse" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-28 bg-gray-200 rounded animate-pulse" />
+              <div className="h-28 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </div>
+        ) : (
+          children
+        )}
         {showInstall && (
-          <div className="fixed bottom-6 right-6 z-50 bg-white border rounded-lg shadow-lg p-3 flex items-center gap-3">
-            <div className="text-sm font-medium">Install Shams</div>
-            <div className="flex items-center gap-2">
-              <button onClick={async () => {
-                if (!deferredPrompt) return
-                try {
-                  await deferredPrompt.prompt()
-                  setShowInstall(false)
-                } catch (err) {
-                  console.error(err)
-                }
-              }} className="px-3 py-1 bg-blue-600 text-white rounded">Install</button>
-              <button onClick={() => setShowInstall(false)} className="px-2 py-1 text-sm text-gray-600">Dismiss</button>
+          <div className="fixed bottom-6 left-6 right-6 md:right-6 md:left-auto z-50 bg-white border rounded-lg shadow-lg p-3 flex items-center gap-3 justify-between max-w-lg mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-medium">Install Shams</div>
+              <div className="text-xs text-gray-500">Get quick access to attendance</div>
+            </div>
+            <div>
+              {deferredPrompt ? (
+                <div className="flex items-center gap-2">
+                  <button onClick={async () => {
+                    if (!deferredPrompt) return
+                    try {
+                      await deferredPrompt.prompt()
+                      setShowInstall(false)
+                    } catch (err) {
+                      console.error(err)
+                    }
+                  }} className="px-3 py-1 bg-blue-600 text-white rounded">Install</button>
+                  <button onClick={() => setShowInstall(false)} className="px-2 py-1 text-sm text-gray-600">Dismiss</button>
+                </div>
+              ) : (
+                // iOS fallback instructions
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setShowInstall(false)} className="px-3 py-1 bg-blue-600 text-white rounded">Got it</button>
+                  <div className="text-xs text-gray-600">Tap Share → Add to Home Screen</div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -166,8 +204,12 @@ function MobileNavLink({ href, icon, label, onClick, active }: { href: string, i
 
 function MobileIcon({ href, label, icon, active }: { href: string; label: string; icon: React.ReactNode; active?: boolean }) {
   return (
-    <Link href={href} aria-current={active ? 'page' : undefined} className={`flex-1 flex flex-col items-center justify-center text-xs min-h-12 touch-target ${active ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}>
-      <div className="p-1">{icon}</div>
+    <Link href={href} aria-current={active ? 'page' : undefined} className={`flex-1 flex flex-col items-center justify-center text-xs min-h-12 touch-target ${active ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`} onClick={() => { try { navigator.vibrate?.(6) } catch {} }}>
+      <div className="p-1 relative">
+        {icon}
+        {/* active dot indicator */}
+        <span className={`absolute left-1/2 -translate-x-1/2 bottom-[-6px] w-2 h-2 rounded-full ${active ? 'bg-blue-600 shadow-md' : 'bg-transparent'}`} />
+      </div>
       <div className="mt-0.5">{label}</div>
     </Link>
   )

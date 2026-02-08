@@ -26,6 +26,11 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
   const [state, action, isPending] = useActionState<ActionState, FormData>(submitAttendance, initialState)
   const [localMessage, setLocalMessage] = useState<string | null>(null)
   const [localError, setLocalError] = useState<string | null>(null)
+  const [statuses, setStatuses] = useState<Record<string,string>>(() => {
+    const map: Record<string,string> = {}
+    for (const e of enrollments) map[e.student.id] = 'PRESENT'
+    return map
+  })
   
   const today = new Date().toISOString().split('T')[0]
 
@@ -35,9 +40,7 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
       const form = e.currentTarget
       const fd = new FormData(form)
       const date = fd.get('date') as string
-      const entries = Array.from(fd.entries())
-        .filter(([k]) => (k as string).startsWith('status_'))
-        .map(([k, v]) => ({ studentId: (k as string).replace('status_', ''), status: v as string }))
+      const entries = Object.keys(statuses).map(id => ({ studentId: id, status: statuses[id] }))
 
       const record = { classId, teacherId, date, entries }
       try {
@@ -45,17 +48,69 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
         // show success message locally
         setLocalMessage('Saved locally — will sync when online.')
         setLocalError(null)
+        try { navigator.vibrate?.(10) } catch {}
       } catch (err) {
         setLocalError('Failed to save offline.')
         setLocalMessage(null)
       }
       return
     }
-    // otherwise let the form submit to the server action
+
+    // Optimistic UI: show saved immediately
+    setLocalMessage('Saving...')
+    try { navigator.vibrate?.(8) } catch {}
+    // allow default submit to server action
+  }
+
+  function cycleStatus(id: string) {
+    setStatuses(prev => {
+      const next = { ...prev }
+      const order = ['PRESENT','LATE','ABSENT']
+      const cur = prev[id] || 'PRESENT'
+      const idx = order.indexOf(cur)
+      next[id] = order[(idx + 1) % order.length]
+      try { navigator.vibrate?.(6) } catch {}
+      return next
+    })
+  }
+
+  function setAll(status: string) {
+    const next: Record<string,string> = {}
+    for (const k of Object.keys(statuses)) next[k] = status
+    setStatuses(next)
+    try { navigator.vibrate?.(12) } catch {}
+  }
+
+  // swipe support (right swipe = present)
+  function attachSwipe(el: HTMLDivElement | null, id: string) {
+    if (!el) return
+    let startX = 0
+    let moved = false
+    const onTouchStart = (e: TouchEvent) => { startX = e.touches[0].clientX; moved = false }
+    const onTouchMove = (e: TouchEvent) => {
+      const dx = e.touches[0].clientX - startX
+      if (Math.abs(dx) > 30) moved = true
+    }
+    const onTouchEnd = () => {
+      if (moved) {
+        setStatuses(prev => ({ ...prev, [id]: 'PRESENT' }))
+        try { navigator.vibrate?.(10) } catch {}
+      }
+    }
+    el.addEventListener('touchstart', onTouchStart)
+    el.addEventListener('touchmove', onTouchMove)
+    el.addEventListener('touchend', onTouchEnd)
+
+    // cleanup when unmounted
+    setTimeout(() => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+    }, 0)
   }
 
   return (
-    <form onSubmit={handleSubmit} action={action} className="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <form onSubmit={handleSubmit} action={action} className="bg-white rounded-xl shadow-sm border overflow-hidden relative">
       
       {/* Hidden Fields */}
       <input type="hidden" name="classId" value={classId} />
@@ -75,23 +130,13 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
         </div>
         <div className="text-sm text-gray-500 flex items-center gap-3">
           <div>Total Students: {enrollments.length}</div>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => {
-              const inputs = document.querySelectorAll<HTMLInputElement>(`input[name^=\"status_\"]`)
-              inputs.forEach(i => { if (i.value === 'PRESENT') i.checked = true })
-            }} className="px-3 py-1 bg-green-600 text-white rounded text-xs">All Present</button>
-            <button type="button" onClick={() => {
-              const inputs = document.querySelectorAll<HTMLInputElement>(`input[name^=\"status_\"]`)
-              inputs.forEach(i => { if (i.value === 'ABSENT') i.checked = true })
-            }} className="px-3 py-1 bg-red-600 text-white rounded text-xs">All Absent</button>
-          </div>
         </div>
       </div>
 
       {/* Student List */}
       <div className="divide-y max-h-[60vh] overflow-y-auto">
         {enrollments.map((enr) => (
-            <div key={enr.student.id} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-gray-50 transition">
+            <div key={enr.student.id} ref={(el) => attachSwipe(el, enr.student.id)} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-gray-50 transition">
             <div className="flex items-center gap-3 flex-1">
               <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm flex-shrink-0">
                 {enr.student.name.charAt(0)}
@@ -103,29 +148,24 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
               </div>
             </div>
 
-            {/* Status Radio Buttons */}
-              <div className="flex bg-gray-100 p-1 rounded-lg self-end sm:self-center">
-                <label className="cursor-pointer">
-                  <input type="radio" name={`status_${enr.student.id}`} value="PRESENT" defaultChecked className="peer sr-only" />
-                  <span className="block px-5 py-3 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-sm transition-all">
-                    Present
-                  </span>
-                </label>
-                <label className="cursor-pointer">
-                  <input type="radio" name={`status_${enr.student.id}`} value="ABSENT" className="peer sr-only" />
-                  <span className="block px-5 py-3 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm transition-all">
-                    Absent
-                  </span>
-                </label>
-                <label className="cursor-pointer">
-                  <input type="radio" name={`status_${enr.student.id}`} value="LATE" className="peer sr-only" />
-                  <span className="block px-5 py-3 rounded-md text-sm font-bold text-gray-500 peer-checked:bg-white peer-checked:text-amber-600 peer-checked:shadow-sm transition-all">
-                    Late
-                  </span>
-                </label>
-              </div>
+            {/* Large Cycle Toggle */}
+            <div className="flex items-center gap-3 self-end sm:self-center">
+              <input type="hidden" name={`status_${enr.student.id}`} value={statuses[enr.student.id]} />
+              <button type="button" onClick={() => cycleStatus(enr.student.id)} className={`px-4 py-3 rounded-lg font-bold text-sm transition-shadow shadow-sm ${statuses[enr.student.id] === 'PRESENT' ? 'bg-green-600 text-white' : statuses[enr.student.id] === 'ABSENT' ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}`}>
+                {statuses[enr.student.id] === 'PRESENT' ? 'Present' : statuses[enr.student.id] === 'ABSENT' ? 'Absent' : 'Late'}
+              </button>
+            </div>
           </div>
         ))}
+      </div>
+
+      {/* Floating Quick Actions */}
+      <div className="fixed bottom-16 left-4 right-4 md:right-auto md:left-auto md:bottom-20 z-40 max-w-3xl mx-auto flex justify-center">
+        <div className="bg-white p-3 rounded-xl shadow-lg flex gap-3">
+          <button type="button" onClick={() => setAll('PRESENT')} className="px-4 py-2 bg-green-600 text-white rounded">All Present</button>
+          <button type="button" onClick={() => setAll('ABSENT')} className="px-4 py-2 bg-red-600 text-white rounded">All Absent</button>
+          <button type="button" onClick={() => setAll('LATE')} className="px-4 py-2 bg-amber-500 text-white rounded">All Late</button>
+        </div>
       </div>
 
       {/* Submit Footer */}

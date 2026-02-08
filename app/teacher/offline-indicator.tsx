@@ -6,27 +6,27 @@ import { flushPendingAttendances } from '@/lib/offline'
 
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true)
-  const [showAlert, setShowAlert] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    // Set initial state
     setIsOnline(navigator.onLine)
 
     const handleOnline = async () => {
       setIsOnline(true)
-      setShowAlert(true)
       // Try to flush pending attendance records
       try {
         await flushPendingAttendances()
       } catch (err) {
         console.error('Error flushing pending attendance', err)
       }
-      setTimeout(() => setShowAlert(false), 3000)
+      // briefly show success pill
+      setVisible(true)
+      setTimeout(() => setVisible(false), 2500)
     }
 
     const handleOffline = () => {
       setIsOnline(false)
-      setShowAlert(true)
+      setVisible(true)
     }
 
     window.addEventListener('online', handleOnline)
@@ -38,27 +38,11 @@ export default function OfflineIndicator() {
     }
   }, [])
 
-  if (!showAlert) return null
+  if (!visible) return null
 
   return (
-    <div
-      className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center gap-3 transition-all ${
-        isOnline
-          ? 'bg-green-100 text-green-800'
-          : 'bg-red-100 text-red-800'
-      }`}
-    >
-      {isOnline ? (
-        <>
-          <Wifi size={18} />
-          <span className="text-sm font-medium">Back online - all data synced</span>
-        </>
-      ) : (
-        <>
-          <WifiOff size={18} />
-          <span className="text-sm font-medium">You are offline - using cached data</span>
-        </>
-      )}
+    <div className={`fixed top-safe right-4 z-50 p-2 rounded-full shadow-md flex items-center gap-2 ${isOnline ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+      {isOnline ? <Wifi size={16} /> : <WifiOff size={16} />}
     </div>
   )
 }

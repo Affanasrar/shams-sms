@@ -4,7 +4,8 @@
   "start_url": "/teacher",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#111827",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icons/web-app-manifest-192x192.png",
