@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { UserButton } from "@clerk/nextjs"
@@ -28,41 +28,55 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { icon: <LayoutDashboard size={20} />, label: "Overview", href: "/admin" },
   { icon: <Users size={20} />, label: "Students", href: "/admin/students" },
-  { icon: <Trash2 size={20} />, label: "Fees Cleanup", href: "/admin/students/cleanup" },
+  { icon: <Trash2 size={20} />, label: "Cleanup", href: "/admin/students/cleanup" },
   { icon: <BookOpen size={20} />, label: "Enrollment", href: "/admin/enrollment" },
   { icon: <CheckSquare size={20} />, label: "Attendance", href: "/admin/attendance" },
-  { icon: <DollarSign size={20} />, label: "Fees Dashboard", href: "/admin/fees/dashboard" },
-  { icon: <Calendar size={20} />, label: "Timetable", href: "/admin/schedule" },
-  { icon: <BookOpen size={20} />, label: "Exam Entry", href: "/admin/results/new" },
-  { icon: <Settings size={20} />, label: "Configuration", href: "/admin/settings" },
+  { icon: <DollarSign size={20} />, label: "Fees", href: "/admin/fees/dashboard" },
+  { icon: <Calendar size={20} />, label: "Schedule", href: "/admin/schedule" },
+  { icon: <BookOpen size={20} />, label: "Results", href: "/admin/results/new" },
+  { icon: <Settings size={20} />, label: "Settings", href: "/admin/settings" },
 ]
 
 export function CollapsibleSidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
 
+  // Update CSS variable when collapsed state changes
+  useEffect(() => {
+    const sidebarWidth = collapsed ? '80px' : '256px'
+    document.documentElement.style.setProperty('--sidebar-width', sidebarWidth)
+  }, [collapsed])
+
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 h-screen bg-sidebar-glass border-r border-sidebar-border transition-all duration-300 z-20 flex flex-col",
+        "fixed left-0 top-0 h-screen transition-all duration-300 z-20 flex flex-col border-r",
         collapsed ? "w-20" : "w-64"
       )}
+      style={{
+        backgroundColor: '#1a202c',
+        borderColor: '#2d3748',
+      }}
     >
       {/* Logo Section */}
-      <div className="p-6 flex items-center justify-between border-b border-sidebar-border">
+      <div 
+        className="p-6 flex items-center justify-between border-b"
+        style={{ borderColor: '#2d3748' }}
+      >
         {!collapsed && (
           <div className="min-w-0">
-            <h1 className="text-lg font-bold tracking-tight text-sidebar-foreground truncate">
+            <h1 className="text-lg font-bold tracking-tight text-white truncate">
               SHAMS SMS
             </h1>
-            <p className="text-xs text-sidebar-foreground/60 truncate">Admin Console</p>
+            <p className="text-xs text-gray-400 truncate">Admin Console</p>
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto text-sidebar-foreground hover:bg-sidebar-accent/10"
+          className="ml-auto hover:bg-gray-700"
+          style={{ color: '#cbd5e1' }}
         >
           <ChevronLeft
             size={20}
@@ -72,7 +86,10 @@ export function CollapsibleSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
+      <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-2 scrollbar-hide" style={{
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none'
+      }}>
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
           return (
@@ -80,18 +97,19 @@ export function CollapsibleSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-colors duration-200",
-                "text-sidebar-foreground hover:bg-sidebar-accent/10",
-                isActive && "bg-primary text-primary-foreground hover:bg-primary"
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm truncate",
+                isActive
+                  ? "bg-blue-600 text-white font-medium"
+                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
               )}
               title={collapsed ? item.label : undefined}
             >
-              {item.icon}
+              <div className="flex-shrink-0">{item.icon}</div>
               {!collapsed && (
                 <>
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.badge && (
-                    <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-2 py-0.5">
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-red-600 text-white rounded-full">
                       {item.badge}
                     </span>
                   )}
@@ -103,11 +121,19 @@ export function CollapsibleSidebar() {
       </nav>
 
       {/* User Section */}
-      <div className="p-6 border-t border-sidebar-border flex-shrink-0">
-        <div className="flex items-center gap-3 bg-sidebar-accent/5 p-3 rounded-lg">
-          <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-8 h-8" } }} />
-          {!collapsed && <span className="text-xs text-sidebar-foreground truncate">My Profile</span>}
+      <div 
+        className="p-4 border-t flex items-center gap-3 flex-shrink-0"
+        style={{ borderColor: '#2d3748' }}
+      >
+        <div className="flex-shrink-0">
+          <UserButton afterSignOutUrl="/" />
         </div>
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">Admin</p>
+            <p className="text-xs text-gray-400 truncate">Account</p>
+          </div>
+        )}
       </div>
     </aside>
   )

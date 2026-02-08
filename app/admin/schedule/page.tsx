@@ -43,6 +43,14 @@ type CourseWithAssignments = {
 // 👇 THIS "export default" IS REQUIRED BY NEXT.JS
 export default async function SchedulePage() {
   
+  // Helper function to convert Decimals to plain JSON objects
+  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
+    if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
+      return Number(value)
+    }
+    return value
+  }))
+  
   // Fetch all slot assignments with course, slot, and enrollment data
   const assignments = await prisma.courseOnSlot.findMany({
     include: {
@@ -78,12 +86,20 @@ export default async function SchedulePage() {
         id: courseId,
         name: assignment.course.name,
         durationMonths: assignment.course.durationMonths,
-        baseFee: assignment.course.baseFee,
+        baseFee: typeof assignment.course.baseFee === 'object' ? Number(assignment.course.baseFee) : assignment.course.baseFee,
         feeType: assignment.course.feeType,
         slotAssignments: []
       })
     }
-    coursesMap.get(courseId).slotAssignments.push(assignment)
+    // Also convert Decimal in the assignment's nested course object
+    const assignmentToAdd = {
+      ...assignment,
+      course: {
+        ...assignment.course,
+        baseFee: typeof assignment.course.baseFee === 'object' ? Number(assignment.course.baseFee) : assignment.course.baseFee
+      }
+    }
+    coursesMap.get(courseId).slotAssignments.push(assignmentToAdd)
   })
 
   const courses: CourseWithAssignments[] = Array.from(coursesMap.values())
@@ -98,7 +114,9 @@ export default async function SchedulePage() {
   })
   // Fetch additional data for management
   const rooms = await prisma.room.findMany()
-  const allCourses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
+  const allCoursesData = await prisma.course.findMany({ orderBy: { name: 'asc' } })
+  const allCourses = toJSON(allCoursesData)
+  
   const slots = await prisma.slot.findMany({
     include: { room: true },
     orderBy: { startTime: 'asc' }
@@ -112,6 +130,8 @@ export default async function SchedulePage() {
     },
     orderBy: { firstName: 'asc' }
   })
+  
+  const coursesWithAssignments = toJSON(courses)
 
   return (
     <PageLayout>
@@ -124,7 +144,7 @@ export default async function SchedulePage() {
           <ManagementPanel
             rooms={rooms}
             courses={allCourses}
-            coursesWithAssignments={courses}
+            coursesWithAssignments={coursesWithAssignments}
             slots={slots}
             teachers={teachers}
           />

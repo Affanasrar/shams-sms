@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ToastProvider } from "@/components/providers/toast-provider";
+import { CommandPaletteProvider } from "@/components/ui/command-palette"
 // PWA removed: installer component removed
 
 const geistSans = Geist({
@@ -43,8 +44,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ToastProvider />
-        {children}
+        <CommandPaletteProvider>
+          <ToastProvider />
+          {children}
+        </CommandPaletteProvider>
       </body>
     </html>
     </ClerkProvider>

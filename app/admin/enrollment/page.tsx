@@ -19,11 +19,23 @@ export default async function EnrollmentIndex(props: Props) {
   const slotId = searchParams.slotId as string | undefined
   const searchQuery = searchParams.search as string | undefined
 
+  // Helper function to convert Decimals to plain JSON objects
+  // Prisma Decimal objects can't be passed to client components
+  // Using JSON.stringify/parse converts Decimals to their string representation
+  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
+    // Convert Decimal instances to numbers if they have toFixed method
+    if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
+      return Number(value)
+    }
+    return value
+  }))
+
   // 2. Fetch Filter Options
-  const courses = await prisma.course.findMany({ orderBy: { name: 'asc' } })
+  const coursesData = await prisma.course.findMany({ orderBy: { name: 'asc' } })
+  const courses: typeof coursesData = toJSON(coursesData)
   
   // Fetch slots - filter by course if one is selected
-  const slots = await prisma.slot.findMany({
+  const slotsData = await prisma.slot.findMany({
     where: courseId ? {
       courses: {
         some: {
@@ -34,6 +46,15 @@ export default async function EnrollmentIndex(props: Props) {
     include: { room: true },
     orderBy: { startTime: 'asc' }
   })
+  // Convert to plain objects, ensuring room exists
+  const slots = slotsData
+    .filter(s => s.room) // Only include slots with a room
+    .map(s => ({
+      id: s.id,
+      startTime: s.startTime,
+      days: s.days,
+      room: { name: s.room!.name }
+    }))
 
   // 3. Build Dynamic Query
   // We start with the base requirement: Status must be ACTIVE
@@ -64,7 +85,7 @@ export default async function EnrollmentIndex(props: Props) {
   }
 
   // 4. Fetch Enrollments
-  const enrollments = await prisma.enrollment.findMany({
+  const enrollmentsData = await prisma.enrollment.findMany({
     where: whereClause,
     include: {
       student: true,
@@ -78,9 +99,12 @@ export default async function EnrollmentIndex(props: Props) {
     orderBy: { joiningDate: 'desc' }
   })
 
+  // Convert Decimals to numbers in enrollments
+  const enrollments: typeof enrollmentsData = toJSON(enrollmentsData)
+
   // 5. Fetch all slots with enrollment counts for each course
   // This helps us show available timings when changing student slots
-  const slotsWithEnrollments = await prisma.courseOnSlot.findMany({
+  const slotsWithEnrollmentsData = await prisma.courseOnSlot.findMany({
     include: {
       course: true,
       slot: {
@@ -96,6 +120,10 @@ export default async function EnrollmentIndex(props: Props) {
     },
     orderBy: { slot: { startTime: 'asc' } }
   })
+
+  // Convert Decimals to numbers in slotsWithEnrollments
+  const slotsWithEnrollments: typeof slotsWithEnrollmentsData = toJSON(slotsWithEnrollmentsData)
+
 
   return (
     <PageLayout>

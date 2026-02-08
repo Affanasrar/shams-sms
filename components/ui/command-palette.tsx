@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, Fragment } from "react"
 import {
   CommandDialog,
   CommandEmpty,
@@ -11,22 +11,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
-import { Search, Users, DollarSign, Calendar, Settings, BookOpen } from "lucide-react"
-
-interface CommandPaletteContextType {
-  open: boolean
-  setOpen: (open: boolean) => void
-}
-
-const CommandPaletteContext = React.createContext<CommandPaletteContextType | undefined>(undefined)
-
-export function useCommandPalette() {
-  const context = React.useContext(CommandPaletteContext)
-  if (!context) {
-    throw new Error("useCommandPalette must be used within CommandPaletteProvider")
-  }
-  return context
-}
+import { Users, DollarSign, Calendar, Settings, BookOpen } from "lucide-react"
 
 export function CommandPaletteProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -68,7 +53,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
         },
         {
           icon: <Calendar className="w-4 h-4" />,
-          label: "Timetable",
+          label: "Schedule",
           value: "schedule",
           onSelect: () => {
             router.push("/admin/schedule")
@@ -98,7 +83,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   ]
 
   return (
-    <CommandPaletteContext.Provider value={{ open, setOpen }}>
+    <>
       {children}
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput
@@ -107,7 +92,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           {commands.map((group) => (
-            <React.Fragment key={group.group}>
+            <Fragment key={group.group}>
               <CommandGroup heading={group.group}>
                 {group.items.map((item) => (
                   <CommandItem
@@ -122,10 +107,10 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                 ))}
               </CommandGroup>
               <CommandSeparator />
-            </React.Fragment>
+            </Fragment>
           ))}
         </CommandList>
       </CommandDialog>
-    </CommandPaletteContext.Provider>
+    </>
   )
 }

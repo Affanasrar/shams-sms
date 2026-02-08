@@ -7,6 +7,14 @@ import { AttendanceFilters } from './attendance-filters'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminAttendancePage() {
+  // Helper function to convert Decimals to plain JSON objects
+  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
+    if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
+      return Number(value)
+    }
+    return value
+  }))
+
   // Fetch all active classes with their enrollments and attendance
   const today = new Date().toISOString().split('T')[0]
   
@@ -43,6 +51,7 @@ export default async function AdminAttendancePage() {
       courseMap.set(courseId, {
         id: courseId,
         name: cls.course.name,
+        baseFee: typeof cls.course.baseFee === 'object' ? Number(cls.course.baseFee) : cls.course.baseFee,
         classes: []
       })
     }
@@ -55,13 +64,14 @@ export default async function AdminAttendancePage() {
 
     courseMap.get(courseId).classes.push({
       ...cls,
+      course: toJSON(cls.course),
       presentCount,
       totalEnrolled,
       isMarked
     })
   })
 
-  const courses = Array.from(courseMap.values())
+  const courses: typeof courseMap extends Map<string, infer V> ? V[] : never = toJSON(Array.from(courseMap.values()))
 
   return (
     <PageLayout>

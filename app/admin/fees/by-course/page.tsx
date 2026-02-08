@@ -4,7 +4,17 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { CourseFeeCard } from './course-fees-card'
 
+export const dynamic = 'force-dynamic'
+
 export default async function FeesByCourse() {
+  // Helper function to convert Decimals to plain JSON objects
+  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
+    if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
+      return Number(value)
+    }
+    return value
+  }))
+
   // Fetch all courses with their enrolled students and fees
   const courses = await prisma.course.findMany({
     include: {
@@ -41,11 +51,14 @@ export default async function FeesByCourse() {
 
     return {
       ...course,
+      baseFee: typeof course.baseFee === 'object' ? Number(course.baseFee) : course.baseFee,
       enrollmentCount: uniqueStudents.length,
       totalUnpaid,
       enrollments: uniqueStudents
     }
   })
+
+  const serializedCourses = toJSON(coursesWithFees)
 
   return (
     <div className="space-y-6">
@@ -63,12 +76,12 @@ export default async function FeesByCourse() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {coursesWithFees.map(course => (
+        {serializedCourses.map((course: any) => (
           <CourseFeeCard key={course.id} course={course} />
         ))}
       </div>
 
-      {coursesWithFees.length === 0 && (
+      {serializedCourses.length === 0 && (
         <div className="text-center py-12 bg-white border rounded-lg">
           <p className="text-gray-500 text-lg">No courses found.</p>
         </div>

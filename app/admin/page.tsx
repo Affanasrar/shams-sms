@@ -1,120 +1,152 @@
 // app/admin/page.tsx
-"use client"
-
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { Users, AlertTriangle, TrendingUp, Calendar, DollarSign } from 'lucide-react'
+import { Users, AlertTriangle, TrendingUp, Calendar } from 'lucide-react'
 import { MetricCard } from '@/components/ui'
 import { Button } from '@/components/ui/button'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-import { use, useEffect, useState } from 'react'
+import FeeTrendChart from '@/components/ui/fee-trend-chart'
 
-// Fee trend data (mock - replace with real data)
-const feeTrendData = [
-  { month: 'Jan', collected: 45000, due: 52000 },
-  { month: 'Feb', collected: 52000, due: 55000 },
-  { month: 'Mar', collected: 48000, due: 60000 },
-  { month: 'Apr', collected: 61000, due: 58000 },
-  { month: 'May', collected: 55000, due: 65000 },
-  { month: 'Jun', collected: 67000, due: 70000 },
-]
-
-const recentActivities = [
-  { id: 1, type: 'attendance', message: 'Ahmed Khan marked as present', time: '2 mins ago' },
-  { id: 2, type: 'fee', message: 'PKR 5,000 collected from Fatima Ali', time: '5 mins ago' },
-  { id: 3, type: 'enrollment', message: 'New enrollment: Computer Science 2401', time: '12 mins ago' },
-  { id: 4, type: 'fee', message: 'Fee reminder sent to 45 students', time: '1 hour ago' },
-]
-
+// Server component: fetch real metrics and pass serialized data to client chart
 export default async function AdminDashboard() {
-  let dashboardData = {
-    totalStudents: 0,
-    activeEnrollments: 0,
-    todaysAttendance: 0,
-    overdueFees: 0,
-  }
+  // High level metrics
+  const [totalStudents, activeEnrollments] = await Promise.all([
+    prisma.student.count(),
+    prisma.enrollment.count({ where: { status: 'ACTIVE' } }),
+  ])
 
-  try {
-    // Parallel Data Fetching for Performance
-    const [
-      totalStudents,
-      activeEnrollments,
-      todaysAttendance,
-      overdueFees
-    ] = await Promise.all([
-      (async () => {
-        const count = await prisma.student.count()
-        return count
-      })(),
-      (async () => {
-        const count = await prisma.enrollment.count({ where: { status: 'ACTIVE' } })
-        return count
-      })(),
-      (async () => {
-        const count = await prisma.attendance.count({ 
-          where: { 
-            date: { gte: new Date(new Date().setHours(0,0,0,0)) },
-            status: 'PRESENT'
-          }
-        })
-        return count
-      })(),
-      (async () => {
-        const fees = await prisma.fee.findMany({
-          where: { 
-            status: { in: ['UNPAID', 'PARTIAL'] }, 
-            dueDate: { lt: new Date() } 
-          },
-          select: { finalAmount: true, paidAmount: true }
-        })
-        return fees.reduce((sum, fee) => sum + Number(fee.finalAmount) - Number(fee.paidAmount), 0)
-      })(),
-    ])
+  // Today's attendance (present)
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+  // Count distinct students marked PRESENT today
+  const todaysAttendanceRows = await prisma.attendance.findMany({
+    where: {
+      date: {
+        gte: todayStart,
+        lte: todayEnd
+      },
+      status: 'PRESENT'
+    },
+    select: { studentId: true }
+  })
+  const todaysAttendance = Array.from(new Set(todaysAttendanceRows.map(r => r.studentId))).length
 
-    dashboardData = {
-      totalStudents,
-      activeEnrollments,
-      todaysAttendance,
-      overdueFees,
+  // Overdue fees (older than 30 days)
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const overdueFees = await prisma.fee.count({
+    where: {
+      status: { in: ['UNPAID', 'PARTIAL'] },
+      dueDate: { lt: thirtyDaysAgo }
     }
-  } catch (error) {
-    console.error('Dashboard data fetch error:', error)
+  })
+  // Also compute overdue amount (sum of outstanding amounts)
+  const overdueSums = await prisma.fee.aggregate({
+    where: {
+      status: { in: ['UNPAID', 'PARTIAL'] },
+      dueDate: { lt: thirtyDaysAgo }
+    },
+    _sum: {
+      finalAmount: true,
+      paidAmount: true
+    }
+  })
+  const overdueAmount = Number((overdueSums._sum.finalAmount || 0)) - Number((overdueSums._sum.paidAmount || 0))
+
+  // Pending fees (all UNPAID or PARTIAL, regardless of due date)
+  const pendingFees = await prisma.fee.count({
+    where: { status: { in: ['UNPAID', 'PARTIAL'] } }
+  })
+  const pendingSums = await prisma.fee.aggregate({
+    where: { status: { in: ['UNPAID', 'PARTIAL'] } },
+    _sum: { finalAmount: true, paidAmount: true }
+  })
+  const pendingAmount = Number((pendingSums._sum.finalAmount || 0)) - Number((pendingSums._sum.paidAmount || 0))
+
+  // Recent activities: latest enrollments (as a simple activity feed)
+  const recentEnrollments = await prisma.enrollment.findMany({
+    take: 6,
+    orderBy: { joiningDate: 'desc' },
+    include: { student: true, courseOnSlot: { include: { course: true } } }
+  })
+
+  const recentActivities = recentEnrollments.map(e => ({
+    id: e.id,
+    type: 'enrollment',
+    message: `${e.student.name} enrolled in ${e.courseOnSlot.course.name}`,
+    time: e.joiningDate.toLocaleString('en-PK')
+  }))
+
+  // Fee trend: last 6 months
+  const now = new Date()
+  const months: { month: string; start: Date; end: Date }[] = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const start = new Date(d.getFullYear(), d.getMonth(), 1)
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
+    months.push({ month: d.toLocaleString('default', { month: 'short' }), start, end })
   }
+
+  const fees = await prisma.fee.findMany({
+    where: { cycleDate: { gte: months[0].start } },
+    select: { finalAmount: true, paidAmount: true, cycleDate: true }
+  })
+
+  const feeTrendData = months.map(m => {
+    const monthFees = fees.filter(f => {
+      const d = new Date(f.cycleDate)
+      return d >= m.start && d <= m.end
+    })
+    const collected = monthFees.reduce((s, f) => s + Number(f.paidAmount || 0), 0)
+    const due = monthFees.reduce((s, f) => s + Number(f.finalAmount || 0), 0)
+    return { month: m.month, collected, due }
+  })
 
   return (
-    <div className="space-y-8" style={{ backgroundColor: '#f8f9fa', padding: '32px 0' }}>
+    <div className="space-y-8">
       {/* Page Title */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#0f172a' }}>Dashboard Overview</h1>
-        <p className="text-muted-foreground mt-2" style={{ color: '#64748b' }}>Welcome back to your school management system</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Dashboard Overview</h1>
+        <p className="text-slate-600">Welcome back! Here's your school's performance at a glance.</p>
       </div>
 
       {/* Top Row: High-Level Metrics in Bento Grid */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
         <MetricCard
           title="Total Students"
-          value={dashboardData.totalStudents}
+          value={totalStudents ?? 'N/A'}
           icon={Users}
           iconColor="text-blue-600"
+          valueColor="text-slate-900"
         />
         <MetricCard
           title="Active Enrollments"
-          value={dashboardData.activeEnrollments}
+          value={activeEnrollments ?? 'N/A'}
           icon={Calendar}
           iconColor="text-green-600"
+          valueColor="text-slate-900"
         />
         <MetricCard
           title="Present Today"
-          value={dashboardData.todaysAttendance}
+          value={todaysAttendance ?? 'N/A'}
           icon={TrendingUp}
           iconColor="text-emerald-600"
+          valueColor="text-slate-900"
         />
         <MetricCard
-          title="Overdue Fees"
-          value={`PKR ${Number(dashboardData.overdueFees || 0).toLocaleString()}`}
+          title="Pending Fees"
+          value={`${pendingFees ?? 0} • PKR ${Number(pendingAmount || 0).toLocaleString('en-PK')}`}
           icon={AlertTriangle}
           iconColor="text-red-600"
           valueColor="text-red-600"
+        />
+        <MetricCard
+          title="Overdue Fees"
+          value={`${overdueFees ?? 0} • PKR ${Number(overdueAmount || 0).toLocaleString('en-PK')}`}
+          icon={AlertTriangle}
+          iconColor="text-rose-600"
+          valueColor="text-rose-600"
         />
       </div>
 
@@ -127,39 +159,9 @@ export default async function AdminDashboard() {
           </div>
           <Button variant="outline" size="sm">Export</Button>
         </div>
-        
+
         <div className="w-full h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={feeTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="month" stroke="#64748b" />
-              <YAxis stroke="#64748b" />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '0.5rem'
-                }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="collected" 
-                stroke="#3b71ca" 
-                strokeWidth={2}
-                dot={false}
-                name="Collected"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="due" 
-                stroke="#64748b" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={false}
-                name="Due"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <FeeTrendChart data={feeTrendData} />
         </div>
       </div>
 
@@ -181,7 +183,7 @@ export default async function AdminDashboard() {
               </div>
             ))}
           </div>
-          
+
           <Button variant="outline" className="w-full mt-6" asChild>
             <Link href="/admin/students">View All Activities</Link>
           </Button>
