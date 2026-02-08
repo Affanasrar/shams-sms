@@ -5,6 +5,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function formatCurrency(amount: number, currency = "PKR"): string {
+  return new Intl.NumberFormat("ur-PK", {
+    style: "currency",
+    currency: currency,
+  }).format(amount)
+}
+
+export function formatDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  return d.toLocaleDateString("ur-PK", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
+export function truncateText(text: string, maxLength: number): string {
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text
+}
+
 // Generate unique student ID in format: SCI-YYMM-XXX
 export async function generateStudentId(prisma: any): Promise<string> {
   const now = new Date()
