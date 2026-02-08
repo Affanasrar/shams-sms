@@ -148,6 +148,42 @@
 }
 
 /* Enterprise Design System - Custom utilities */
+@layer components {
+  /* Sidebar with glassmorphism */
+  .bg-sidebar-glass {
+    @apply transition-all duration-300;
+    background-color: rgba(21, 24, 38, 0.95) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .border-sidebar-border {
+    @apply border;
+    border-color: rgb(51, 65, 85) !important;
+  }
+
+  .text-sidebar-foreground {
+    color: rgb(248, 249, 250) !important;
+  }
+
+  .bg-sidebar {
+    background-color: rgb(21, 24, 38) !important;
+  }
+
+  .bg-sidebar-accent {
+    @apply transition-colors;
+    background-color: rgb(59, 113, 202) !important;
+  }
+
+  .hover\:bg-sidebar-accent\/10:hover {
+    background-color: rgba(59, 113, 202, 0.1) !important;
+  }
+
+  .text-sidebar-foreground\/60 {
+    color: rgba(248, 249, 250, 0.6) !important;
+  }
+}
+
 @layer utilities {
   /* High-density data table text */
   .data-table-text {
@@ -157,11 +193,6 @@
   /* Card surface with glassmorphism effect */
   .card-surface {
     @apply bg-card border border-border rounded-lg shadow-sm;
-  }
-
-  /* Sidebar with glassmorphism */
-  .sidebar-glass {
-    @apply bg-sidebar/95 backdrop-blur-md;
   }
 
   /* Professional badge styles */

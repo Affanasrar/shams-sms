@@ -5,7 +5,6 @@ import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { Users, AlertTriangle, TrendingUp, Calendar, DollarSign } from 'lucide-react'
 import { MetricCard } from '@/components/ui'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { use, useEffect, useState } from 'react'
@@ -83,11 +82,11 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" style={{ backgroundColor: '#f8f9fa', padding: '32px 0' }}>
       {/* Page Title */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-        <p className="text-muted-foreground mt-2">Welcome back to your school management system</p>
+        <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#0f172a' }}>Dashboard Overview</h1>
+        <p className="text-muted-foreground mt-2" style={{ color: '#64748b' }}>Welcome back to your school management system</p>
       </div>
 
       {/* Top Row: High-Level Metrics in Bento Grid */}
@@ -120,11 +119,11 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Center Panel: Fee Collection Trends Chart */}
-      <Card className="p-6">
+      <div className="p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold tracking-tight">Fee Collection Trends</h2>
-            <p className="text-sm text-muted-foreground">6-month collection analysis</p>
+            <h2 className="text-xl font-bold tracking-tight" style={{ color: '#0f172a' }}>Fee Collection Trends</h2>
+            <p className="text-sm" style={{ color: '#64748b' }}>6-month collection analysis</p>
           </div>
           <Button variant="outline" size="sm">Export</Button>
         </div>
@@ -132,20 +131,20 @@ export default async function AdminDashboard() {
         <div className="w-full h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={feeTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="month" stroke="var(--color-muted-foreground)" />
-              <YAxis stroke="var(--color-muted-foreground)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="month" stroke="#64748b" />
+              <YAxis stroke="#64748b" />
               <Tooltip 
                 contentStyle={{
-                  backgroundColor: 'var(--color-card)',
-                  border: '1px solid var(--color-border)',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '0.5rem'
                 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="collected" 
-                stroke="var(--color-primary)" 
+                stroke="#3b71ca" 
                 strokeWidth={2}
                 dot={false}
                 name="Collected"
@@ -153,7 +152,7 @@ export default async function AdminDashboard() {
               <Line 
                 type="monotone" 
                 dataKey="due" 
-                stroke="var(--color-muted-foreground)" 
+                stroke="#64748b" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
@@ -162,22 +161,22 @@ export default async function AdminDashboard() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </Card>
+      </div>
 
       {/* Bottom Grid: Side Panel with Live Activities */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         {/* Recent Activities */}
-        <Card className="lg:col-span-2 p-6">
-          <h2 className="text-xl font-bold tracking-tight mb-6">Live Activity Feed</h2>
+        <div className="lg:col-span-2 p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#0f172a' }}>Live Activity Feed</h2>
           <div className="space-y-4">
             {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-border last:border-0 last:pb-0">
+              <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-slate-200 last:border-0 last:pb-0">
                 <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
                   activity.type === 'fee' ? 'bg-emerald-500' : 'bg-blue-500'
                 }`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{activity.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                  <p className="text-sm font-medium" style={{ color: '#0f172a' }}>{activity.message}</p>
+                  <p className="text-xs mt-1" style={{ color: '#64748b' }}>{activity.time}</p>
                 </div>
               </div>
             ))}
@@ -186,11 +185,11 @@ export default async function AdminDashboard() {
           <Button variant="outline" className="w-full mt-6" asChild>
             <Link href="/admin/students">View All Activities</Link>
           </Button>
-        </Card>
+        </div>
 
         {/* Quick Actions */}
-        <Card className="p-6">
-          <h2 className="text-xl font-bold tracking-tight mb-6">Quick Actions</h2>
+        <div className="p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#0f172a' }}>Quick Actions</h2>
           <div className="space-y-3">
             <Button asChild className="w-full justify-start" variant="outline">
               <Link href="/admin/students/new">+ New Student</Link>
@@ -208,7 +207,7 @@ export default async function AdminDashboard() {
               <Link href="/admin/fees/reports">View Reports</Link>
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )

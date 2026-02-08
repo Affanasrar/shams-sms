@@ -28,11 +28,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // ✅ Authorized: Render the Admin Interface
   return (
     <CommandPaletteProvider>
-      <div className="flex min-h-screen bg-background text-foreground">
+      <div className="flex min-h-screen" style={{ backgroundColor: '#f8f9fa' }}>
         <CollapsibleSidebar />
         
         {/* Main Content */}
-        <main className="flex-1 ml-64 transition-all duration-300 sm:ml-20 md:ml-64">
+        <main className="flex-1 ml-64 transition-all duration-300 sm:ml-20 md:ml-64" style={{ backgroundColor: '#f8f9fa' }}>
           <div className="p-4 md:p-8 max-w-7xl mx-auto">
             <DynamicBreadcrumbs />
             {children}
