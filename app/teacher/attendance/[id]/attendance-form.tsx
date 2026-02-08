@@ -3,7 +3,9 @@
 
 import { useActionState } from 'react'
 import { submitAttendance } from '@/app/actions/attendance'
+import { savePendingAttendance } from '@/lib/offline'
 import { CalendarIcon, UserCheck, CheckCircle2, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
 
 // Define the shape of our state
 type ActionState = {
@@ -22,11 +24,38 @@ type Props = {
 
 export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
   const [state, action, isPending] = useActionState<ActionState, FormData>(submitAttendance, initialState)
+  const [localMessage, setLocalMessage] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
   
   const today = new Date().toISOString().split('T')[0]
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      e.preventDefault()
+      const form = e.currentTarget
+      const fd = new FormData(form)
+      const date = fd.get('date') as string
+      const entries = Array.from(fd.entries())
+        .filter(([k]) => (k as string).startsWith('status_'))
+        .map(([k, v]) => ({ studentId: (k as string).replace('status_', ''), status: v as string }))
+
+      const record = { classId, teacherId, date, entries }
+      try {
+        await savePendingAttendance({ record })
+        // show success message locally
+        setLocalMessage('Saved locally — will sync when online.')
+        setLocalError(null)
+      } catch (err) {
+        setLocalError('Failed to save offline.')
+        setLocalMessage(null)
+      }
+      return
+    }
+    // otherwise let the form submit to the server action
+  }
+
   return (
-    <form action={action} className="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <form onSubmit={handleSubmit} action={action} className="bg-white rounded-xl shadow-sm border overflow-hidden">
       
       {/* Hidden Fields */}
       <input type="hidden" name="classId" value={classId} />
@@ -111,6 +140,16 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
         {state?.error && (
           <div className="flex items-center gap-2 text-sm font-bold text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
             <AlertCircle size={16} /> {state.error}
+          </div>
+        )}
+        {localMessage && (
+          <div className="flex items-center gap-2 text-sm font-bold text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-100">
+            <CheckCircle2 size={16} /> {localMessage}
+          </div>
+        )}
+        {localError && (
+          <div className="flex items-center gap-2 text-sm font-bold text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
+            <AlertCircle size={16} /> {localError}
           </div>
         )}
 

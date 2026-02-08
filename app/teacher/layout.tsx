@@ -4,7 +4,7 @@
 import { UserButton } from "@clerk/nextjs"
 import { LayoutDashboard, CheckSquare, GraduationCap, Calendar, Menu, X, FileText } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePathname } from 'next/navigation'
 // PWA banner removed
 import OfflineIndicator from "./offline-indicator"
@@ -12,6 +12,22 @@ import OfflineIndicator from "./offline-indicator"
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [showInstall, setShowInstall] = useState(false)
+
+  useEffect(() => {
+    // detect standalone / iOS
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone
+    if (isStandalone) return
+
+    const handler = (e: any) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setShowInstall(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler as EventListener)
+    return () => window.removeEventListener('beforeinstallprompt', handler as EventListener)
+  }, [])
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -99,6 +115,23 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       {/* Main Content Area */}
       <main className="flex-1 md:ml-72 pt-20 md:pt-8 px-4 md:px-8 pb-24 md:pb-8 safe-padding-bottom">
         {children}
+        {showInstall && (
+          <div className="fixed bottom-6 right-6 z-50 bg-white border rounded-lg shadow-lg p-3 flex items-center gap-3">
+            <div className="text-sm font-medium">Install Shams</div>
+            <div className="flex items-center gap-2">
+              <button onClick={async () => {
+                if (!deferredPrompt) return
+                try {
+                  await deferredPrompt.prompt()
+                  setShowInstall(false)
+                } catch (err) {
+                  console.error(err)
+                }
+              }} className="px-3 py-1 bg-blue-600 text-white rounded">Install</button>
+              <button onClick={() => setShowInstall(false)} className="px-2 py-1 text-sm text-gray-600">Dismiss</button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

@@ -2,6 +2,7 @@
 
 import { Wifi, WifiOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { flushPendingAttendances } from '@/lib/offline'
 
 export default function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true)
@@ -11,9 +12,15 @@ export default function OfflineIndicator() {
     // Set initial state
     setIsOnline(navigator.onLine)
 
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOnline(true)
       setShowAlert(true)
+      // Try to flush pending attendance records
+      try {
+        await flushPendingAttendances()
+      } catch (err) {
+        console.error('Error flushing pending attendance', err)
+      }
       setTimeout(() => setShowAlert(false), 3000)
     }
 
