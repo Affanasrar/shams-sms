@@ -49,14 +49,23 @@ export function EnrollmentForm({ students, assignments }: any) {
     if (!studentSearch.trim()) return []
     
     const query = studentSearch.toLowerCase()
-    return students.filter((student: any) => 
-      student.studentId.toLowerCase().includes(query) ||
-      student.name.toLowerCase().includes(query) ||
-      student.fatherName.toLowerCase().includes(query)
-    ).slice(0, 10) // Limit to 10 results for performance
+    return students.filter((student: any) => {
+      // 👇 FIX: Add NULL checks to prevent errors when name or fatherName is missing
+      const studentId = student.studentId?.toLowerCase() || ''
+      const name = student.name?.toLowerCase() || ''
+      const fatherName = student.fatherName?.toLowerCase() || ''
+      
+      return studentId.includes(query) || name.includes(query) || fatherName.includes(query)
+    }).slice(0, 10) // Limit to 10 results for performance
   }, [studentSearch, students])
 
   const handleStudentSelect = (student: any) => {
+    // 👇 FIX: Validate that student has required fields before selecting
+    if (!student.name || !student.fatherName) {
+      setError('Invalid student data. Please contact support.')
+      return
+    }
+    
     setSelectedStudent(student.id)
     setSelectedStudentData(student)
     setStudentSearch(`${student.studentId} - ${student.name} (s/o ${student.fatherName})`)

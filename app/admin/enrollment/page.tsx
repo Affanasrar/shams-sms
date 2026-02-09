@@ -6,6 +6,9 @@ import { EnrollmentFilters } from './enrollment-filters'
 import { EnrollmentRowActions } from './enrollment-row-actions'
 import { PageLayout, PageHeader } from '@/components/ui'
 
+// 👇 FIX: Force dynamic rendering to ensure fresh data after enrollments
+export const dynamic = 'force-dynamic'
+
 // 👇 Define the props type correctly for Next.js 15+
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>

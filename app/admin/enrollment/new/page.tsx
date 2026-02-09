@@ -3,8 +3,15 @@ import { EnrollmentForm } from './enrollment-form'
 import { getEnrollmentOptions } from '@/app/actions/fetch-options'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { unstable_noStore as noStore } from 'next/cache'
+
+// 👇 FIX: Force fresh data so newly created students appear in the dropdown
+export const dynamic = 'force-dynamic'
 
 export default async function NewEnrollmentPage() {
+  // 👇 Also add noStore() for extra safety
+  noStore()
+  
   const data = await getEnrollmentOptions()
 
   // 👇 FIX: Convert 'Decimal' objects to plain 'Numbers'

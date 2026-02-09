@@ -91,6 +91,11 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
     console.log(`✅ Success! Enrolled & Billed.`)
     return newEnrollment
   })
+
+  // 👇 FIX: Revalidate caches so newly enrolled students appear immediately
+  revalidatePath('/admin/enrollment')
+  revalidatePath(`/admin/students/${studentId}`)
+  revalidatePath('/admin/enrollment/new')
 }
 
 // ------------------------------------------------------------------
