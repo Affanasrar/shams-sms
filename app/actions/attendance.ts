@@ -10,13 +10,13 @@ export async function submitAttendance(prevState: any, formData: FormData) {
   const dateStr = formData.get('date') as string
   const teacherId = formData.get('teacherId') as string
 
-  // Convert raw form data into a list of student IDs who were PRESENT
+  // Convert raw form data into a list of student IDs with their status
   const entries = Array.from(formData.entries())
   const attendanceData = entries
     .filter(([key]) => key.startsWith('status_'))
     .map(([key, value]) => ({
       studentId: key.replace('status_', ''),
-      status: value as 'PRESENT' | 'ABSENT' | 'LATE'
+      status: value as 'PRESENT' | 'ABSENT' | 'LATE' | 'LEAVE'
     }))
 
   if (attendanceData.length === 0) {
@@ -24,12 +24,27 @@ export async function submitAttendance(prevState: any, formData: FormData) {
   }
 
   try {
-    // We use a Transaction to save everyone at once
+    const date = new Date(dateStr)
+
+    // Use upsert logic: update if exists, create if doesn't
     await prisma.$transaction(
       attendanceData.map((entry) => 
-        prisma.attendance.create({
-          data: {
-            date: new Date(dateStr),
+        prisma.attendance.upsert({
+          where: {
+            studentId_courseOnSlotId_date: {
+              studentId: entry.studentId,
+              courseOnSlotId: classId,
+              date
+            }
+          },
+          // Update if exists
+          update: {
+            status: entry.status,
+            markedById: teacherId
+          },
+          // Create if doesn't exist
+          create: {
+            date,
             status: entry.status,
             studentId: entry.studentId,
             courseOnSlotId: classId,
