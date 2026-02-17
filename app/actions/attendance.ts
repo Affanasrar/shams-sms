@@ -10,6 +10,17 @@ export async function submitAttendance(prevState: any, formData: FormData) {
   const dateStr = formData.get('date') as string
   const teacherId = formData.get('teacherId') as string
 
+  // Validation: Check required fields
+  if (!classId || !dateStr || !teacherId) {
+    return { success: false, error: "Missing required fields." }
+  }
+
+  // Validation: Check date format
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) {
+    return { success: false, error: "Invalid date format." }
+  }
+
   // Convert raw form data into a list of student IDs with their status
   const entries = Array.from(formData.entries())
   const attendanceData = entries
@@ -24,11 +35,37 @@ export async function submitAttendance(prevState: any, formData: FormData) {
   }
 
   try {
-    const date = new Date(dateStr)
+    // Permission Check: Verify teacher has access to this class
+    const courseOnSlot = await prisma.courseOnSlot.findUnique({
+      where: { id: classId },
+      select: { teacherId: true }
+    })
+
+    if (!courseOnSlot || courseOnSlot.teacherId !== teacherId) {
+      return { success: false, error: "Unauthorized access." }
+    }
+
+    // Enrollment Verification: Ensure students are actively enrolled
+    const validStudents = await prisma.enrollment.findMany({
+      where: {
+        courseOnSlotId: classId,
+        status: 'ACTIVE'
+      },
+      select: { studentId: true }
+    })
+
+    const validStudentIds = new Set(validStudents.map(e => e.studentId))
+    const filteredAttendanceData = attendanceData.filter(
+      entry => validStudentIds.has(entry.studentId)
+    )
+
+    if (filteredAttendanceData.length === 0) {
+      return { success: false, error: "No valid enrolled students found." }
+    }
 
     // Use upsert logic: update if exists, create if doesn't
     await prisma.$transaction(
-      attendanceData.map((entry) => 
+      filteredAttendanceData.map((entry) => 
         prisma.attendance.upsert({
           where: {
             studentId_courseOnSlotId_date: {
