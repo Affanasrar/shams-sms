@@ -138,23 +138,59 @@ export async function getEnrollmentData() {
 
 export async function dropStudent(formData: FormData) {
   const enrollmentId = formData.get('enrollmentId') as string
+  const refund = formData.get('refund') === 'true'
 
   if (!enrollmentId) return
 
   try {
-    // Soft Delete: Mark as DROPPED and set endDate to today
+    // Get enrollment details to find the student
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      select: { studentId: true }
+    })
+
+    if (!enrollment) {
+      return { success: false, error: "Enrollment not found" }
+    }
+
+    // Get the current month for fee deletion
+    const now = new Date()
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+    // Only delete fees if user chose to refund
+    if (refund) {
+      await prisma.fee.deleteMany({
+        where: {
+          studentId: enrollment.studentId,
+          cycleDate: {
+            gte: currentMonthStart,
+            lte: currentMonthEnd
+          }
+        }
+      })
+    }
+
+    // Mark enrollment as DROPPED and set endDate to today
     await prisma.enrollment.update({
       where: { id: enrollmentId },
       data: { 
         status: 'DROPPED',
-        endDate: new Date() // Mark today as their last day
+        endDate: new Date()
       }
     })
 
-    // Refresh the relevant pages so the student disappears from the list
+    // Refresh the relevant pages
     revalidatePath('/admin/enrollment')
-    revalidatePath('/admin') // update dashboard activity feed
-    return { success: true, message: "Student dropped successfully" }
+    revalidatePath('/admin')
+    revalidatePath(`/admin/students/${enrollment.studentId}`)
+    
+    return { 
+      success: true, 
+      message: refund 
+        ? "Student dropped and fees refunded" 
+        : "Student dropped (fees kept)"
+    }
   } catch (error) {
     console.error("Drop Error:", error)
     return { success: false, error: "Failed to drop student" }
@@ -167,6 +203,35 @@ export async function restoreEnrollment(formData: FormData) {
   if (!enrollmentId) return
 
   try {
+    // Get enrollment details including course info
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: {
+        courseOnSlot: { include: { course: true } },
+        student: true
+      }
+    })
+
+    if (!enrollment) {
+      return { success: false, error: "Enrollment not found" }
+    }
+
+    // Check if fees exist for the current month
+    const now = new Date()
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+    const existingFee = await prisma.fee.findFirst({
+      where: {
+        studentId: enrollment.studentId,
+        cycleDate: {
+          gte: currentMonthStart,
+          lte: currentMonthEnd
+        }
+      }
+    })
+
+    // Restore the enrollment
     await prisma.enrollment.update({
       where: { id: enrollmentId },
       data: {
@@ -175,9 +240,32 @@ export async function restoreEnrollment(formData: FormData) {
       }
     })
 
+    // Only create a new fee if fees were refunded (i.e., don't exist)
+    if (!existingFee) {
+      await prisma.fee.create({
+        data: {
+          studentId: enrollment.studentId,
+          enrollmentId: enrollmentId,
+          amount: enrollment.courseOnSlot.course.baseFee,
+          discountAmount: 0,
+          finalAmount: enrollment.courseOnSlot.course.baseFee,
+          rolloverAmount: 0,
+          dueDate: now,
+          cycleDate: currentMonthStart,
+          status: 'UNPAID'
+        }
+      })
+    }
+
     revalidatePath('/admin/enrollment')
     revalidatePath('/admin')
-    return { success: true, message: "Enrollment restored" }
+    revalidatePath(`/admin/students/${enrollment.studentId}`)
+
+    const message = existingFee
+      ? "Enrollment restored (fees were not refunded, original balance remains)"
+      : "Enrollment restored and new fees created"
+
+    return { success: true, message }
   } catch (error) {
     console.error("Restore Error:", error)
     return { success: false, error: "Failed to restore enrollment" }

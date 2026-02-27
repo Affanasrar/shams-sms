@@ -46,12 +46,16 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setOpen((open) => !open)
+        // Clear search when dialog opens
+        if (!open) {
+          setSearchQuery("")
+        }
       }
     }
 
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
-  }, [])
+  }, [open])
 
   // Debounced search
   useEffect(() => {
@@ -62,8 +66,8 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
       return
     }
 
+    setIsLoading(true)
     const timer = setTimeout(async () => {
-      setIsLoading(true)
       try {
         const [studentsRes, coursesRes, feesRes] = await Promise.all([
           fetch(`/api/admin/search-students?q=${encodeURIComponent(searchQuery)}`),
@@ -78,9 +82,9 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
         setStudents(Array.isArray(studentsData) ? studentsData : [])
         setCourses(Array.isArray(coursesData) ? coursesData : [])
         setFees(Array.isArray(feesData) ? feesData : [])
+        setIsLoading(false)
       } catch (error) {
         console.error("Search error:", error)
-      } finally {
         setIsLoading(false)
       }
     }, 300) // 300ms debounce
@@ -144,13 +148,13 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput
           placeholder="Search students, courses, fees... (⌘K)"
-          value={searchQuery}
           onValueChange={setSearchQuery}
         />
         <CommandList>
-          {isLoading && (
+          {isLoading && searchQuery.trim().length > 0 && (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span className="text-sm text-gray-500">Searching...</span>
             </div>
           )}
 
@@ -172,7 +176,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
             </>
           )}
 
-          {!isLoading && hasSearchResults && (
+          {!isLoading && hasSearchResults && searchQuery.trim().length > 0 && (
             <>
               {students.length > 0 && (
                 <>
@@ -180,7 +184,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                     {students.map((student) => (
                       <CommandItem
                         key={student.id}
-                        value={student.studentId}
+                        value={student.name}
                         onSelect={() => {
                           router.push(`/admin/students/${student.id}`)
                           setOpen(false)
@@ -207,7 +211,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                         key={course.id}
                         value={course.name}
                         onSelect={() => {
-                          router.push(`/admin/enrollment?course=${course.id}`)
+                          router.push(`/admin/schedule?course=${course.id}`)
                           setOpen(false)
                         }}
                         className="cursor-pointer"
@@ -227,7 +231,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                     {fees.map((fee) => (
                       <CommandItem
                         key={fee.id}
-                        value={fee.id}
+                        value={fee.student?.name || "Unknown"}
                         onSelect={() => {
                           router.push(`/admin/fees?student=${fee.studentId}`)
                           setOpen(false)

@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
 
-    if (!query) {
-      return NextResponse.json({ error: 'Search query is required' }, { status: 400 })
+    if (!query || query.trim().length === 0) {
+      return NextResponse.json([])
     }
 
     // Search fees by student name or ID
@@ -21,22 +21,25 @@ export async function GET(request: NextRequest) {
           ]
         }
       },
-      include: {
-        student: true,
-        enrollment: {
-          include: {
-            courseOnSlot: { include: { course: true } }
+      select: {
+        id: true,
+        studentId: true,
+        amount: true,
+        status: true,
+        student: {
+          select: {
+            name: true,
+            studentId: true
           }
-        },
-        transactions: true
+        }
       },
       orderBy: { dueDate: 'desc' },
-      take: 10 // Limit results
+      take: 10
     })
 
     return NextResponse.json(fees)
   } catch (error) {
     console.error('Search fees error:', error)
-    return NextResponse.json({ error: 'Failed to search fees' }, { status: 500 })
+    return NextResponse.json([])
   }
 }

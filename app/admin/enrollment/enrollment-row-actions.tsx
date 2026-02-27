@@ -44,12 +44,15 @@ export function EnrollmentRowActions({
   currentSlotId,
   currentCourseOnSlotId,
   currentTiming,
-  availableSlotsForCourse
+  availableSlotsForCourse,
+  status
 }: Props) {
   const [isTimingModalOpen, setIsTimingModalOpen] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [state, setState] = useState<ActionState>(initialState)
   const [isLoading, setIsLoading] = useState(false)
+  const [showRefundModal, setShowRefundModal] = useState(false)
+  const [refundDecision, setRefundDecision] = useState<boolean | null>(null)
 
   const isDropped = status === 'DROPPED'
 
@@ -129,25 +132,34 @@ export function EnrollmentRowActions({
             </button>
           </form>
         ) : (
-          <form
-            onSubmit={(e) => {
-              if (!confirm("Are you sure you want to drop this student? This action cannot be undone.")) {
-                e.preventDefault()
-              }
-            }}
-            action={async (formData) => {
-              await dropStudent(formData)
-            }}
-          >
-            <input type="hidden" name="enrollmentId" value={enrollmentId} />
+          <>
             <button
-              type="submit"
+              onClick={() => {
+                if (confirm("Are you sure you want to drop this student? This action cannot be undone.")) {
+                  setShowRefundModal(true)
+                  setRefundDecision(null)
+                }
+              }}
               className="inline-flex items-center gap-1.5 text-red-600 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-red-700"
               title="Drop Student from Class"
             >
               <Trash2 size={14} /> Drop
             </button>
-          </form>
+
+            {showRefundModal && (
+              <form
+                action={async (formData) => {
+                  await dropStudent(formData)
+                  setShowRefundModal(false)
+                }}
+                className="hidden"
+                id={`drop-form-${enrollmentId}`}
+              >
+                <input type="hidden" name="enrollmentId" value={enrollmentId} />
+                <input type="hidden" name="refund" value={refundDecision ? 'true' : 'false'} />
+              </form>
+            )}
+          </>
         )}
       </div>
 
@@ -287,6 +299,60 @@ export function EnrollmentRowActions({
                 }}
                 disabled={isLoading}
                 className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 disabled:cursor-not-allowed transition font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Confirmation Modal */}
+      {showRefundModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Refund Fees?</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {studentName} has unpaid/partial fees for this month. Do you want to refund (delete) these fees, or keep them?
+                </p>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">
+                    <strong>Refund:</strong> Delete current month fees (they can enroll again fresh)
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    <strong>No Refund:</strong> Keep fees (balance remains owed even after drop)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setRefundDecision(true)
+                  const form = document.getElementById(`drop-form-${enrollmentId}`) as HTMLFormElement
+                  form?.submit()
+                }}
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition font-medium text-sm"
+              >
+                Yes, Refund Fees
+              </button>
+              <button
+                onClick={() => {
+                  setRefundDecision(false)
+                  const form = document.getElementById(`drop-form-${enrollmentId}`) as HTMLFormElement
+                  form?.submit()
+                }}
+                className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition font-medium text-sm"
+              >
+                No, Keep Fees
+              </button>
+              <button
+                onClick={() => setShowRefundModal(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
               >
                 Cancel
               </button>

@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')
 
-    if (!query) {
-      return NextResponse.json({ error: 'Search query is required' }, { status: 400 })
+    if (!query || query.trim().length === 0) {
+      return NextResponse.json([])
     }
 
     // Search students by ID or name
@@ -20,27 +20,17 @@ export async function GET(request: NextRequest) {
           { fatherName: { contains: query, mode: 'insensitive' } }
         ]
       },
-      include: {
-        enrollments: {
-          where: { status: 'ACTIVE' },
-          include: {
-            courseOnSlot: {
-              include: {
-                course: true
-              }
-            },
-            fees: {
-              orderBy: { dueDate: 'asc' }
-            }
-          }
-        }
+      select: {
+        id: true,
+        studentId: true,
+        name: true
       },
-      take: 10 // Limit results
+      take: 10
     })
 
     return NextResponse.json(students)
   } catch (error) {
     console.error('Search students error:', error)
-    return NextResponse.json({ error: 'Failed to search students' }, { status: 500 })
+    return NextResponse.json([])
   }
 }
