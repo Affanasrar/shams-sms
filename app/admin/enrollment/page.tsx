@@ -3,8 +3,10 @@ import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { EnrollmentFilters } from './enrollment-filters'
-import { EnrollmentRowActions } from './enrollment-row-actions'
 import { PageLayout, PageHeader } from '@/components/ui'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { subDays } from 'date-fns'
+import { EnrollmentTable, EnrollmentRow } from '@/components/enrollment/enrollment-table'
 
 // 👇 FIX: Force dynamic rendering to ensure fresh data after enrollments
 export const dynamic = 'force-dynamic'
@@ -21,6 +23,12 @@ export default async function EnrollmentIndex(props: Props) {
   const courseId = searchParams.courseId as string | undefined
   const slotId = searchParams.slotId as string | undefined
   const searchQuery = searchParams.search as string | undefined
+
+  // date range for joining date, default last 30 days
+  const now = new Date()
+  const startDate = searchParams.start ? new Date(searchParams.start) : subDays(now, 30)
+  const endDate = searchParams.end ? new Date(searchParams.end) : now
+  endDate.setHours(23, 59, 59, 999)
 
   // Helper function to convert Decimals to plain JSON objects
   // Prisma Decimal objects can't be passed to client components
@@ -62,7 +70,8 @@ export default async function EnrollmentIndex(props: Props) {
   // 3. Build Dynamic Query
   // We start with the base requirement: Status must be ACTIVE
   const whereClause: any = { 
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    joiningDate: { gte: startDate, lte: endDate }
   }
 
   // If a Course is selected, add it to the filter
@@ -127,6 +136,36 @@ export default async function EnrollmentIndex(props: Props) {
   // Convert Decimals to numbers in slotsWithEnrollments
   const slotsWithEnrollments: typeof slotsWithEnrollmentsData = toJSON(slotsWithEnrollmentsData)
 
+  const rows: EnrollmentRow[] = enrollments.map((record) => ({
+    id: record.id,
+    studentId: record.student.studentId,
+    studentName: record.student.name,
+    fatherName: record.student.fatherName,
+    courseName: record.courseOnSlot.course.name,
+    slotDays: record.courseOnSlot.slot.days,
+    slotStartTime: record.courseOnSlot.slot.startTime,
+    slotRoom: record.courseOnSlot.slot.room.name,
+    joiningDate: record.joiningDate,
+    status: record.status,
+    currentSlotId: record.courseOnSlot.slot.id,
+    currentCourseOnSlotId: record.courseOnSlot.id,
+    currentTiming: {
+      days: record.courseOnSlot.slot.days,
+      startTime: record.courseOnSlot.slot.startTime,
+      endTime: record.courseOnSlot.slot.endTime,
+      room: record.courseOnSlot.slot.room.name,
+    },
+    availableSlotsForCourse: slotsWithEnrollments
+      .filter((s) => s.courseId === record.courseOnSlot.courseId)
+      .map((s) => ({
+        id: s.id,
+        days: s.slot.days,
+        startTime: s.slot.startTime,
+        endTime: s.slot.endTime,
+        room: { name: s.slot.room.name, capacity: s.slot.room.capacity },
+        enrollmentCount: s._count.enrollments,
+      })),
+  }))
 
   return (
     <PageLayout>
@@ -136,123 +175,46 @@ export default async function EnrollmentIndex(props: Props) {
         backHref="/admin"
         backLabel="Back to Dashboard"
         actions={
-          <Link
-            href="/admin/enrollment/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-          >
-            <Plus size={16} />
-            New Enrollment
-          </Link>
+          <>
+            <DateRangePicker />
+            <Link
+              href="/admin/enrollment/new"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+            >
+              <Plus size={16} />
+              New Enrollment
+            </Link>
+          </>
         }
       />
 
       {/* Render the Filters */}
       <EnrollmentFilters courses={courses} slots={slots} />
 
-      <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
-          <p className="text-sm text-gray-600">
-            Showing <span className="font-semibold">{enrollments.length}</span> enrollment{enrollments.length !== 1 ? 's' : ''}
-            {(courseId || slotId || searchQuery) && (
-              <span> •
-                {searchQuery && ` Search: "${searchQuery}"`}
-                {searchQuery && (courseId || slotId) && ' •'}
-                {courseId && ` Course: ${courses.find(c => c.id === courseId)?.name}`}
-                {courseId && slotId && ' •'}
-                {slotId && ` Slot: ${slots.find(s => s.id === slotId)?.days}`}
-              </span>
-            )}
-          </p>
+      <div className="px-6 py-4">
+        <p className="text-sm text-gray-600">
+          Showing <span className="font-semibold">{rows.length}</span> enrollment{rows.length !== 1 ? 's' : ''}
           {(courseId || slotId || searchQuery) && (
-            <Link
-              href="/admin/enrollment"
-              className="text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              Clear filters
-            </Link>
+            <span> •
+              {searchQuery && ` Search: "${searchQuery}"`}
+              {searchQuery && (courseId || slotId) && ' •'}
+              {courseId && ` Course: ${courses.find(c => c.id === courseId)?.name}`}
+              {courseId && slotId && ' •'}
+              {slotId && ` Slot: ${slots.find(s => s.id === slotId)?.days}`}
+            </span>
           )}
-        </div>
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b text-gray-500">
-            <tr>
-              <th className="px-6 py-3">Student ID</th>
-              <th className="px-6 py-3">Student Name</th>
-              <th className="px-6 py-3">Course</th>
-              <th className="px-6 py-3">Slot / Room</th>
-              <th className="px-6 py-3">Enrollment Date</th>
-              <th className="px-6 py-3 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {enrollments.map((record) => (
-              <tr key={record.id} className="hover:bg-gray-50 group">
-                <td className="px-6 py-4 font-mono text-xs text-blue-600 font-medium">
-                  {record.student.studentId}
-                </td>
-                <td className="px-6 py-4 font-medium text-gray-900">
-                  {record.student.name}
-                  <div className="text-xs text-gray-500 font-normal">{record.student.fatherName}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded text-xs font-bold border border-blue-200">
-                    {record.courseOnSlot.course.name}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-gray-600">
-                  <div className="font-medium text-gray-900">{record.courseOnSlot.slot.days}</div>
-                  <div className="flex items-center gap-1 text-xs">
-                    {new Date(record.courseOnSlot.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
-                    <span>•</span>
-                    <span className="text-gray-500">{record.courseOnSlot.slot.room.name}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-600">
-                  {new Date(record.joiningDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
-                </td>
-
-                <td className="px-6 py-4 text-right">
-                  <EnrollmentRowActions
-                    enrollmentId={record.id}
-                    studentId={record.student.id}
-                    studentName={record.student.name}
-                    courseName={record.courseOnSlot.course.name}
-                    currentSlotId={record.courseOnSlot.slot.id}
-                    currentCourseOnSlotId={record.courseOnSlot.id}
-                    currentTiming={{
-                      days: record.courseOnSlot.slot.days,
-                      startTime: record.courseOnSlot.slot.startTime,
-                      endTime: record.courseOnSlot.slot.endTime,
-                      room: record.courseOnSlot.slot.room.name
-                    }}
-                    availableSlotsForCourse={slotsWithEnrollments
-                      .filter(s => s.courseId === record.courseOnSlot.courseId)
-                      .map(s => ({
-                        id: s.id,
-                        days: s.slot.days,
-                        startTime: s.slot.startTime,
-                        endTime: s.slot.endTime,
-                        room: {
-                          name: s.slot.room.name,
-                          capacity: s.slot.room.capacity
-                        },
-                        enrollmentCount: s._count.enrollments
-                      }))}
-                  />
-                </td>
-              </tr>
-            ))}
-
-            {enrollments.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  <p className="mb-2 text-lg">No students found for this filter.</p>
-                  <p className="text-sm">Try clearing filters or checking other classes.</p>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        </p>
+        {(courseId || slotId || searchQuery) && (
+          <Link
+            href="/admin/enrollment"
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Clear filters
+          </Link>
+        )}
       </div>
+
+      <EnrollmentTable data={rows} />
     </PageLayout>
   )
 }

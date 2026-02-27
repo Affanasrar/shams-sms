@@ -1,94 +1,136 @@
-import React from "react"
+// components/ui/data-table.tsx
+'use client'
+
+import React, { useState } from 'react'
+import {
+  ColumnDef,
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+} from '@tanstack/react-table'
+import { Input } from '@/components/ui/input'
 import {
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
   TableHeader,
+  TableBody,
   TableRow,
-} from "@/components/ui/table"
-import { cn } from "@/lib/utils"
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { ArrowUpDown } from 'lucide-react'
 
-interface DataTableProps<TData> {
-  columns: Array<{
-    key: string
-    label: string
-    render?: (data: any) => React.ReactNode
-    sortable?: boolean
-    width?: string
-  }>
+interface DataTableProps<TData, TValue> {
+  columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  isLoading?: boolean
-  rowClassName?: string
-  onRowClick?: (row: TData) => void
+  searchKey?: string
+  searchPlaceholder?: string
 }
 
-export function DataTable<TData extends Record<string, any>>({
+export function DataTable<TData, TValue>({
   columns,
   data,
-  isLoading,
-  rowClassName,
-  onRowClick,
-}: DataTableProps<TData>) {
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-12 bg-muted rounded animate-pulse" />
-        ))}
-      </div>
-    )
-  }
+  searchKey,
+  searchPlaceholder,
+}: DataTableProps<TData, TValue>) {
+  const [globalFilter, setGlobalFilter] = useState('')
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: {
+      globalFilter,
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: 'includesString',
+  })
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHead
-                key={column.key}
-                className={cn("font-semibold", column.width)}
-              >
-                {column.label}
-                {column.sortable && <span className="ml-1 text-muted-foreground">↕</span>}
-              </TableHead>
+    <div className="space-y-4">
+      {searchKey && (
+        <Input
+          placeholder={searchPlaceholder || `Search ${searchKey}…`}
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="max-w-sm"
+        />
+      )}
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : (
+                      <div
+                        className="flex items-center cursor-pointer select-none"
+                        {...{
+                          onClick: header.column.getToggleSortingHandler(),
+                        }}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </div>
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className="text-center py-8 text-muted-foreground"
-              >
-                No data found
-              </TableCell>
-            </TableRow>
-          ) : (
-            data.map((row, idx) => (
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="p-8 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+            {table.getRowModel().rows.map((row) => (
               <TableRow
-                key={idx}
-                onClick={() => onRowClick?.(row)}
-                className={cn(
-                  "data-table-text transition-colors",
-                  onRowClick && "cursor-pointer hover:bg-muted/50",
-                  rowClassName
-                )}
+                key={row.id}
+                className="hover:bg-slate-50 transition-colors"
               >
-                {columns.map((column) => (
-                  <TableCell key={column.key} className={column.width}>
-                    {column.render
-                      ? column.render(row[column.key])
-                      : row[column.key]}
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-end space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   )
 }

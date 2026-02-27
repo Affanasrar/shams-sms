@@ -64,10 +64,18 @@ export default async function AdminDashboard() {
   })
   const pendingAmount = Number((pendingSums._sum.finalAmount || 0)) - Number((pendingSums._sum.paidAmount || 0))
 
-  // Recent activities: fetch both enrollments and fee transactions
+  // Recent activities: fetch enrollments (new + dropped) and fee transactions
   const recentEnrollments = await prisma.enrollment.findMany({
     take: 10,
     orderBy: { joiningDate: 'desc' },
+    include: { student: true, courseOnSlot: { include: { course: true } } }
+  })
+
+  // also grab most recent drops (status DROPPED) by endDate
+  const recentDrops = await prisma.enrollment.findMany({
+    take: 10,
+    where: { status: 'DROPPED' },
+    orderBy: { endDate: 'desc' },
     include: { student: true, courseOnSlot: { include: { course: true } } }
   })
 
@@ -91,6 +99,13 @@ export default async function AdminDashboard() {
       message: `${e.student.name} enrolled in ${e.courseOnSlot.course.name}`,
       timestamp: e.joiningDate,
       time: e.joiningDate.toLocaleString('en-PK')
+    })),
+    ...recentDrops.map(e => ({
+      id: `drop-${e.id}`,
+      type: 'drop' as const,
+      message: `${e.student.name} dropped from ${e.courseOnSlot.course.name}`,
+      timestamp: e.endDate || new Date(),
+      time: (e.endDate || new Date()).toLocaleString('en-PK')
     })),
     ...recentTransactions.map(t => ({
       id: t.id,
@@ -199,7 +214,11 @@ export default async function AdminDashboard() {
             {recentActivities.map((activity) => (
               <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-slate-200 last:border-0 last:pb-0">
                 <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
-                  activity.type === 'fee' ? 'bg-emerald-500' : 'bg-blue-500'
+                  activity.type === 'fee'
+                    ? 'bg-emerald-500'
+                    : activity.type === 'drop'
+                    ? 'bg-yellow-500'
+                    : 'bg-blue-500'
                 }`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium" style={{ color: '#0f172a' }}>{activity.message}</p>

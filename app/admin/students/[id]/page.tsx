@@ -23,6 +23,17 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   
   const student = await getStudentProfile(id)
 
+  // convert Decimal instances in nested objects to plain numbers so that
+  // we can safely pass data down to client components (React RSC boundary)
+  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
+    if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
+      return Number(value)
+    }
+    return value
+  }))
+
+  const cleanEnrollments = toJSON(student.enrollments)
+
   // Calculate Total Outstanding Balance
   const totalDue = student.fees
     .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
@@ -98,7 +109,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
         <TabsContent value="general" className="space-y-6">
           <Card className="p-6">
             <h2 className="text-xl font-bold tracking-tight mb-6">Active Enrollments</h2>
-            <EnrollmentTable enrollments={student.enrollments} />
+            <EnrollmentTable enrollments={cleanEnrollments} />
           </Card>
         </TabsContent>
 

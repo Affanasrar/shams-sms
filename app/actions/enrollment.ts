@@ -151,12 +151,36 @@ export async function dropStudent(formData: FormData) {
       }
     })
 
-    // Refresh the page so the student disappears from the list
+    // Refresh the relevant pages so the student disappears from the list
     revalidatePath('/admin/enrollment')
+    revalidatePath('/admin') // update dashboard activity feed
     return { success: true, message: "Student dropped successfully" }
   } catch (error) {
     console.error("Drop Error:", error)
     return { success: false, error: "Failed to drop student" }
+  }
+}
+
+export async function restoreEnrollment(formData: FormData) {
+  const enrollmentId = formData.get('enrollmentId') as string
+
+  if (!enrollmentId) return
+
+  try {
+    await prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        status: 'ACTIVE',
+        endDate: null
+      }
+    })
+
+    revalidatePath('/admin/enrollment')
+    revalidatePath('/admin')
+    return { success: true, message: "Enrollment restored" }
+  } catch (error) {
+    console.error("Restore Error:", error)
+    return { success: false, error: "Failed to restore enrollment" }
   }
 }
 

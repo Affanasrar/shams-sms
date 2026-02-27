@@ -1,8 +1,11 @@
 // app/admin/students/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { UserPlus, Search } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { PageHeader, PageLayout } from '@/components/ui'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { subDays } from 'date-fns'
+import { StudentTable, StudentRow } from '@/components/students/student-table'
 
 // 👇 Define the props type correctly for Next.js 15+
 type Props = {
@@ -14,8 +17,18 @@ export default async function StudentList(props: Props) {
   const searchParams = await props.searchParams
   const searchQuery = searchParams.q as string | undefined
 
+  // date range parameters; do not impose default range unless user set one
+  const now = new Date()
+  const hasRangeFilter = Boolean(searchParams.start || searchParams.end)
+  const startDate = searchParams.start ? new Date(searchParams.start as string) : subDays(now, 30)
+  const endDate = searchParams.end ? new Date(searchParams.end as string) : now
+  endDate.setHours(23, 59, 59, 999)
+
   // 2. Build Dynamic Query
   const whereClause: any = {}
+  if (hasRangeFilter) {
+    whereClause.admission = { gte: startDate, lte: endDate }
+  }
   
   if (searchQuery && searchQuery.trim()) {
     whereClause.OR = [
@@ -32,6 +45,15 @@ export default async function StudentList(props: Props) {
     take: 50
   })
 
+  const rows: StudentRow[] = students.map(s => ({
+    id: s.id,
+    studentId: s.studentId,
+    name: s.name,
+    fatherName: s.fatherName,
+    phone: s.phone,
+    admission: s.admission
+  }))
+
   return (
     <PageLayout>
       <PageHeader
@@ -40,112 +62,20 @@ export default async function StudentList(props: Props) {
         backHref="/admin"
         backLabel="Back to Dashboard"
         actions={
-          <Link
-            href="/admin/students/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-          >
-            <UserPlus size={16} />
-            New Admission
-          </Link>
+          <>
+            <DateRangePicker />
+            <Link
+              href="/admin/students/new"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+            >
+              <UserPlus size={16} />
+              New Admission
+            </Link>
+          </>
         }
       />
 
-      <form method="GET" className="relative">
-        <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-        <input
-          type="text"
-          name="q"
-          placeholder="Search by name, student ID, phone, or father's name..."
-          defaultValue={searchQuery || ''}
-          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </form>
-
-      <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              {searchQuery ? (
-                <>Found <span className="font-semibold">{students.length}</span> student{students.length !== 1 ? 's' : ''} matching "<span className="font-medium">{searchQuery}</span>"</>
-              ) : (
-                <>Showing <span className="font-semibold">{students.length}</span> student{students.length !== 1 ? 's' : ''}</>
-              )}
-            </p>
-            {searchQuery && (
-              <Link
-                href="/admin/students"
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                Clear search
-              </Link>
-            )}
-          </div>
-        </div>
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b text-gray-500">
-            <tr>
-              <th className="px-6 py-3">Student ID</th>
-              <th className="px-6 py-3">Student Name</th>
-              <th className="px-6 py-3">Father's Name</th>
-              <th className="px-6 py-3">Phone</th>
-              <th className="px-6 py-3">Joined</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {students.map((student) => (
-              <tr key={student.id} className="hover:bg-gray-50 group">
-                <td className="px-6 py-4 font-mono text-xs text-blue-600 font-medium">
-                  {student.studentId}
-                </td>
-
-                {/* 👇 THIS IS THE UPDATED PART 👇 */}
-                <td className="px-6 py-4 font-medium text-gray-900">
-                  <Link
-                    href={`/admin/students/${student.studentId}`}
-                    className="hover:text-blue-600 hover:underline"
-                  >
-                    {student.name}
-                  </Link>
-                </td>
-                {/* 👆 END OF UPDATED PART 👆 */}
-
-                <td className="px-6 py-4 text-gray-600">{student.fatherName}</td>
-                <td className="px-6 py-4 font-mono text-gray-600">{student.phone}</td>
-                <td className="px-6 py-4 text-gray-500">
-                  {new Date(student.admission).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {students.length === 0 && (
-          <div className="px-6 py-12 text-center">
-            <div className="text-gray-400 mb-2">
-              <Search size={48} className="mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
-              {searchQuery ? 'No students found' : 'No students yet'}
-            </h3>
-            <p className="text-gray-500">
-              {searchQuery
-                ? `No students match "${searchQuery}". Try a different search term.`
-                : 'Get started by adding your first student.'
-              }
-            </p>
-            {searchQuery && (
-              <div className="mt-4">
-                <Link
-                  href="/admin/students"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Clear search and view all students
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <StudentTable data={rows} />
     </PageLayout>
   )
 }

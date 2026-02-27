@@ -1,12 +1,24 @@
 // app/admin/fees/reports/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { ArrowLeft, FileText, Download, Calendar, Users, BookOpen, Building, TrendingUp, BarChart3 } from 'lucide-react'
+import { ArrowLeft, FileText, Calendar, Users, BookOpen, Building, TrendingUp } from 'lucide-react'
 import { ReportGenerator } from './report-generator'
+import { DateRangePicker } from '../../../../components/ui/date-range-picker'
+import { FeesReportTable, FeeRow } from '@/components/fees/fees-report-table'
+import { subDays } from 'date-fns'
 
-export default async function FeesReportsPage() {
-  // Fetch data for report options
-  const [courses, students] = await Promise.all([
+interface ReportsPageProps {
+  searchParams: { start?: string; end?: string }
+}
+
+export default async function FeesReportsPage({ searchParams }: ReportsPageProps) {
+  // determine date range, default last 30 days
+  const now = new Date()
+  const startDate = searchParams.start ? new Date(searchParams.start) : subDays(now, 30)
+  const endDate = searchParams.end ? new Date(searchParams.end) : now
+  endDate.setHours(23, 59, 59, 999)
+
+  const [courses, students, fees] = await Promise.all([
     prisma.course.findMany({
       select: { id: true, name: true },
       orderBy: { name: 'asc' }
@@ -14,15 +26,32 @@ export default async function FeesReportsPage() {
     prisma.student.findMany({
       select: { id: true, studentId: true, name: true, fatherName: true },
       orderBy: { name: 'asc' }
+    }),
+    prisma.fee.findMany({
+      where: {
+        dueDate: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      include: { student: true }
     })
   ])
+
+  const feeData: FeeRow[] = fees.map(f => ({
+    id: f.id,
+    studentName: f.student.name,
+    finalAmount: Number(f.finalAmount),
+    status: f.status,
+    dueDate: f.dueDate
+  }))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
             <Link
               href="/admin/fees/dashboard"
               className="group flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
@@ -36,57 +65,63 @@ export default async function FeesReportsPage() {
               <p className="text-gray-600 mt-1">Generate comprehensive PDF reports for fees management</p>
             </div>
           </div>
+          <DateRangePicker />
+        </div>
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Students</p>
-                  <p className="text-2xl font-bold text-gray-900">{students.length}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <Users size={24} className="text-blue-600" />
-                </div>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Students</p>
+                <p className="text-2xl font-bold text-gray-900">{students.length}</p>
               </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active Courses</p>
-                  <p className="text-2xl font-bold text-gray-900">{courses.length}</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <BookOpen size={24} className="text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Report Types</p>
-                  <p className="text-2xl font-bold text-gray-900">4</p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <FileText size={24} className="text-purple-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Generated Today</p>
-                  <p className="text-2xl font-bold text-gray-900">0</p>
-                </div>
-                <div className="p-3 bg-orange-100 rounded-xl">
-                  <TrendingUp size={24} className="text-orange-600" />
-                </div>
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <Users size={24} className="text-blue-600" />
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Courses</p>
+                <p className="text-2xl font-bold text-gray-900">{courses.length}</p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-xl">
+                <BookOpen size={24} className="text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Report Types</p>
+                <p className="text-2xl font-bold text-gray-900">4</p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-xl">
+                <FileText size={24} className="text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Generated Today</p>
+                <p className="text-2xl font-bold text-gray-900">0</p>
+              </div>
+              <div className="p-3 bg-orange-100 rounded-xl">
+                <TrendingUp size={24} className="text-orange-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Data table section */}
+        <div className="mb-8">
+          <FeesReportTable data={feeData} />
         </div>
 
         {/* Report Types Grid */}
@@ -128,7 +163,7 @@ export default async function FeesReportsPage() {
               </div>
               <div>
                 <h3 className="font-bold text-white text-lg">Course Report</h3>
-                <p className="text-purple-100 text-sm">Fees by course</p>
+                <p className="text-purple-100 text-small">Fees by course</p>
               </div>
             </div>
             <p className="text-purple-50 text-sm leading-relaxed">

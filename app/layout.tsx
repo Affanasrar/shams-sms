@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { ToastProvider } from "@/components/providers/toast-provider";
-import { CommandPaletteProvider } from "@/components/ui/command-palette"
+// providers that must only render on the client.  `DynamicClientProviders`
+// is itself a client component which handles the dynamic import.
+import DynamicClientProviders from "@/components/ui/dynamic-client-providers"
 // PWA removed: installer component removed
 
 const geistSans = Geist({
@@ -55,10 +56,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <CommandPaletteProvider>
-          <ToastProvider />
+        <DynamicClientProviders>
           {children}
-        </CommandPaletteProvider>
+        </DynamicClientProviders>
       </body>
     </html>
     </ClerkProvider>

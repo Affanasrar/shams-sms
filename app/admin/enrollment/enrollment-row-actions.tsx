@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import { Clock, Trash2, X, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { dropStudent } from '@/app/actions/enrollment'
-import { changeEnrollmentTiming } from '@/app/actions/enrollment'
+import { dropStudent, changeEnrollmentTiming, restoreEnrollment } from '@/app/actions/enrollment'
 
 type Props = {
   enrollmentId: string
   studentId: string
   studentName: string
   courseName: string
+  status: string // ACTIVE | DROPPED | COMPLETED etc
   currentSlotId: string
   currentCourseOnSlotId: string
   currentTiming: {
@@ -50,6 +50,8 @@ export function EnrollmentRowActions({
   const [selectedSlot, setSelectedSlot] = useState<string>('')
   const [state, setState] = useState<ActionState>(initialState)
   const [isLoading, setIsLoading] = useState(false)
+
+  const isDropped = status === 'DROPPED'
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString('en-US', {
@@ -92,32 +94,61 @@ export function EnrollmentRowActions({
     slot => slot.id !== currentCourseOnSlotId
   )
 
+  // If the enrollment was dropped, we don't allow timing changes
+  if (isDropped) {
+    // render early? we still want the markup above to show restore, so no changes here
+  }
+
   return (
     <>
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
-        <button
-          onClick={() => setIsTimingModalOpen(true)}
-          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white hover:bg-blue-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-blue-700"
-          title="Change Course Timing"
-        >
-          <Clock size={14} /> Change Timing
-        </button>
-
-        <form
-          action={async (formData) => {
-            await dropStudent(formData)
-          }}
-        >
-          <input type="hidden" name="enrollmentId" value={enrollmentId} />
+        {!isDropped && (
           <button
-            type="submit"
-            className="inline-flex items-center gap-1.5 text-red-600 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-red-700"
-            title="Drop Student from Class"
+            onClick={() => setIsTimingModalOpen(true)}
+            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white hover:bg-blue-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-blue-700"
+            title="Change Course Timing"
           >
-            <Trash2 size={14} /> Drop
+            <Clock size={14} /> Change Timing
           </button>
-        </form>
+        )}
+
+        {isDropped ? (
+          <form
+            action={async (formData) => {
+              await restoreEnrollment(formData)
+            }}
+          >
+            <input type="hidden" name="enrollmentId" value={enrollmentId} />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 text-green-600 hover:text-white hover:bg-green-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-green-700"
+              title="Restore Enrollment"
+            >
+              <CheckCircle2 size={14} /> Restore
+            </button>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              if (!confirm("Are you sure you want to drop this student? This action cannot be undone.")) {
+                e.preventDefault()
+              }
+            }}
+            action={async (formData) => {
+              await dropStudent(formData)
+            }}
+          >
+            <input type="hidden" name="enrollmentId" value={enrollmentId} />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 text-red-600 hover:text-white hover:bg-red-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-red-700"
+              title="Drop Student from Class"
+            >
+              <Trash2 size={14} /> Drop
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Change Timing Modal */}

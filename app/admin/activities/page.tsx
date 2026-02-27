@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 
 type Activity = {
   id: string
-  type: 'enrollment' | 'fee'
+  type: 'enrollment' | 'fee' | 'drop'
   message: string
   timestamp: Date
   time: string
@@ -22,6 +22,15 @@ export default async function ActivitiesPage() {
       joiningDate: { gte: fourWeeksAgo }
     },
     orderBy: { joiningDate: 'desc' },
+    include: { student: true, courseOnSlot: { include: { course: true } } }
+  })
+
+  const droppedEnrollments = await prisma.enrollment.findMany({
+    where: {
+      status: 'DROPPED',
+      endDate: { gte: fourWeeksAgo }
+    },
+    orderBy: { endDate: 'desc' },
     include: { student: true, courseOnSlot: { include: { course: true } } }
   })
 
@@ -44,6 +53,13 @@ export default async function ActivitiesPage() {
       message: `${e.student.name} enrolled in ${e.courseOnSlot.course.name}`,
       timestamp: e.joiningDate,
       time: e.joiningDate.toLocaleString('en-PK')
+    })),
+    ...droppedEnrollments.map(e => ({
+      id: `drop-${e.id}`,
+      type: 'drop' as const,
+      message: `${e.student.name} dropped from ${e.courseOnSlot.course.name}`,
+      timestamp: e.endDate || new Date(),
+      time: (e.endDate || new Date()).toLocaleString('en-PK')
     })),
     ...transactions.map(t => ({
       id: t.id,
@@ -154,6 +170,7 @@ export default async function ActivitiesPage() {
             const weekStart = getWeekStart(new Date(year, 0, 1 + (weekNum - 1) * 7))
             const weekEnd = getWeekEnd(weekStart)
             const enrollmentCount = activities.filter(a => a.type === 'enrollment').length
+            const dropCount = activities.filter(a => a.type === 'drop').length
             const feeCount = activities.filter(a => a.type === 'fee').length
             const totalFees = activities
               .filter(a => a.type === 'fee')
@@ -176,6 +193,12 @@ export default async function ActivitiesPage() {
                       <p className="text-gray-600">Enrollments</p>
                       <p className="font-bold text-blue-600">{enrollmentCount}</p>
                     </div>
+                    {dropCount > 0 && (
+                      <div className="text-right">
+                        <p className="text-gray-600">Drops</p>
+                        <p className="font-bold text-red-600">{dropCount}</p>
+                      </div>
+                    )}
                     <div className="text-right">
                       <p className="text-gray-600">Fee Transactions</p>
                       <p className="font-bold text-green-600">{feeCount}</p>
@@ -194,7 +217,7 @@ export default async function ActivitiesPage() {
                   {activities.map((activity) => (
                     <div key={activity.id} className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                       <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
-                        activity.type === 'fee' ? 'bg-emerald-500' : 'bg-blue-500'
+                        activity.type === 'fee' ? 'bg-emerald-500' : activity.type === 'drop' ? 'bg-red-500' : 'bg-blue-500'
                       }`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900">{activity.message}</p>
@@ -209,10 +232,12 @@ export default async function ActivitiesPage() {
                       </div>
                       <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${
                         activity.type === 'fee' 
-                          ? 'bg-emerald-100 text-emerald-700' 
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : activity.type === 'drop'
+                          ? 'bg-red-100 text-red-700'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {activity.type === 'fee' ? 'Fee Payment' : 'Enrollment'}
+                        {activity.type === 'fee' ? 'Fee Payment' : activity.type === 'drop' ? 'Dropped' : 'Enrollment'}
                       </span>
                     </div>
                   ))}
