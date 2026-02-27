@@ -186,7 +186,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                         key={student.id}
                         value={student.name}
                         onSelect={() => {
-                          router.push(`/admin/students/${student.id}`)
+                          router.push(`/admin/students/${student.studentId}`)
                           setOpen(false)
                         }}
                         className="cursor-pointer"
