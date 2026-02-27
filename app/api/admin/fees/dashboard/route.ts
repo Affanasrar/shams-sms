@@ -35,10 +35,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Add status filter if provided
-    if (status) {
-      whereClause.status = status
-    }
+    // Note: Do NOT filter by status at the database level
+    // Status should be calculated after grouping fees by student
+    // to ensure totals include all fees for that student
 
     if (courseId) {
       whereClause.enrollment = {
@@ -144,6 +143,11 @@ export async function GET(request: NextRequest) {
         fee.studentId.toLowerCase().includes(searchLower) ||
         fee.fatherName.toLowerCase().includes(searchLower)
       )
+    }
+
+    // Apply status filter AFTER grouping and calculating totals
+    if (status) {
+      result = result.filter(fee => fee.status === status)
     }
 
     return NextResponse.json(result)

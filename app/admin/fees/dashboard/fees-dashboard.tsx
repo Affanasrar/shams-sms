@@ -79,7 +79,7 @@ export function FeesDashboard({ courses }: Props) {
 
   useEffect(() => {
     fetchFeesData()
-  }, [selectedMonth, selectedYear, selectedCourse, selectedStatus, useCustomDateRange])
+  }, [selectedMonth, selectedYear, selectedCourse, selectedStatus, useCustomDateRange, searchTerm, startDate, endDate])
 
   const handleSearch = () => {
     fetchFeesData()
