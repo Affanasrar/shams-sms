@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { searchStudentAction, deleteStudentFeesAction } from '@/app/actions/student-cleanup'
+import { searchStudentAction, deleteStudentFeesAction, deleteSingleFeeAction } from '@/app/actions/student-cleanup'
 import { Trash2, Search, User, DollarSign, Calendar, CreditCard } from 'lucide-react'
 
 interface Fee {
@@ -60,10 +60,14 @@ interface StudentData {
 export default function StudentCleanupPage() {
   const [studentData, setStudentData] = useState<StudentData | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [feeToDelete, setFeeToDelete] = useState<Fee | null>(null)
+  const [confirmFeeDelete, setConfirmFeeDelete] = useState(false)
   const [searchPending, startSearchTransition] = useTransition()
   const [deletePending, startDeleteTransition] = useTransition()
+  const [feeDeletePending, startFeeDeleteTransition] = useTransition()
   const [searchError, setSearchError] = useState<string | null>(null)
   const [deleteResult, setDeleteResult] = useState<any>(null)
+  const [feeDeleteResult, setFeeDeleteResult] = useState<any>(null)
 
   const handleSearch = async (formData: FormData) => {
     const studentId = formData.get('studentId') as string
@@ -101,6 +105,44 @@ export default function StudentCleanupPage() {
         }
       } catch (error) {
         setDeleteResult({ success: false, error: 'An unexpected error occurred' })
+      }
+    })
+  }
+
+  const handleFeeDelete = async (formData: FormData) => {
+    startFeeDeleteTransition(async () => {
+      try {
+        const result = await deleteSingleFeeAction(null, formData)
+        setFeeDeleteResult(result)
+        if (result.success) {
+          // remove fee from state
+          setStudentData(prev => {
+            if (!prev) return prev
+            const removedFee = prev.fees.find(f => f.id === formData.get('feeId'))
+            const updatedFees = prev.fees.filter(f => f.id !== formData.get('feeId'))
+            if (!removedFee) {
+              return { ...prev, fees: updatedFees }
+            }
+            const feeAmt = Number(removedFee.finalAmount)
+            const paidAmt = Number(removedFee.paidAmount)
+            const transCount = removedFee.transactions.length
+            return {
+              ...prev,
+              fees: updatedFees,
+              summary: {
+                totalFees: prev.summary.totalFees - 1,
+                totalTransactions: prev.summary.totalTransactions - transCount,
+                totalAmount: prev.summary.totalAmount - feeAmt,
+                totalPaid: prev.summary.totalPaid - paidAmt,
+                totalOutstanding: prev.summary.totalOutstanding - (feeAmt - paidAmt)
+              }
+            }
+          })
+          setFeeToDelete(null)
+          setConfirmFeeDelete(false)
+        }
+      } catch (error) {
+        setFeeDeleteResult({ success: false, error: 'An unexpected error occurred' })
       }
     })
   }
@@ -232,6 +274,14 @@ export default function StudentCleanupPage() {
         {studentData && studentData.fees.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Fees Details</h2>
+
+            {/* feedback from single fee deletion */}
+            {feeDeleteResult && (
+              <div className={`p-4 mb-4 rounded-md ${feeDeleteResult.success ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                {feeDeleteResult.success ? feeDeleteResult.message : feeDeleteResult.error}
+              </div>
+            )}
+
             <div className="space-y-4">
               {studentData.fees.map((fee) => (
                 <div key={fee.id} className="border rounded-lg p-4">
@@ -286,6 +336,18 @@ export default function StudentCleanupPage() {
                       </div>
                     </div>
                   )}
+                  {/* delete single fee button */}
+                  <div className="mt-4 text-right">
+                    <button
+                      onClick={() => {
+                        setFeeToDelete(fee)
+                        setConfirmFeeDelete(true)
+                      }}
+                      className="text-red-600 hover:underline text-sm"
+                    >
+                      Delete this fee
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -308,6 +370,43 @@ export default function StudentCleanupPage() {
               <Trash2 className="h-4 w-4" />
               Delete All Fees & Transactions
             </button>
+          </div>
+        )}
+
+        {/* Single Fee Delete Confirmation */}
+        {feeToDelete && !confirmFeeDelete && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-yellow-800">Fee Deletion</h2>
+            <p className="text-yellow-700 mb-4">
+              Click on a fee's "Delete this fee" link below to remove an individual fee along with its transactions.
+            </p>
+          </div>
+        )}
+        {feeToDelete && confirmFeeDelete && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-yellow-800">Confirm Fee Deletion</h2>
+            <p className="text-yellow-700 mb-4">
+              Are you sure you want to delete the fee from{' '}
+              <strong>{new Date(feeToDelete.cycleDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'Asia/Karachi' })}</strong>?
+              This will also remove {feeToDelete.transactions.length} associated transaction(s).
+            </p>
+            <form onSubmit={handleFeeDelete} className="space-y-4">
+              <input type="hidden" name="feeId" value={feeToDelete.id} />
+              <button
+                type="submit"
+                disabled={feeDeletePending}
+                className="w-full bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 flex items-center justify-center gap-2"
+              >
+                {feeDeletePending ? 'Deleting...' : 'Confirm Delete Fee'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setFeeToDelete(null); setConfirmFeeDelete(false); }}
+                className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </form>
           </div>
         )}
 

@@ -152,6 +152,38 @@ export async function deleteStudentFees(studentId: string) {
   }
 }
 
+// Delete a specific fee and its related transactions
+export async function deleteSingleFee(feeId: string) {
+  try {
+    console.log(`🗑️ Deleting fee ${feeId} and its transactions`)
+
+    // remove transactions first
+    const deletedTransactions = await prisma.transaction.deleteMany({
+      where: { feeId }
+    })
+
+    const deletedFee = await prisma.fee.delete({
+      where: { id: feeId }
+    })
+
+    // revalidate relevant paths (student page, fees list)
+    revalidatePath('/admin/fees')
+    revalidatePath('/admin/students')
+
+    return {
+      success: true,
+      message: `Deleted fee and ${deletedTransactions.count} transactions`,
+      deletedData: { fee: deletedFee.id, transactions: deletedTransactions.count }
+    }
+  } catch (error) {
+    console.error('❌ Error deleting single fee:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete fee'
+    }
+  }
+}
+
 // Server action wrapper for useActionState
 export async function searchStudentAction(prevState: any, formData: FormData) {
   const studentId = formData.get('studentId') as string
@@ -177,4 +209,18 @@ export async function deleteStudentFeesAction(prevState: any, formData: FormData
   }
 
   return await deleteStudentFees(studentId.trim())
+}
+
+// Delete single fee and its transactions
+export async function deleteSingleFeeAction(prevState: any, formData: FormData) {
+  const feeId = formData.get('feeId') as string
+
+  if (!feeId || feeId.trim() === '') {
+    return {
+      success: false,
+      error: 'Fee ID is required'
+    }
+  }
+
+  return await deleteSingleFee(feeId.trim())
 }
