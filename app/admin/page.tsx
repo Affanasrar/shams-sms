@@ -64,19 +64,44 @@ export default async function AdminDashboard() {
   })
   const pendingAmount = Number((pendingSums._sum.finalAmount || 0)) - Number((pendingSums._sum.paidAmount || 0))
 
-  // Recent activities: latest enrollments (as a simple activity feed)
+  // Recent activities: fetch both enrollments and fee transactions
   const recentEnrollments = await prisma.enrollment.findMany({
-    take: 6,
+    take: 10,
     orderBy: { joiningDate: 'desc' },
     include: { student: true, courseOnSlot: { include: { course: true } } }
   })
 
-  const recentActivities = recentEnrollments.map(e => ({
-    id: e.id,
-    type: 'enrollment',
-    message: `${e.student.name} enrolled in ${e.courseOnSlot.course.name}`,
-    time: e.joiningDate.toLocaleString('en-PK')
-  }))
+  // Fetch recent fee transactions
+  const recentTransactions = await prisma.transaction.findMany({
+    take: 10,
+    orderBy: { date: 'desc' },
+    include: {
+      fee: {
+        include: { student: true }
+      },
+      collectedBy: true
+    }
+  })
+
+  // Combine and sort all activities by timestamp
+  const allActivities = [
+    ...recentEnrollments.map(e => ({
+      id: e.id,
+      type: 'enrollment' as const,
+      message: `${e.student.name} enrolled in ${e.courseOnSlot.course.name}`,
+      timestamp: e.joiningDate,
+      time: e.joiningDate.toLocaleString('en-PK')
+    })),
+    ...recentTransactions.map(t => ({
+      id: t.id,
+      type: 'fee' as const,
+      message: `${t.fee.student.name} paid PKR ${Number(t.amount).toLocaleString('en-PK')} towards fees`,
+      timestamp: t.date,
+      time: t.date.toLocaleString('en-PK')
+    }))
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 8)
+
+  const recentActivities = allActivities
 
   // Fee trend: last 6 months
   const now = new Date()
@@ -185,7 +210,7 @@ export default async function AdminDashboard() {
           </div>
 
           <Button variant="outline" className="w-full mt-6" asChild>
-            <Link href="/admin/students">View All Activities</Link>
+            <Link href="/admin/activities">View All Activities</Link>
           </Button>
         </div>
 
