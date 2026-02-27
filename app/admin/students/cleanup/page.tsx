@@ -1,7 +1,7 @@
 // app/admin/students/cleanup/page.tsx
 'use client'
 
-import { useState, useTransition } from 'react'
+import React, { useState, useTransition } from 'react'
 import { searchStudentAction, deleteStudentFeesAction, deleteSingleFeeAction } from '@/app/actions/student-cleanup'
 import { Trash2, Search, User, DollarSign, Calendar, CreditCard } from 'lucide-react'
 
@@ -109,7 +109,9 @@ export default function StudentCleanupPage() {
     })
   }
 
-  const handleFeeDelete = async (formData: FormData) => {
+  const handleFeeDelete: React.FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
     startFeeDeleteTransition(async () => {
       try {
         const result = await deleteSingleFeeAction(null, formData)
