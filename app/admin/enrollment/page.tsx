@@ -26,8 +26,8 @@ export default async function EnrollmentIndex(props: Props) {
 
   // date range for joining date, default last 30 days
   const now = new Date()
-  const startDate = searchParams.start ? new Date(searchParams.start) : subDays(now, 30)
-  const endDate = searchParams.end ? new Date(searchParams.end) : now
+  const startDate = searchParams.start ? new Date(searchParams.start as string) : subDays(now, 30)
+  const endDate = searchParams.end ? new Date(searchParams.end as string) : now
   endDate.setHours(23, 59, 59, 999)
 
   // Helper function to convert Decimals to plain JSON objects

@@ -14,8 +14,8 @@ interface ReportsPageProps {
 export default async function FeesReportsPage({ searchParams }: ReportsPageProps) {
   // determine date range, default last 30 days
   const now = new Date()
-  const startDate = searchParams.start ? new Date(searchParams.start) : subDays(now, 30)
-  const endDate = searchParams.end ? new Date(searchParams.end) : now
+  const startDate = searchParams.start ? new Date(searchParams.start as string) : subDays(now, 30)
+  const endDate = searchParams.end ? new Date(searchParams.end as string) : now
   endDate.setHours(23, 59, 59, 999)
 
   const [courses, students, fees] = await Promise.all([
