@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 // providers that must only render on the client.  `DynamicClientProviders`
@@ -7,15 +6,26 @@ import { ClerkProvider } from "@clerk/nextjs";
 import DynamicClientProviders from "@/components/ui/dynamic-client-providers"
 // PWA removed: installer component removed
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Using system fonts instead of Google Fonts for better reliability in restricted environments
+// Font stack provides good typography across all platforms
+const fontStack = {
+  sansSerif: [
+    '-apple-system',
+    'BlinkMacSystemFont', 
+    '"Segoe UI"',
+    'Helvetica',
+    'Arial',
+    'sans-serif',
+    '"Apple Color Emoji"',
+    '"Segoe UI Emoji"',
+  ].join(','),
+  monospace: [
+    '"Fira Code"',
+    '"Source Code Pro"',
+    'Menlo',
+    'monospace',
+  ].join(','),
+}
 
 export const metadata: Metadata = {
   title: "Shams SMS - School Management System",
@@ -54,8 +64,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+        className="antialiased"
+        style={{
+          fontFamily: fontStack.sansSerif,
+        }}>
         <DynamicClientProviders>
           {children}
         </DynamicClientProviders>

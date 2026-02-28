@@ -161,6 +161,7 @@ model Fee {
   discountId   String?
   transactions Transaction[]
   
+  @@unique([enrollmentId, cycleDate]) // Prevent duplicate fees for same enrollment/month
   @@index([status, dueDate]) // Optimize for "Overdue" reports
 }
 

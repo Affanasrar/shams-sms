@@ -3,6 +3,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* System font stack for reliability in restricted environments */
+:root {
+  --font-geist-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-geist-mono: "Fira Code", "Source Code Pro", Menlo, monospace;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

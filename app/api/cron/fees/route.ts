@@ -127,7 +127,10 @@ export async function GET() {
         where: {
           enrollmentId: enrollment.id,
           applicableFromMonth: { lte: monthNumber },
-          applicableToMonth: { gte: monthNumber }
+          OR: [
+            { applicableToMonth: { gte: monthNumber } },
+            { applicableToMonth: null } // Include entire-course discounts
+          ]
         }
       })
 
@@ -150,8 +153,14 @@ export async function GET() {
       const baseAmount = Number(course.baseFee) - discountAmount
       const totalAmount = baseAmount + rolloverAmount
       
-      await prisma.fee.create({
-        data: {
+      await prisma.fee.upsert({
+        where: {
+          enrollmentId_cycleDate: {
+            enrollmentId: enrollment.id,
+            cycleDate: cycleDate
+          }
+        },
+        create: {
           studentId: enrollment.studentId,
           enrollmentId: enrollment.id,
           amount: course.baseFee,
@@ -161,6 +170,14 @@ export async function GET() {
           dueDate: dueDate,
           cycleDate: cycleDate,
           status: 'UNPAID',
+          discountId: discountId
+        },
+        update: {
+          amount: course.baseFee,
+          discountAmount: discountAmount,
+          rolloverAmount: rolloverAmount,
+          finalAmount: totalAmount,
+          dueDate: dueDate,
           discountId: discountId
         }
       })
