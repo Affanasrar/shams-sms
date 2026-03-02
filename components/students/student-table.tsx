@@ -62,8 +62,6 @@ export function StudentTable({ data }: StudentTableProps) {
     <DataTable
       columns={columns}
       data={data}
-      searchKey="name"
-      searchPlaceholder="Search name or ID…"
     />
   )
 }

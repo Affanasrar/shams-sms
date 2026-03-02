@@ -6,6 +6,7 @@ import { PageHeader, PageLayout } from '@/components/ui'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { subDays } from 'date-fns'
 import { StudentTable, StudentRow } from '@/components/students/student-table'
+import { StudentFilters } from './student-filters'
 
 // 👇 Define the props type correctly for Next.js 15+
 type Props = {
@@ -41,8 +42,7 @@ export default async function StudentList(props: Props) {
 
   const students = await prisma.student.findMany({
     where: whereClause,
-    orderBy: { admission: 'desc' },
-    take: 50
+    orderBy: { admission: 'desc' }
   })
 
   const rows: StudentRow[] = students.map(s => ({
@@ -74,6 +74,15 @@ export default async function StudentList(props: Props) {
           </>
         }
       />
+
+      <StudentFilters />
+
+      <div className="px-6 py-4">
+        <p className="text-sm text-gray-600">
+          Showing <span className="font-semibold">{rows.length}</span> student{rows.length !== 1 ? 's' : ''}
+          {searchQuery && ` matching "${searchQuery}"`}
+        </p>
+      </div>
 
       <StudentTable data={rows} />
     </PageLayout>

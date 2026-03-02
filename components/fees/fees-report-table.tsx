@@ -48,8 +48,6 @@ export function FeesReportTable({ data }: FeesReportTableProps) {
     <DataTable
       columns={columns}
       data={data}
-      searchKey="studentName"
-      searchPlaceholder="Search student…"
     />
   )
 }

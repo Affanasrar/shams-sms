@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { CollectButton } from './collect-button'
 import { EarlyFeeCollection } from './early-fee-collection'
 import { ArrowLeft } from 'lucide-react'
+import { FeesFilters } from './fees-filters'
 
 // 👇 Define the props type correctly for Next.js 15+
 type Props = {
@@ -99,22 +100,13 @@ export default async function FeesPage(props: Props) {
 
       <EarlyFeeCollection adminId={adminId} />
 
-      <div className="bg-white border rounded-lg p-4 shadow-sm">
-        <form method="GET" className="flex gap-2">
-          <input
-            type="text"
-            name="search"
-            placeholder="Search by Student Name, ID, or Father Name"
-            defaultValue={search || ''}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-          >
-            Search
-          </button>
-        </form>
+      <FeesFilters />
+
+      <div className="px-4 py-2">
+        <p className="text-sm text-gray-600">
+          Showing <span className="font-semibold">{dueFees.length}</span> unpaid fee{dueFees.length !== 1 ? 's' : ''}
+          {search && ` matching "${search}"`}
+        </p>
       </div>
 
       <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
