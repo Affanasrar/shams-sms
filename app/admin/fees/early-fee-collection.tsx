@@ -1,15 +1,20 @@
 // app/admin/fees/early-fee-collection.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, User, Calendar, DollarSign, CreditCard, Plus, X } from 'lucide-react'
 
-interface Student {
+// student object returned by the search endpoint (minimal fields)
+interface SearchStudent {
   id: string
   studentId: string
   name: string
-  fatherName: string
-  phone: string
+  fatherName?: string
+  phone?: string
+}
+
+// full object used after selecting a student (includes enrollments/fees)
+interface Student extends SearchStudent {
   enrollments: {
     id: string
     status: string
@@ -41,7 +46,7 @@ interface EarlyFeeCollectionProps {
 
 export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Student[]>([])
+  const [searchResults, setSearchResults] = useState<SearchStudent[]>([])
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(false)
   const [collectingFee, setCollectingFee] = useState<string | null>(null)
@@ -50,12 +55,15 @@ export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
   const [advanceFeeAmount, setAdvanceFeeAmount] = useState('')
   const [addingAdvanceFee, setAddingAdvanceFee] = useState(false)
 
-  const searchStudents = async () => {
-    if (!searchQuery.trim()) return
+  const searchStudents = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/admin/search-students?q=${encodeURIComponent(searchQuery)}`)
+      const response = await fetch(`/api/admin/search-students?q=${encodeURIComponent(query)}`)
       if (response.ok) {
         const data = await response.json()
         setSearchResults(data)
@@ -69,10 +77,35 @@ export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
     setLoading(false)
   }
 
-  const selectStudent = (student: Student) => {
-    setSelectedStudent(student)
+  // automatically search when the user types, with a small debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchStudents(searchQuery)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const selectStudent = async (student: SearchStudent) => {
+    // reset UI state first
     setSearchResults([])
     setSearchQuery('')
+
+    // fetch full student profile with enrollments/fees
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/admin/student-fees/${student.id}`)
+      if (response.ok) {
+        const full = await response.json()
+        setSelectedStudent(full)
+      } else {
+        alert('Failed to load student details')
+      }
+    } catch (error) {
+      console.error('Load student error:', error)
+      alert('Error loading student information')
+    }
+    setLoading(false)
   }
 
   const collectFee = async (feeId: string, amount: number) => {
@@ -165,15 +198,15 @@ export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Search by Student ID or Name..."
+              placeholder="Search by Student ID, Name or Phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && searchStudents()}
+              onKeyPress={(e) => e.key === 'Enter' && searchStudents(searchQuery)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button
-            onClick={searchStudents}
+            onClick={() => searchStudents(searchQuery)}
             disabled={loading || !searchQuery.trim()}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
@@ -195,7 +228,7 @@ export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
                   <div>
                     <div className="font-medium">{student.name}</div>
                     <div className="text-sm text-gray-500">
-                      ID: {student.studentId} • Phone: {student.phone}
+                      ID: {student.studentId} • Phone: {student.phone || 'N/A'}
                     </div>
                   </div>
                 </div>
@@ -205,7 +238,6 @@ export function EarlyFeeCollection({ adminId }: EarlyFeeCollectionProps) {
         )}
       </div>
 
-      {/* Selected Student Details */}
       {selectedStudent && (
         <div className="border-t pt-6">
           <div className="flex items-center justify-between mb-4">

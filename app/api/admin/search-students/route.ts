@@ -11,19 +11,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([])
     }
 
-    // Search students by ID or name
+    // Search students by ID, name or phone
     const students = await prisma.student.findMany({
       where: {
         OR: [
           { studentId: { contains: query, mode: 'insensitive' } },
           { name: { contains: query, mode: 'insensitive' } },
-          { fatherName: { contains: query, mode: 'insensitive' } }
+          { fatherName: { contains: query, mode: 'insensitive' } },
+          { phone: { contains: query, mode: 'insensitive' } }
         ]
       },
       select: {
         id: true,
         studentId: true,
-        name: true
+        name: true,
+        fatherName: true,
+        phone: true
       },
       take: 10
     })

@@ -17,6 +17,7 @@ interface Student {
   id: string
   studentId: string
   name: string
+  phone?: string
 }
 
 interface Course {
@@ -79,6 +80,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
         const coursesData = await coursesRes.json()
         const feesData = await feesRes.json()
 
+        // server currently returns phone/fatherName as well
         setStudents(Array.isArray(studentsData) ? studentsData : [])
         setCourses(Array.isArray(coursesData) ? coursesData : [])
         setFees(Array.isArray(feesData) ? feesData : [])
@@ -194,7 +196,9 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                         <Users className="w-4 h-4 mr-2" />
                         <div className="flex flex-col">
                           <span>{student.name}</span>
-                          <span className="text-xs text-gray-500">{student.studentId}</span>
+                          <span className="text-xs text-gray-500">
+                            {student.studentId}{student.phone ? ` • ${student.phone}` : ''}
+                          </span>
                         </div>
                       </CommandItem>
                     ))}
