@@ -51,5 +51,6 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
   ])
 
   revalidatePath('/admin/fees')
+  revalidatePath('/admin/activities')
   return { success: true }
 }
