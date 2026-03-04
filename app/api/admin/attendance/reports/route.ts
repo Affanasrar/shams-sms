@@ -81,7 +81,19 @@ export async function GET(request: NextRequest) {
     // Fill in attendance data
     attendanceRecords.forEach(record => {
       const dateKey = record.date.toISOString().split('T')[0]
-      studentAttendance[record.studentId].attendance[dateKey] = record.status
+      const sid = record.studentId
+
+      // If the attendance record belongs to a student not present in the
+      // current active enrollments (e.g., withdrawn or historical), ensure
+      // we still create an entry so accessing `.attendance` is safe.
+      if (!studentAttendance[sid]) {
+        studentAttendance[sid] = {
+          student: record.student || { id: sid, studentId: '', name: 'Unknown', fatherName: '' },
+          attendance: {}
+        }
+      }
+
+      studentAttendance[sid].attendance[dateKey] = record.status
     })
 
     // Calculate summary statistics
