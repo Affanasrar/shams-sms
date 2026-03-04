@@ -15,7 +15,14 @@ export default async function FeesByCourse() {
     return value
   }))
 
-  // Fetch all courses with their enrolled students and fees
+  // Get current month's cycle date
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+  const currentMonthCycleDate = new Date(currentYear, currentMonth, 1)
+  const nextMonthCycleDate = new Date(currentYear, currentMonth + 1, 1)
+
+  // Fetch all courses with their enrolled students and CURRENT MONTH fees only
   const courses = await prisma.course.findMany({
     include: {
       slotAssignments: {
@@ -25,6 +32,12 @@ export default async function FeesByCourse() {
             include: {
               student: true,
               fees: {
+                where: {
+                  cycleDate: {
+                    gte: currentMonthCycleDate,
+                    lt: nextMonthCycleDate
+                  }
+                },
                 orderBy: { dueDate: 'asc' }
               }
             }

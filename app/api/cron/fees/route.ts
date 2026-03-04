@@ -104,22 +104,24 @@ export async function GET() {
         continue
       }
 
-      // 🔄 Calculate rollover amount from unpaid previous month fees
-      const previousMonthDate = new Date(currentYear, currentMonth - 1, 1)
-      const previousMonthFees = await prisma.fee.findMany({
+      // 🔄 Calculate rollover amount from ALL unpaid previous fees (cumulative)
+      const unpaidPreviousFees = await prisma.fee.findMany({
         where: {
           enrollmentId: enrollment.id,
-          cycleDate: previousMonthDate,
+          cycleDate: {
+            lt: cycleDate // Get all fees before the current month
+          },
           status: { in: ['UNPAID', 'PARTIAL'] }
         }
       })
 
       let rolloverAmount = 0
-      if (previousMonthFees.length > 0) {
-        // Calculate unpaid balance from previous month
-        const prevFee = previousMonthFees[0]
-        const unpaidBalance = Number(prevFee.finalAmount) - Number(prevFee.paidAmount)
-        rolloverAmount = Math.max(0, unpaidBalance) // Only positive balances roll over
+      if (unpaidPreviousFees.length > 0) {
+        // Calculate total unpaid balance from ALL previous months
+        rolloverAmount = unpaidPreviousFees.reduce((sum, fee) => {
+          const unpaidBalance = Number(fee.finalAmount) - Number(fee.paidAmount)
+          return sum + Math.max(0, unpaidBalance)
+        }, 0)
       }
 
       // 🎯 Check for active discounts that apply to this month
