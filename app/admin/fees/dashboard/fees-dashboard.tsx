@@ -79,6 +79,11 @@ export function FeesDashboard({ courses }: Props) {
 
   useEffect(() => {
     fetchFeesData()
+
+    // Poll every 30 seconds for real-time updates
+    const interval = setInterval(fetchFeesData, 30000)
+
+    return () => clearInterval(interval)
   }, [selectedMonth, selectedYear, selectedCourse, selectedStatus, useCustomDateRange, searchTerm, startDate, endDate])
 
   const handleSearch = () => {

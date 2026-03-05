@@ -1,87 +1,69 @@
 // app/admin/fees/dashboard/page.tsx
-import prisma from '@/lib/prisma'
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, FileText, Download, Calendar, Users, DollarSign } from 'lucide-react'
 import { FeesDashboard } from './fees-dashboard'
 
-export default async function FeesDashboardPage() {
-  // Get current month and year for default view
-  const now = new Date()
-  const currentMonth = now.getMonth() + 1 // JavaScript months are 0-based
-  const currentYear = now.getFullYear()
+type SummaryData = {
+  totalStudents: number
+  totalFeesThisMonth: number
+  paidFeesThisMonth: number
+  pendingAmount: number
+  overdueFeesCount: number
+  studentsWithPendingFeesCount: number
+  collectionRate: number
+  courses: Array<{ id: string; name: string }>
+}
 
-  // Fetch summary data
-  const [
-    totalStudents,
-    totalFeesThisMonth,
-    paidFeesThisMonth,
-    pendingFeesThisMonth,
-    courses
-  ] = await Promise.all([
-    prisma.student.count(),
-    prisma.fee.aggregate({
-      where: {
-        cycleDate: {
-          gte: new Date(currentYear, currentMonth - 1, 1),
-          lt: new Date(currentYear, currentMonth, 1)
-        }
-      },
-      _sum: { finalAmount: true }
-    }),
-    prisma.fee.aggregate({
-      where: {
-        cycleDate: {
-          gte: new Date(currentYear, currentMonth - 1, 1),
-          lt: new Date(currentYear, currentMonth, 1)
-        },
-        status: { in: ['PAID', 'PARTIAL'] }
-      },
-      _sum: { paidAmount: true }
-    }),
-    prisma.fee.aggregate({
-      where: {
-        cycleDate: {
-          gte: new Date(currentYear, currentMonth - 1, 1),
-          lt: new Date(currentYear, currentMonth, 1)
-        },
-        status: { in: ['UNPAID', 'PARTIAL'] }
-      },
-      _sum: {
-        finalAmount: true,
-        paidAmount: true
+export default function FeesDashboardPage() {
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchSummaryData = async () => {
+    try {
+      const response = await fetch('/api/admin/fees/summary')
+      if (response.ok) {
+        const data = await response.json()
+        setSummaryData(data)
       }
-    }),
-    prisma.course.findMany({
-      select: { id: true, name: true }
-    })
-  ])
-
-  const pendingAmount = Number(totalFeesThisMonth._sum.finalAmount || 0) -
-                       Number(paidFeesThisMonth._sum.paidAmount || 0)
-
-  // Get overdue fees count (30+ days)
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-  const overdueFeesCount = await prisma.fee.count({
-    where: {
-      status: { in: ['UNPAID', 'PARTIAL'] },
-      dueDate: { lt: thirtyDaysAgo }
+    } catch (error) {
+      console.error('Failed to fetch fees summary:', error)
+    } finally {
+      setLoading(false)
     }
-  })
+  }
 
-  // Get students with pending fees
-  const studentsWithPendingFees = await prisma.fee.findMany({
-    where: {
-      cycleDate: {
-        gte: new Date(currentYear, currentMonth - 1, 1),
-        lt: new Date(currentYear, currentMonth, 1)
-      },
-      status: { in: ['UNPAID', 'PARTIAL'] }
-    },
-    distinct: ['studentId'],
-    select: { studentId: true }
-  })
+  useEffect(() => {
+    fetchSummaryData()
+
+    // Poll every 30 seconds for real-time updates
+    const interval = setInterval(fetchSummaryData, 30000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  if (loading || !summaryData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin"
+              className="text-gray-600 hover:text-gray-900 transition"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Fees Dashboard</h1>
+              <p className="text-gray-500">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -123,7 +105,7 @@ export default async function FeesDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Students</p>
-              <p className="text-2xl font-bold text-gray-900">{totalStudents}</p>
+              <p className="text-2xl font-bold text-gray-900">{summaryData.totalStudents}</p>
             </div>
             <Users className="h-8 w-8 text-blue-600" />
           </div>
@@ -134,7 +116,7 @@ export default async function FeesDashboardPage() {
             <div>
               <p className="text-sm font-medium text-gray-600">Fees This Month</p>
               <p className="text-2xl font-bold text-gray-900">
-                PKR {(totalFeesThisMonth._sum.finalAmount || 0).toLocaleString()}
+                PKR {summaryData.totalFeesThisMonth.toLocaleString()}
               </p>
             </div>
             <Calendar className="h-8 w-8 text-green-600" />
@@ -146,7 +128,7 @@ export default async function FeesDashboardPage() {
             <div>
               <p className="text-sm font-medium text-gray-600">Collected This Month</p>
               <p className="text-2xl font-bold text-green-600">
-                PKR {(paidFeesThisMonth._sum.paidAmount || 0).toLocaleString()}
+                PKR {summaryData.paidFeesThisMonth.toLocaleString()}
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-green-600" />
@@ -158,7 +140,7 @@ export default async function FeesDashboardPage() {
             <div>
               <p className="text-sm font-medium text-gray-600">Pending This Month</p>
               <p className="text-2xl font-bold text-red-600">
-                PKR {pendingAmount.toLocaleString()}
+                PKR {summaryData.pendingAmount.toLocaleString()}
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-red-600" />
@@ -170,7 +152,7 @@ export default async function FeesDashboardPage() {
             <div>
               <p className="text-sm font-medium text-gray-600">Students with Pending Fees</p>
               <p className="text-2xl font-bold text-orange-600">
-                {studentsWithPendingFees.length}
+                {summaryData.studentsWithPendingFeesCount}
               </p>
             </div>
             <Users className="h-8 w-8 text-orange-600" />
@@ -182,7 +164,7 @@ export default async function FeesDashboardPage() {
             <div>
               <p className="text-sm font-medium text-gray-600">Overdue Fees (30+ days)</p>
               <p className="text-2xl font-bold text-red-700">
-                {overdueFeesCount}
+                {summaryData.overdueFeesCount}
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-red-700" />
@@ -194,10 +176,7 @@ export default async function FeesDashboardPage() {
             <div>
               <p className="text-sm font-medium text-gray-600">Collection Rate</p>
               <p className="text-2xl font-bold text-purple-600">
-                {totalFeesThisMonth._sum.finalAmount ? 
-                  ((Number(paidFeesThisMonth._sum.paidAmount || 0) / Number(totalFeesThisMonth._sum.finalAmount)) * 100).toFixed(2) + '%'
-                  : '0%'
-                }
+                {summaryData.collectionRate.toFixed(2)}%
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-purple-600" />
@@ -206,7 +185,7 @@ export default async function FeesDashboardPage() {
       </div>
 
       {/* Main Dashboard Component */}
-      <FeesDashboard courses={courses} />
+      <FeesDashboard courses={summaryData.courses} />
     </div>
   )
 }
