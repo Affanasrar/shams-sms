@@ -1,6 +1,7 @@
 // app/api/admin/add-advance-fee/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { serializeDecimals } from '@/lib/serialize-decimals'
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      fee: newFee
+      fee: serializeDecimals(newFee)
     })
   } catch (error) {
     console.error('Add advance fee error:', error)

@@ -1,6 +1,7 @@
 // app/api/admin/student-fees/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { serializeDecimals } from '@/lib/serialize-decimals'
 
 export async function GET(
   request: NextRequest,
@@ -31,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
 
-    return NextResponse.json(student)
+    return NextResponse.json(serializeDecimals(student))
   } catch (error) {
     console.error('Get student fees error:', error)
     return NextResponse.json({ error: 'Failed to get student fees' }, { status: 500 })

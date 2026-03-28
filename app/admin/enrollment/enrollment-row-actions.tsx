@@ -334,7 +334,7 @@ export function EnrollmentRowActions({
                 onClick={() => {
                   setRefundDecision(true)
                   const form = document.getElementById(`drop-form-${enrollmentId}`) as HTMLFormElement
-                  form?.submit()
+                  form?.requestSubmit()
                 }}
                 className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition font-medium text-sm"
               >
@@ -344,7 +344,7 @@ export function EnrollmentRowActions({
                 onClick={() => {
                   setRefundDecision(false)
                   const form = document.getElementById(`drop-form-${enrollmentId}`) as HTMLFormElement
-                  form?.submit()
+                  form?.requestSubmit()
                 }}
                 className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition font-medium text-sm"
               >

@@ -1,6 +1,7 @@
 // app/api/admin/search-fees/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { serializeDecimals } from '@/lib/serialize-decimals'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       take: 10
     })
 
-    return NextResponse.json(fees)
+    return NextResponse.json(serializeDecimals(fees))
   } catch (error) {
     console.error('Search fees error:', error)
     return NextResponse.json([])
