@@ -42,13 +42,11 @@ export async function updateCourseFee(prevState: any, formData: FormData) {
 
     // Start transaction to update course fee and create history record
     await prisma.$transaction(async (tx) => {
-      // Update course fee
       await tx.course.update({
         where: { id: courseId },
         data: { baseFee: newFee }
       })
 
-      // Create fee history record
       await tx.courseFeeHistory.create({
         data: {
           courseId,
