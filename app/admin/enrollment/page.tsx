@@ -69,9 +69,13 @@ export default async function EnrollmentIndex(props: Props) {
 
   // 3. Build Dynamic Query
   // We start with the base requirement: Status must be ACTIVE
-  const whereClause: any = { 
-    status: 'ACTIVE',
-    joiningDate: { gte: startDate, lte: endDate }
+  const whereClause: any = {
+    status: 'ACTIVE'
+  }
+
+  // Apply date range filter only when user explicitly requests it
+  if (searchParams.start || searchParams.end) {
+    whereClause.joiningDate = { gte: startDate, lte: endDate }
   }
 
   // If a Course is selected, add it to the filter
