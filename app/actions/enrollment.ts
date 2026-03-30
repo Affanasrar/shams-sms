@@ -3,6 +3,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getCurrentFeeForCourse } from '@/lib/course-fees'
 
 // Note: This function is likely called by your Server Action wrapper, or needs to be adapted to receive (prevState, formData) if used directly in useActionState.
 // Assuming this is the helper function called by the server action:
@@ -32,7 +33,7 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
     const roomName = targetAssignment.slot.room.name
     const roomCapacity = targetAssignment.slot.room.capacity
     const courseDuration = targetAssignment.course.durationMonths
-    const courseFee = targetAssignment.course.baseFee // Get the fee amount
+    const courseFee = await getCurrentFeeForCourse(targetAssignment.courseId) // Get current fee for new enrollment
 
     // 2. Count Total Occupancy in this Slot
     const currentOccupancy = await tx.enrollment.count({

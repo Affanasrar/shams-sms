@@ -6,8 +6,8 @@ import { ExtendCourseModal } from './extend-course-modal'
 
 interface Enrollment {
   id: string
-  joiningDate: Date
-  endDate: Date | null
+  joiningDate: string // ISO date string
+  endDate: string | null // ISO date string
   extendedDays: number
   status: string
   courseOnSlot: {
@@ -17,7 +17,7 @@ interface Enrollment {
     }
     slot: {
       days: string
-      startTime: Date
+      startTime: string // ISO date string
     }
   }
 }

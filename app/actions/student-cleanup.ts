@@ -3,6 +3,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { serializeDecimals } from '@/lib/serialize-decimals'
 
 // Search for student by ID and get their fees and transactions
 export async function searchStudentFees(studentId: string) {
@@ -66,7 +67,7 @@ export async function searchStudentFees(studentId: string) {
 
     return {
       success: true,
-      data: {
+      data: serializeDecimals({
         student: {
           id: student.id,
           studentId: student.studentId,
@@ -83,7 +84,7 @@ export async function searchStudentFees(studentId: string) {
           totalPaid,
           totalOutstanding
         }
-      }
+      })
     }
 
   } catch (error) {

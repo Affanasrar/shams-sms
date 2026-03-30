@@ -1,6 +1,7 @@
 // app/api/cron/fees/route.ts
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { getFeeForStudent } from '@/lib/course-fees'
 
 // Function name must be GET (uppercase)
 export async function GET() {
@@ -124,6 +125,9 @@ export async function GET() {
         }, 0)
       }
 
+      // Get the fee amount for this specific student based on their enrollment date
+      const studentFee = await getFeeForStudent(enrollment.id)
+
       // 🎯 Check for active discounts that apply to this month
       const activeDiscounts = await prisma.studentDiscount.findMany({
         where: {
@@ -147,12 +151,12 @@ export async function GET() {
         if (discount.discountType === 'FIXED') {
           discountAmount = Number(discount.discountAmount)
         } else if (discount.discountType === 'PERCENTAGE') {
-          discountAmount = Number(course.baseFee) * (Number(discount.discountAmount) / 100)
+          discountAmount = studentFee * (Number(discount.discountAmount) / 100)
         }
       }
 
       // Create the current month fee with rollover and discount applied
-      const baseAmount = Number(course.baseFee) - discountAmount
+      const baseAmount = studentFee - discountAmount
       const totalAmount = baseAmount + rolloverAmount
       
       await prisma.fee.upsert({
@@ -165,7 +169,7 @@ export async function GET() {
         create: {
           studentId: enrollment.studentId,
           enrollmentId: enrollment.id,
-          amount: course.baseFee,
+          amount: studentFee,       // Use student's specific fee
           discountAmount: discountAmount,
           rolloverAmount: rolloverAmount, // Track previous month balance
           finalAmount: totalAmount, // Total = (current month - discount) + rollover
@@ -175,7 +179,7 @@ export async function GET() {
           discountId: discountId
         },
         update: {
-          amount: course.baseFee,
+          amount: studentFee,       // Use student's specific fee
           discountAmount: discountAmount,
           rolloverAmount: rolloverAmount,
           finalAmount: totalAmount,

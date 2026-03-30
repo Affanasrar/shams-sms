@@ -12,8 +12,10 @@ export function formatCurrency(amount: number, currency = "PKR"): string {
   }).format(amount)
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return 'N/A'
   const d = typeof date === "string" ? new Date(date) : date
+  if (isNaN(d.getTime())) return 'Invalid Date'
   return d.toLocaleDateString("ur-PK", {
     year: "numeric",
     month: "short",

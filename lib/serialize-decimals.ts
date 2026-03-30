@@ -1,10 +1,15 @@
 /**
- * Recursively converts Prisma Decimal objects to numbers in an object
- * This is needed because Decimal objects cannot be passed to Client Components
+ * Recursively converts Prisma Decimal objects to numbers and Date objects to ISO strings in an object
+ * This is needed because Decimal objects and Date objects cannot be passed to Client Components
  */
 export function serializeDecimals(obj: any): any {
   if (obj === null || obj === undefined) {
     return obj
+  }
+
+  // Check if this is a Date object
+  if (obj instanceof Date) {
+    return obj.toISOString()
   }
 
   // Check if this is a Decimal object (has toString and toJSON methods)

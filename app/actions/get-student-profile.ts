@@ -4,6 +4,7 @@
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { unstable_noStore as noStore } from 'next/cache'
+import { serializeDecimals } from '@/lib/serialize-decimals'
 
 export async function getStudentProfile(studentId: string) {
   // Prevent caching of database queries
@@ -42,5 +43,5 @@ export async function getStudentProfile(studentId: string) {
   })
 
   if (!student) notFound()
-  return student
+  return serializeDecimals(student)
 }

@@ -2,7 +2,9 @@
 'use client'
 
 import { useActionState } from 'react'
+import React from 'react'
 import { createRoom, createCourse, createSlot, assignCourseToSlot } from '@/app/actions/settings'
+import { updateCourseFee, getCourseFeeHistory } from '@/app/actions/course-fees'
 import { 
   Building2, 
   BookOpen, 
@@ -11,7 +13,9 @@ import {
   Plus, 
   CheckCircle2, 
   AlertCircle,
-  CalendarDays
+  CalendarDays,
+  DollarSign,
+  History
 } from 'lucide-react'
 
 // --- Types ---
@@ -197,6 +201,46 @@ export function SettingsForms({ rooms, courses, slots, teachers }: Props) {
         </div>
 
       </div>
+
+      <hr className="border-gray-200" />
+
+      {/* SECTION 3: Course Fee Management */}
+      <div>
+        <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <DollarSign className="text-gray-500" /> 
+          Course Fee Management
+        </h3>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          
+          {/* Update Course Fees */}
+          <FormCard 
+            title="Update Course Fees" 
+            description="Change fees for new enrollments. Existing students keep their original fees." 
+            icon={<DollarSign size={20} className="text-blue-600"/>}
+          >
+            <div className="space-y-4">
+              {courses.map(course => (
+                <CourseFeeUpdater key={course.id} course={course} />
+              ))}
+            </div>
+          </FormCard>
+
+          {/* Fee History */}
+          <FormCard 
+            title="Fee Change History" 
+            description="View all fee changes and when they were made." 
+            icon={<History size={20} className="text-purple-600"/>}
+          >
+            <div className="space-y-4">
+              {courses.map(course => (
+                <CourseFeeHistory key={course.id} course={course} />
+              ))}
+            </div>
+          </FormCard>
+
+        </div>
+      </div>
     </div>
   )
 }
@@ -246,7 +290,96 @@ function SelectGroup({ label, children }: { label: string, children: React.React
     </div>
   )
 }
+// --- Course Fee Management Components ---
 
+function CourseFeeUpdater({ course }: { course: any }) {
+  const [feeState, feeAction, feePending] = useActionState<ActionState, FormData>(updateCourseFee, initialState)
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4">
+      <div className="flex justify-between items-center mb-3">
+        <h5 className="font-semibold text-gray-800">{course.name}</h5>
+        <span className="text-sm text-gray-600">Current: PKR {course.baseFee.toLocaleString()}</span>
+      </div>
+      
+      <form action={feeAction} className="flex gap-2">
+        <input type="hidden" name="courseId" value={course.id} />
+        <input
+          name="newFee"
+          type="number"
+          placeholder="New fee"
+          min="0"
+          step="0.01"
+          className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        <button
+          disabled={feePending}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+        >
+          {feePending ? 'Updating...' : 'Update'}
+        </button>
+      </form>
+      
+      {feeState?.message && (
+        <div className="mt-2 text-sm text-green-600">{feeState.message}</div>
+      )}
+      {feeState?.error && (
+        <div className="mt-2 text-sm text-red-600">{feeState.error}</div>
+      )}
+    </div>
+  )
+}
+
+function CourseFeeHistory({ course }: { course: any }) {
+  const [history, setHistory] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(false)
+
+  React.useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true)
+      try {
+        const response = await fetch(`/api/admin/course-fee-history/${course.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setHistory(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch fee history:', error)
+      }
+      setLoading(false)
+    }
+
+    fetchHistory()
+  }, [course.id])
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4">
+      <h5 className="font-semibold text-gray-800 mb-3">{course.name}</h5>
+      
+      {loading ? (
+        <div className="text-sm text-gray-500">Loading history...</div>
+      ) : history.length === 0 ? (
+        <div className="text-sm text-gray-500">No fee changes yet</div>
+      ) : (
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          {history.map((change: any) => (
+            <div key={change.id} className="text-xs bg-gray-50 p-2 rounded">
+              <div className="flex justify-between">
+                <span>PKR {Number(change.oldFee).toLocaleString()} → PKR {Number(change.newFee).toLocaleString()}</span>
+                <span className="text-gray-500">
+                  {new Date(change.changedAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="text-gray-600 mt-1">
+                by {change.changedBy.firstName} {change.changedBy.lastName}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 function DarkSelectGroup({ label, children }: { label: string, children: React.ReactNode }) {
   return (
     <div>

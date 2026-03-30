@@ -23,24 +23,15 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   
   const student = await getStudentProfile(id)
 
-  // convert Decimal instances in nested objects to plain numbers so that
-  // we can safely pass data down to client components (React RSC boundary)
-  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
-    if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
-      return Number(value)
-    }
-    return value
-  }))
-
-  const cleanEnrollments = toJSON(student.enrollments)
+  const cleanEnrollments = student.enrollments
 
   // Calculate Total Outstanding Balance
   const totalDue = student.fees
-    .filter(f => f.status === 'UNPAID' || f.status === 'PARTIAL')
-    .reduce((sum, fee) => sum + (Number(fee.finalAmount) - Number(fee.paidAmount)), 0)
+    .filter((fee: any) => fee.status === 'UNPAID' || fee.status === 'PARTIAL')
+    .reduce((sum: number, fee: any) => sum + (Number(fee.finalAmount) - Number(fee.paidAmount)), 0)
 
-  const totalPaid = student.fees.reduce((sum, fee) => sum + Number(fee.paidAmount), 0)
-  const totalFees = student.fees.reduce((sum, fee) => sum + Number(fee.finalAmount), 0)
+  const totalPaid = student.fees.reduce((sum: number, fee: any) => sum + Number(fee.paidAmount), 0)
+  const totalFees = student.fees.reduce((sum: number, fee: any) => sum + Number(fee.finalAmount), 0)
 
   return (
     <div className="space-y-8">
@@ -154,7 +145,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                   </tr>
                 </thead>
                 <tbody>
-                  {student.fees.map((fee) => {
+                  {student.fees.map((fee: any) => {
                     const enrollment = fee.enrollment as any
                     const courseName = enrollment ? enrollment.courseOnSlot.course.name : "General Fee"
                     const courseCode = enrollment ? enrollment.courseOnSlot.course.code : "---"
@@ -209,7 +200,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {student.results.map((res) => (
+                  {student.results.map((res: any) => (
                     <div
                       key={res.id}
                       className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"

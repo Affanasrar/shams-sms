@@ -53,8 +53,9 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < enrollmentFees.length; i++) {
         const fee = enrollmentFees[i]
         const discountAmount = Number(fee.discountAmount)
-        const courseBaseFee = Number(fee.enrollment?.courseOnSlot.course.baseFee || fee.amount)
-        const baseAmountForMonth = courseBaseFee - discountAmount
+        // Keep original fee amount for historical rows, do not override by current course base fee
+        const feeAmountAtMonth = Number(fee.amount)
+        const baseAmountForMonth = feeAmountAtMonth - discountAmount
         const unpaidPreviousBalance = cumulativeUnpaidBalance
         const expectedFinalAmount = baseAmountForMonth + unpaidPreviousBalance
 

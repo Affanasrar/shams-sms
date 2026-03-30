@@ -30,6 +30,7 @@ model User {
   taughtSlots       CourseOnSlot[] // Slots this teacher is assigned to [cite: 108]
   markedAttendance  Attendance[]
   collectedPayments Transaction[]
+  feeChanges        CourseFeeHistory[] // Fee changes made by this admin
 }
 
 // --------------------------------------
@@ -51,10 +52,25 @@ model Course {
   id              String         @id @default(uuid())
   name            String         // e.g., "Computer Basics"
   durationMonths  Int
-  baseFee         Decimal
+  baseFee         Decimal        // Current fee (for new enrollments)
   feeType         FeeType
   slotAssignments CourseOnSlot[]
   results         Result[]
+  feeHistory      CourseFeeHistory[]
+}
+
+model CourseFeeHistory {
+  id          String   @id @default(uuid())
+  courseId    String
+  oldFee      Decimal  // Fee before this change
+  newFee      Decimal  // Fee after this change
+  changedAt   DateTime @default(now()) // When the fee was changed
+  changedById String   // Admin who made the change
+
+  course    Course @relation(fields: [courseId], references: [id])
+  changedBy User   @relation(fields: [changedById], references: [id])
+
+  @@index([courseId, changedAt])
 }
 
 model Slot {
