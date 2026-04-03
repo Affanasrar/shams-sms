@@ -26,9 +26,18 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
   const cleanEnrollments = student.enrollments
 
   // Calculate Total Outstanding Balance
-  const totalDue = student.fees
-    .filter((fee: any) => fee.status === 'UNPAID' || fee.status === 'PARTIAL')
-    .reduce((sum: number, fee: any) => sum + (Number(fee.finalAmount) - Number(fee.paidAmount)), 0)
+  const outstandingFees = student.fees.filter((fee: any) => fee.status === 'UNPAID' || fee.status === 'PARTIAL')
+  const groupedFees = outstandingFees.reduce((acc: Record<string, any[]>, fee: any) => {
+    const key = fee.enrollmentId || 'general'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(fee)
+    return acc
+  }, {} as Record<string, any[]>)
+  const totalDue = (Object.values(groupedFees) as any[][]).reduce((sum: number, fees: any[]) => {
+    fees.sort((a: any, b: any) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
+    const latest = fees[0]
+    return sum + (Number(latest.finalAmount) - Number(latest.paidAmount))
+  }, 0)
 
   const totalPaid = student.fees.reduce((sum: number, fee: any) => sum + Number(fee.paidAmount), 0)
   const totalFees = student.fees.reduce((sum: number, fee: any) => sum + Number(fee.finalAmount), 0)
@@ -165,7 +174,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                         </td>
                         <td className="py-3 px-4 text-xs">{formatDate(fee.dueDate)}</td>
                         <td className="py-3 px-4">
-                          <StatusBadge status={fee.status as "PAID" | "PENDING" | "OVERDUE" | "UNPAID"} />
+                          <StatusBadge status={fee.status as "PAID" | "PENDING" | "OVERDUE" | "UNPAID" | "PARTIAL"} />
                         </td>
                       </tr>
                     )
@@ -248,7 +257,10 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                 {student.fees.length > 0 && (
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground">Enrollment Status</p>
-                    <p className="text-lg font-semibold text-emerald-600">Active</p>
+                    <p className="text-lg font-semibold text-emerald-600">
+                      {student.enrollments.some((e: any) => e.status === 'ACTIVE') ? 'Active' : 
+                       student.enrollments.some((e: any) => e.status === 'COMPLETED') ? 'Completed' : 'Inactive'}
+                    </p>
                   </div>
                 )}
 

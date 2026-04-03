@@ -2,7 +2,7 @@ import React from "react"
 import { cn } from "@/lib/utils"
 
 interface StatusBadgeProps {
-  status: "PAID" | "PENDING" | "OVERDUE" | "UNPAID" | "ACTIVE" | "INACTIVE" | "PROCESSING"
+  status: "PAID" | "PENDING" | "OVERDUE" | "UNPAID" | "PARTIAL" | "ACTIVE" | "INACTIVE" | "PROCESSING"
   className?: string
 }
 
@@ -23,6 +23,10 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     UNPAID: {
       label: "Unpaid",
       className: "badge-error",
+    },
+    PARTIAL: {
+      label: "Partial",
+      className: "badge-warning",
     },
     ACTIVE: {
       label: "Active",

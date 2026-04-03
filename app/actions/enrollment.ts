@@ -154,20 +154,12 @@ export async function dropStudent(formData: FormData) {
       return { success: false, error: "Enrollment not found" }
     }
 
-    // Get the current month for fee deletion
-    const now = new Date()
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-
     // Only delete fees if user chose to refund
     if (refund) {
       await prisma.fee.deleteMany({
         where: {
           studentId: enrollment.studentId,
-          cycleDate: {
-            gte: currentMonthStart,
-            lte: currentMonthEnd
-          }
+          status: { not: 'PAID' }
         }
       })
     }
