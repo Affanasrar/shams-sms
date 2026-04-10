@@ -158,7 +158,7 @@ export async function dropStudent(formData: FormData) {
     if (refund) {
       await prisma.fee.deleteMany({
         where: {
-          studentId: enrollment.studentId,
+          enrollmentId: enrollmentId,
           status: { not: 'PAID' }
         }
       })

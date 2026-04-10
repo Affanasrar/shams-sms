@@ -57,9 +57,10 @@ export async function POST(request: NextRequest) {
         const feeAmountAtMonth = Number(fee.amount)
         const baseAmountForMonth = feeAmountAtMonth - discountAmount
         const unpaidPreviousBalance = cumulativeUnpaidBalance
-        const expectedFinalAmount = baseAmountForMonth + unpaidPreviousBalance
+        // NEW LOGIC: finalAmount should NOT include rollover - each month stands alone
+        const expectedFinalAmount = baseAmountForMonth  // No rollover in finalAmount
 
-        // Check if this fee's rollover is incorrect
+        // Check if this fee's rollover is incorrect (rolloverAmount should track previous balance for display)
         if (Number(fee.rolloverAmount) !== unpaidPreviousBalance || Number(fee.finalAmount) !== expectedFinalAmount) {
           const logEntry = `Updated ${fee.enrollment?.student.name} (${fee.enrollment?.student.studentId}): Cycle ${fee.cycleDate.toISOString().split('T')[0]}, Rollover: ${fee.rolloverAmount} → ${unpaidPreviousBalance}, FinalAmount: ${fee.finalAmount} → ${expectedFinalAmount}`
           console.log(`⚠️  ${logEntry}`)

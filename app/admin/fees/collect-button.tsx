@@ -4,7 +4,7 @@
 import { collectFee } from '@/app/actions/finance'
 import { useState } from 'react'
 
-export function CollectButton({ feeId, adminId, finalAmount }: { feeId: string, adminId: string, finalAmount: number }) {
+export function CollectButton({ feeId, adminId, remainingAmount }: { feeId: string, adminId: string, remainingAmount: number }) {
   const [loading, setLoading] = useState(false)
   const [paymentAmount, setPaymentAmount] = useState('')
   const [showInput, setShowInput] = useState(false)
@@ -16,8 +16,8 @@ export function CollectButton({ feeId, adminId, finalAmount }: { feeId: string, 
       return
     }
     
-    if (amount > finalAmount) {
-      alert("Payment amount cannot exceed the final amount due")
+    if (amount > remainingAmount) {
+      alert("Payment amount cannot exceed the remaining balance")
       return
     }
 
@@ -41,7 +41,7 @@ export function CollectButton({ feeId, adminId, finalAmount }: { feeId: string, 
           type="number"
           step="0.01"
           min="0"
-          max={finalAmount}
+          max={remainingAmount}
           value={paymentAmount}
           onChange={(e) => setPaymentAmount(e.target.value)}
           placeholder="Amount"

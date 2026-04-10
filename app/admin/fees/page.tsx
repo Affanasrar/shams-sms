@@ -17,8 +17,13 @@ export default async function FeesPage(props: Props) {
   const studentId = searchParams.studentId as string | undefined
   const search = searchParams.search as string | undefined
 
-  // Build where clause
-  const whereClause: any = { status: 'UNPAID' }
+  // Build where clause - show all fees that have outstanding balance (not fully paid)
+  const whereClause: any = {
+    OR: [
+      { status: 'UNPAID' },
+      { status: 'PARTIAL' }
+    ]
+  }
   
   if (studentId) {
     whereClause.student = { id: studentId }
@@ -144,9 +149,16 @@ export default async function FeesPage(props: Props) {
 
                   <td className="px-6 py-4 font-mono">
                     <div className="font-bold">PKR {Number(fee.finalAmount).toLocaleString()}</div>
+                    <div className="text-xs text-blue-600">
+                      {new Date(fee.cycleDate).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        year: 'numeric',
+                        timeZone: 'Asia/Karachi' 
+                      })} fee
+                    </div>
                     {Number(fee.rolloverAmount) > 0 && (
-                      <div className="text-xs text-orange-600">
-                        (PKR {Number(fee.rolloverAmount).toLocaleString()} from previous month)
+                      <div className="text-xs text-orange-600 mt-1">
+                        ⚠️ PKR {Number(fee.rolloverAmount).toLocaleString()} outstanding from previous months
                       </div>
                     )}
                     {Number(fee.paidAmount) > 0 && (
@@ -161,7 +173,7 @@ export default async function FeesPage(props: Props) {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <CollectButton feeId={fee.id} adminId={adminId} finalAmount={Number(fee.finalAmount)} />
+                    <CollectButton feeId={fee.id} adminId={adminId} remainingAmount={Number(fee.finalAmount) - Number(fee.paidAmount)} />
                   </td>
                 </tr>
               )

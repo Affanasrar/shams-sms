@@ -155,9 +155,9 @@ export async function GET() {
         }
       }
 
-      // Create the current month fee with rollover and discount applied
+      // Create the current month fee WITHOUT rollover in finalAmount
+      // Keep fees separate by month - each month stands alone
       const baseAmount = studentFee - discountAmount
-      const totalAmount = baseAmount + rolloverAmount
       
       await prisma.fee.upsert({
         where: {
@@ -171,8 +171,8 @@ export async function GET() {
           enrollmentId: enrollment.id,
           amount: studentFee,       // Use student's specific fee
           discountAmount: discountAmount,
-          rolloverAmount: rolloverAmount, // Track previous month balance
-          finalAmount: totalAmount, // Total = (current month - discount) + rollover
+          rolloverAmount: rolloverAmount, // Track previous month balance for reporting only
+          finalAmount: baseAmount, // Total = current month - discount (NO rollover)
           dueDate: dueDate,
           cycleDate: cycleDate,
           status: 'UNPAID',
@@ -182,15 +182,15 @@ export async function GET() {
           amount: studentFee,       // Use student's specific fee
           discountAmount: discountAmount,
           rolloverAmount: rolloverAmount,
-          finalAmount: totalAmount,
+          finalAmount: baseAmount,
           dueDate: dueDate,
           discountId: discountId
         }
       })
 
       const discountInfo = discountAmount > 0 ? ` (- PKR ${discountAmount} discount)` : ''
-      const rolloverInfo = rolloverAmount > 0 ? ` (+ PKR ${rolloverAmount} rollover from previous month)` : ''
-      console.log(`✅ Created fee for ${enrollment.student.name} - Month ${monthNumber} - Due: ${dueDate.toISOString().split('T')[0]} - Amount: PKR ${totalAmount}${discountInfo}${rolloverInfo}`)
+      const rolloverInfo = rolloverAmount > 0 ? ` (PKR ${rolloverAmount} outstanding from previous months)` : ''
+      console.log(`✅ Created fee for ${enrollment.student.name} - Month ${monthNumber} - Due: ${dueDate.toISOString().split('T')[0]} - Amount: PKR ${baseAmount}${discountInfo}${rolloverInfo}`)
       feesCreated++
     }
 
