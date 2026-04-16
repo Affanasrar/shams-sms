@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 /**
  * API endpoint to recalculate rollover amounts for all fees
@@ -8,6 +9,14 @@ import prisma from '@/lib/prisma'
  * Only accepts POST requests from authenticated admin users
  */
 export async function POST(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     console.log('🔄 Starting fee rollover recalculation...')
 

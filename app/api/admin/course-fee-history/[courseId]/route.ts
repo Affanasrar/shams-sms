@@ -1,11 +1,20 @@
 // app/api/admin/course-fee-history/[courseId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getCourseFeeHistory } from '@/app/actions/course-fees'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ courseId: string }> }
 ) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     const { courseId } = await params
 

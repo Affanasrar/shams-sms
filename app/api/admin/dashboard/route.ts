@@ -1,8 +1,17 @@
 // app/api/admin/dashboard/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function GET(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     // High level metrics
     const [totalStudents, activeEnrollments] = await Promise.all([

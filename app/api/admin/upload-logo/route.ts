@@ -3,8 +3,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function POST(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     const data = await request.formData()
     const file: File | null = data.get('logo') as unknown as File

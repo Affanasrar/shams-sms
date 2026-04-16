@@ -7,6 +7,8 @@ import { Users, AlertTriangle, TrendingUp, Calendar } from 'lucide-react'
 import { MetricCard } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import FeeTrendChart from '@/components/ui/fee-trend-chart'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 
 type DashboardData = {
   totalStudents: number
@@ -31,8 +33,20 @@ type DashboardData = {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter()
+  const { userId, isLoaded } = useAuth()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // CLIENT-SIDE VERIFICATION: Additional layer of protection
+  // Note: Server-side check in layout is primary protection
+  useEffect(() => {
+    if (!isLoaded) return
+
+    if (!userId) {
+      router.push('/sign-in')
+    }
+  }, [isLoaded, userId, router])
 
   const fetchDashboardData = async () => {
     try {

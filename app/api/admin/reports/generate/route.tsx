@@ -3,8 +3,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import prisma from '@/lib/prisma'
 import { AttendanceReport, CourseReport } from '@/components/pdf'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function POST(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     const { type, data, formatId } = await request.json()
 

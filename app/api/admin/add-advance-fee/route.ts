@@ -2,8 +2,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { serializeDecimals } from '@/lib/serialize-decimals'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function POST(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     const { enrollmentId, amount, adminId, courseOnSlotId } = await request.json()
 

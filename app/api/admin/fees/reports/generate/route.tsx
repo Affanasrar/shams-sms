@@ -4,8 +4,17 @@ import prisma from '@/lib/prisma'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { MonthlyReport, StudentReport, CourseReport, OverallReport } from '@/components/pdf'
 import { ReportType } from '@prisma/client'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function GET(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') as 'monthly' | 'student' | 'course' | 'overall'

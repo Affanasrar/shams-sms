@@ -61,6 +61,12 @@ export default async function TeacherDashboard() {
     return <div>Database Error: Could not create user profile.</div>
   }
 
+  // ✅ ROLE VERIFICATION: Ensure user is a teacher, not an admin
+  if (dbUser.role !== 'TEACHER') {
+    console.warn(`Unauthorized teacher access attempt by ${email} with role ${dbUser.role}`)
+    redirect("/")
+  }
+
   // 5. Fetch Classes Assigned to This Teacher
   const myClasses = await prisma.courseOnSlot.findMany({
     where: { teacherId: dbUser.id },

@@ -1,8 +1,17 @@
 // app/api/admin/fees/summary/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function GET(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     // Get current month and year for default view
     const now = new Date()

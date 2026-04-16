@@ -1,8 +1,17 @@
 // app/api/admin/settings/report-format/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function PUT(request: NextRequest) {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
   try {
     const body = await request.json()
     const {
@@ -105,6 +114,15 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function GET() {
+  // ✅ ROLE VERIFICATION: Verify admin access
+  const { isAdmin } = await verifyAdminApiRole()
+  if (!isAdmin) {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    )
+  }
+
   try {
     const formats = await prisma.reportFormat.findMany({
       orderBy: { reportType: 'asc' }
