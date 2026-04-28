@@ -1,5 +1,5 @@
 // app/admin/enrollment/new/page.tsx
-import { EnrollmentForm } from './enrollment-form'
+import { EnrollmentForm, type CourseOnSlot } from './enrollment-form'
 import { getEnrollmentOptions } from '@/app/actions/fetch-options'
 import Link from 'next/link'
 import { ArrowLeft, BookOpen } from 'lucide-react'
@@ -18,6 +18,15 @@ export default async function NewEnrollmentPage() {
   // This cleans the data so the Client Component can read it without crashing.
   const safeAssignments = data.assignments.map((assignment) => ({
     ...assignment,
+    slot: {
+      ...assignment.slot,
+      startTime: assignment.slot.startTime instanceof Date
+        ? assignment.slot.startTime.toISOString()
+        : assignment.slot.startTime,
+      endTime: assignment.slot.endTime instanceof Date
+        ? assignment.slot.endTime.toISOString()
+        : assignment.slot.endTime
+    },
     course: {
       ...assignment.course,
       baseFee: Number(assignment.course.baseFee) // Convert Decimal -> Number
@@ -31,7 +40,7 @@ export default async function NewEnrollmentPage() {
         ? enrollment.endDate.toISOString() 
         : enrollment.endDate
     }))
-  }))
+  })) as CourseOnSlot[]
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4">

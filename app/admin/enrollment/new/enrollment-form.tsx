@@ -47,7 +47,7 @@ interface Enrollment {
   extendedDays: number
 }
 
-interface CourseOnSlot {
+export interface CourseOnSlot {
   id: string
   slotId: string
   courseId: string
