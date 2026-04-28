@@ -121,6 +121,7 @@ model Student {
   attendance  Attendance[]
   results     Result[]
   discounts   StudentDiscount[]
+  feeReminderLogs FeeReminderLog[]
 }
 
 model Enrollment {
@@ -179,6 +180,20 @@ model Fee {
   
   @@unique([enrollmentId, cycleDate]) // Prevent duplicate fees for same enrollment/month
   @@index([status, dueDate]) // Optimize for "Overdue" reports
+}
+
+model FeeReminderLog {
+  id          String   @id @default(uuid())
+  studentId   String
+  feeIds      String[]
+  sentAt      DateTime @default(now())
+  status      String
+  details     String
+  error       String?
+
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@index([studentId, sentAt])
 }
 
 model StudentDiscount {

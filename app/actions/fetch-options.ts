@@ -10,12 +10,13 @@ export async function getEnrollmentOptions() {
     select: { id: true, studentId: true, name: true, fatherName: true } // Include studentId
   })
 
-  // 2. Get all Course Assignments
+  // 2. Get all Course Assignments with enrollment count
   // We group them so the frontend can filter: "If I select English, show me English Slots"
   const assignments = await prisma.courseOnSlot.findMany({
     include: {
       course: true,
-      slot: { include: { room: true } }
+      slot: { include: { room: true } },
+      enrollments: { where: { status: 'ACTIVE' } } // Count only active enrollments
     }
   })
 

@@ -188,6 +188,13 @@ export async function GET() {
         }
       })
 
+      const dueIsToday = dueDateAtMidnight.getTime() === nowAtMidnight.getTime()
+      if (dueIsToday && enrollment.student.phone) {
+        // SMS sending is now handled manually through the admin dashboard
+        // This log entry helps track when fees become due for manual SMS sending
+        console.log(`📅 Fee due today for ${enrollment.student.name} (${enrollment.student.phone}) - Amount: PKR ${baseAmount}`)
+      }
+
       const discountInfo = discountAmount > 0 ? ` (- PKR ${discountAmount} discount)` : ''
       const rolloverInfo = rolloverAmount > 0 ? ` (PKR ${rolloverAmount} outstanding from previous months)` : ''
       console.log(`✅ Created fee for ${enrollment.student.name} - Month ${monthNumber} - Due: ${dueDate.toISOString().split('T')[0]} - Amount: PKR ${baseAmount}${discountInfo}${rolloverInfo}`)

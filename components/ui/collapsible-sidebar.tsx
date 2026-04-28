@@ -14,6 +14,8 @@ import {
   CheckSquare,
   Trash2,
   ChevronLeft,
+  MessageSquare,
+  UserX,
 } from "lucide-react"
 import { Button } from "./button"
 import { cn } from "@/lib/utils"
@@ -30,10 +32,12 @@ const NAV_ITEMS: NavItem[] = [
   { icon: <Users size={20} />, label: "Students", href: "/admin/students" },
   { icon: <Trash2 size={20} />, label: "Cleanup", href: "/admin/students/cleanup" },
   { icon: <BookOpen size={20} />, label: "Enrollment", href: "/admin/enrollment" },
+  { icon: <UserX size={20} />, label: "Dropped Students", href: "/admin/dropped-students" },
   { icon: <CheckSquare size={20} />, label: "Attendance", href: "/admin/attendance" },
   { icon: <DollarSign size={20} />, label: "Fees", href: "/admin/fees/dashboard" },
   { icon: <Calendar size={20} />, label: "Schedule", href: "/admin/schedule" },
   { icon: <BookOpen size={20} />, label: "Results", href: "/admin/results/new" },
+  { icon: <MessageSquare size={20} />, label: "SMS", href: "/admin/sms" },
   { icon: <Settings size={20} />, label: "Settings", href: "/admin/settings" },
 ]
 

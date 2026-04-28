@@ -32,6 +32,28 @@ Your `vercel.json` is configured with:
 ## Manual Testing:
 ```bash
 curl -X GET https://your-app.vercel.app/api/cron/fees
+curl -X GET https://your-app.vercel.app/api/cron/fees-reminder
 ```
 
-That's it! Your fee generation is now fully automated on Vercel! 🎉
+## Automatic Fee Reminder Cron
+Your `vercel.json` now includes a second daily cron endpoint:
+```json
+{
+  "path": "/api/cron/fees-reminder",
+  "schedule": "0 0 * * *"
+}
+```
+
+This endpoint automatically sends SMS reminders for unpaid or overdue fees once the due date has arrived and keeps a persistent reminder log.
+
+## Textbee SMS Setup
+To send due-date SMS notifications through Textbee, configure these environment variables in your deployment environment:
+- `TEXTBEE_BASE_URL` (optional, defaults to https://api.textbee.dev for cloud service, or your self-hosted URL)
+- `TEXTBEE_API_KEY`
+- `TEXTBEE_DEVICE_ID`
+
+These values come from your Textbee dashboard (or your self-hosted Textbee instance).
+
+SMS reminders are now sent automatically by the new Vercel cron endpoint at `/api/cron/fees-reminder`, while the admin dashboard at `/admin/sms` still supports manual SMS sending.
+
+That's it! Your fee generation and overdue reminders are now automated on Vercel! 🎉
