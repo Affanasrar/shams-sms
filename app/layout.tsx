@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 // providers that must only render on the client.  `DynamicClientProviders`
 // is itself a client component which handles the dynamic import.
 import DynamicClientProviders from "@/components/ui/dynamic-client-providers"
@@ -71,6 +72,7 @@ export default function RootLayout({
         <DynamicClientProviders>
           {children}
         </DynamicClientProviders>
+        <SpeedInsights />
       </body>
     </html>
     </ClerkProvider>
