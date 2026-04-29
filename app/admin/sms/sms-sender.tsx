@@ -1,7 +1,7 @@
 // app/admin/sms/sms-sender.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Send, Loader, CheckCircle, AlertCircle, Phone } from 'lucide-react'
 
 type Student = {
@@ -68,15 +68,12 @@ export function SmsSender({ students, courseSlots }: Props) {
   const [selectedCourseSlot, setSelectedCourseSlot] = useState<string>('')
 
   const handleSelectAll = () => {
-    const filteredStudents = students.filter(student => {
-      if (!selectedCourseSlot) return true
-      return student.enrollments.some(enrollment => enrollment.courseOnSlot.id === selectedCourseSlot)
-    })
+    const filteredStudentIds = filteredStudents.map(s => s.id)
 
-    if (selectedStudents.length === filteredStudents.length) {
+    if (selectedStudents.length === filteredStudents.length && selectedStudents.every(id => filteredStudentIds.includes(id))) {
       setSelectedStudents([])
     } else {
-      setSelectedStudents(filteredStudents.map(s => s.id))
+      setSelectedStudents(filteredStudentIds)
     }
   }
 
@@ -86,12 +83,45 @@ export function SmsSender({ students, courseSlots }: Props) {
     setSelectedStudents([]) // Clear student selection
   }
 
+  const handleCourseSlotChange = (slotId: string) => {
+    setSelectedCourseSlot(slotId)
+    setSelectedStudents([]) // Clear student selection when slot changes
+  }
+
   // Get unique courses from courseSlots
   const uniqueCourses = Array.from(
     new Map(
       courseSlots.map(slot => [slot.course.id, slot.course])
     ).values()
   ).sort((a, b) => a.name.localeCompare(b.name))
+
+  // Filter selected students to only include currently visible ones
+  useEffect(() => {
+    const visibleStudentIds = students
+      .filter(student => {
+        if (!selectedCourseSlot) {
+          if (!selectedCourse) return true
+          return student.enrollments.some(enrollment =>
+            enrollment.courseOnSlot.course.id === selectedCourse
+          )
+        }
+        return student.enrollments.some(enrollment => enrollment.courseOnSlot.id === selectedCourseSlot)
+      })
+      .map(student => student.id)
+
+    setSelectedStudents(prev => prev.filter(id => visibleStudentIds.includes(id)))
+  }, [selectedCourse, selectedCourseSlot, students])
+
+  // Get filtered students based on current selections
+  const filteredStudents = students.filter(student => {
+    if (!selectedCourseSlot) {
+      if (!selectedCourse) return true
+      return student.enrollments.some(enrollment =>
+        enrollment.courseOnSlot.course.id === selectedCourse
+      )
+    }
+    return student.enrollments.some(enrollment => enrollment.courseOnSlot.id === selectedCourseSlot)
+  })
 
   // Filter course slots based on selected course
   const filteredCourseSlots = selectedCourse
@@ -199,7 +229,7 @@ export function SmsSender({ students, courseSlots }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Time Slot & Teacher</label>
             <select
               value={selectedCourseSlot}
-              onChange={(e) => setSelectedCourseSlot(e.target.value)}
+              onChange={(e) => handleCourseSlotChange(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All slots for this course</option>
@@ -233,24 +263,12 @@ export function SmsSender({ students, courseSlots }: Props) {
               onClick={handleSelectAll}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
-              {selectedStudents.length === students.length ? 'Deselect All' : 'Select All'}
+              {selectedStudents.length === filteredStudents.length && selectedStudents.every(id => filteredStudents.map(s => s.id).includes(id)) ? 'Deselect All' : 'Select All'}
             </button>
           </div>
 
           <div className="border border-gray-200 rounded-xl max-h-64 overflow-y-auto">
-            {students
-              .filter(student => {
-                if (!selectedCourseSlot) {
-                  // If no specific slot selected, show students from all slots of the selected course
-                  if (!selectedCourse) return true
-                  return student.enrollments.some(enrollment =>
-                    enrollment.courseOnSlot.course.id === selectedCourse
-                  )
-                }
-                // If specific slot selected, filter by that slot
-                return student.enrollments.some(enrollment => enrollment.courseOnSlot.id === selectedCourseSlot)
-              })
-              .map(student => {
+            {filteredStudents.map(student => {
               const recentFee = student.enrollments
                 .flatMap(enrollment => enrollment.fees)
                 .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())[0]
@@ -296,17 +314,7 @@ export function SmsSender({ students, courseSlots }: Props) {
           </div>
 
           <p className="text-sm text-gray-600 mt-2">
-            {selectedStudents.length} of {students.filter(student => {
-              if (!selectedCourseSlot) {
-                // If no specific slot selected, show students from all slots of the selected course
-                if (!selectedCourse) return true
-                return student.enrollments.some(enrollment =>
-                  enrollment.courseOnSlot.course.id === selectedCourse
-                )
-              }
-              // If specific slot selected, filter by that slot
-              return student.enrollments.some(enrollment => enrollment.courseOnSlot.id === selectedCourseSlot)
-            }).length} students selected
+            {selectedStudents.length} of {filteredStudents.length} students selected
           </p>
         </div>
 

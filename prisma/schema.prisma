@@ -115,6 +115,7 @@ model Student {
   phone       String
   address     String?
   admission   DateTime @default(now()) // Global admission [cite: 173]
+  smsReminderEnabled Boolean @default(true) // Opt-out for SMS reminders
 
   enrollments Enrollment[]
   fees        Fee[]
@@ -190,10 +191,12 @@ model FeeReminderLog {
   status      String
   details     String
   error       String?
+  week        String?  // Format: YYYY-WW (e.g., 2026-17)
 
   student Student @relation(fields: [studentId], references: [id])
 
   @@index([studentId, sentAt])
+  @@index([studentId, week])
 }
 
 model StudentDiscount {

@@ -51,7 +51,8 @@ export default async function StudentList(props: Props) {
     name: s.name,
     fatherName: s.fatherName,
     phone: s.phone,
-    admission: s.admission
+    admission: s.admission,
+    smsReminderEnabled: s.smsReminderEnabled
   }))
 
   return (

@@ -3,6 +3,14 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sendTextbeeSms } from '@/lib/textbee'
 
+function getWeekString(date: Date): string {
+  const year = date.getFullYear()
+  const startOfYear = new Date(year, 0, 1)
+  const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000))
+  const week = Math.ceil((days + startOfYear.getDay() + 1) / 7)
+  return `${year}-W${week.toString().padStart(2, '0')}`
+}
+
 export async function GET() {
   try {
     console.log('⏳ Daily Fee Reminder Cron Started: checking unpaid fees and sending SMS reminders...')
@@ -10,11 +18,15 @@ export async function GET() {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const todayString = today.toISOString().split('T')[0]
+    const currentWeek = getWeekString(today)
 
     const overdueFees = await prisma.fee.findMany({
       where: {
         status: { in: ['UNPAID', 'PARTIAL'] },
-        dueDate: { lte: today }
+        dueDate: { lte: today },
+        student: {
+          smsReminderEnabled: true
+        }
       },
       include: {
         student: true
@@ -57,7 +69,7 @@ export async function GET() {
       }
     }
 
-    const reminderResults: Array<{ studentId: string; studentName: string; success: boolean; skipped: boolean; feeIds: string[]; outstandingAmount: number; error?: string }> = []
+    const reminderResults: Array<{ studentId: string; studentName: string; success: boolean; skipped: boolean; feeIds: string[]; outstandingAmount: number; weeklyReminderCount: number; error?: string }> = []
     let remindersSent = 0
     let remindersSkipped = 0
 
@@ -73,7 +85,15 @@ export async function GET() {
       }, fees[0].dueDate)
       const dueDateString = earliestDueDate.toISOString().split('T')[0]
 
-      const message = `Dear ${student.name}, you have unpaid fees of PKR ${totalOutstanding} due on ${dueDateString}. Please pay immediately to avoid penalties. Student ID: ${student.studentId}.`
+      const message = `Dear ${student.name},
+
+You have outstanding fees of PKR ${totalOutstanding} due on ${dueDateString}. Please make the payment immediately to avoid penalties.
+
+Student ID: ${student.studentId}
+
+Regards,
+Finance Department
+Shams Commercial Institute`
 
       let status = 'SKIPPED'
       let errorMessage: string | null = null
@@ -109,7 +129,16 @@ export async function GET() {
           feeIds,
           status,
           details: message,
-          error: errorMessage ?? undefined
+          error: errorMessage ?? undefined,
+          week: currentWeek
+        }
+      })
+
+      const weeklyReminderCount = await prisma.feeReminderLog.count({
+        where: {
+          studentId: student.id,
+          status: 'SENT',
+          week: currentWeek
         }
       })
 
@@ -120,6 +149,7 @@ export async function GET() {
         skipped,
         feeIds,
         outstandingAmount: totalOutstanding,
+        weeklyReminderCount,
         error: errorMessage ?? undefined
       })
     }
