@@ -68,3 +68,43 @@ export async function createStudent(prevState: any, formData: FormData) {
   revalidatePath('/admin/students')
   redirect('/admin/students')
 }
+
+const StudentUpdateSchema = StudentSchema.extend({
+  id: z.string().min(1, 'Student ID is required'),
+  studentId: z.string().min(1, 'Student Route ID is required'),
+})
+
+export async function updateStudent(prevState: any, formData: FormData) {
+  const rawData = {
+    id: formData.get('id'),
+    studentId: formData.get('studentId'),
+    name: formData.get('name'),
+    fatherName: formData.get('fatherName'),
+    phone: formData.get('phone'),
+    address: formData.get('address'),
+  }
+
+  const validated = StudentUpdateSchema.safeParse(rawData)
+  if (!validated.success) {
+    return { success: false, error: validated.error.issues[0].message }
+  }
+
+  try {
+    await prisma.student.update({
+      where: { id: validated.data.id },
+      data: {
+        name: validated.data.name,
+        fatherName: validated.data.fatherName,
+        phone: validated.data.phone,
+        address: (validated.data.address as string) || '',
+      },
+    })
+  } catch (error: any) {
+    console.error('❌ Failed to update student profile:', error)
+    return { success: false, error: 'Unable to save changes. Please try again.' }
+  }
+
+  revalidatePath('/admin/students')
+  revalidatePath(`/admin/students/${validated.data.studentId}`)
+  redirect(`/admin/students/${validated.data.studentId}`)
+}

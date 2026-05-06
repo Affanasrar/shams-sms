@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -47,6 +47,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const showSpeedInsights = process.env.NODE_ENV !== "production";
+
   return (
     <ClerkProvider
       signInForceRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL}
@@ -72,7 +74,7 @@ export default function RootLayout({
         <DynamicClientProviders>
           {children}
         </DynamicClientProviders>
-        <SpeedInsights />
+        {showSpeedInsights ? <SpeedInsights /> : null}
       </body>
     </html>
     </ClerkProvider>

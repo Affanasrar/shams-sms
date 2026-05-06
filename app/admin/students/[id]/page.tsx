@@ -123,15 +123,30 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
           </div>
         </div>
 
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Link
+            href={`/admin/students/${student.studentId}/edit`}
+            className="inline-flex items-center justify-center rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-primary shadow-sm transition hover:bg-muted"
+          >
+            Edit Profile
+          </Link>
+        </div>
+
         {/* Contact Information */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Phone className="w-4 h-4" />
-            <span>{student.phone}</span>
+            <span>{student.phone || 'No phone number'}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
             <span>Joined: {formatDate(student.admission)}</span>
+          </div>
+          <div className="col-span-2 md:col-span-4 flex items-start gap-2 text-sm text-muted-foreground">
+            <div className="mt-0.5">
+              <span className="text-sm font-medium text-foreground">Address:</span>
+            </div>
+            <span>{student.address || 'No address provided'}</span>
           </div>
         </div>
       </Card>

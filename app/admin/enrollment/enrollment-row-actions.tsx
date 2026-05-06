@@ -1,16 +1,15 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { Clock, Trash2, X, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { dropStudent, changeEnrollmentTiming, restoreEnrollment } from '@/app/actions/enrollment'
 
 type Props = {
   enrollmentId: string
-  studentId: string
   studentName: string
   courseName: string
   status: string // ACTIVE | DROPPED | COMPLETED etc
-  currentSlotId: string
   currentCourseOnSlotId: string
   currentTiming: {
     days: string
@@ -38,10 +37,8 @@ const initialState: ActionState = { success: false }
 
 export function EnrollmentRowActions({
   enrollmentId,
-  studentId,
   studentName,
   courseName,
-  currentSlotId,
   currentCourseOnSlotId,
   currentTiming,
   availableSlotsForCourse,
@@ -106,13 +103,22 @@ export function EnrollmentRowActions({
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
         {!isDropped && (
-          <button
-            onClick={() => setIsTimingModalOpen(true)}
-            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white hover:bg-blue-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-blue-700"
-            title="Change Course Timing"
-          >
-            <Clock size={14} /> Change Timing
-          </button>
+          <>
+            <button
+              onClick={() => setIsTimingModalOpen(true)}
+              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white hover:bg-blue-600 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-blue-700"
+              title="Change Course Timing"
+            >
+              <Clock size={14} /> Change Timing
+            </button>
+            <Link
+              href={`/admin/enrollment/${enrollmentId}/edit`}
+              className="inline-flex items-center gap-1.5 text-gray-700 hover:text-white hover:bg-gray-700 px-3 py-1.5 rounded-md transition-all font-medium text-xs border border-transparent hover:border-gray-700"
+              title="Edit Enrollment"
+            >
+              Edit
+            </Link>
+          </>
         )}
 
         {isDropped ? (

@@ -120,6 +120,123 @@ export async function createEnrollment(prevState: any, formData: FormData) {
   }
 }
 
+export async function updateEnrollment(prevState: any, formData: FormData) {
+  const enrollmentId = formData.get('enrollmentId') as string
+  const courseOnSlotId = formData.get('courseOnSlotId') as string
+  const joiningDateRaw = formData.get('joiningDate') as string
+
+  if (!enrollmentId || !courseOnSlotId || !joiningDateRaw) {
+    return { success: false, error: 'Missing required fields' }
+  }
+
+  const joiningDate = new Date(joiningDateRaw)
+  if (Number.isNaN(joiningDate.getTime())) {
+    return { success: false, error: 'Invalid enrollment date' }
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const existingEnrollment = await tx.enrollment.findUnique({
+        where: { id: enrollmentId },
+        include: {
+          courseOnSlot: {
+            include: {
+              course: true,
+              slot: { include: { room: true } }
+            }
+          },
+          student: true
+        }
+      })
+
+      if (!existingEnrollment) {
+        throw new Error('Enrollment not found')
+      }
+
+      if (existingEnrollment.status !== 'ACTIVE') {
+        throw new Error('Only active enrollments can be edited')
+      }
+
+      const newCourseOnSlot = await tx.courseOnSlot.findUnique({
+        where: { id: courseOnSlotId },
+        include: {
+          course: true,
+          slot: { include: { room: true } }
+        }
+      })
+
+      if (!newCourseOnSlot) {
+        throw new Error('Invalid course selection')
+      }
+
+      if (newCourseOnSlot.id !== existingEnrollment.courseOnSlotId) {
+        const occupied = await tx.enrollment.count({
+          where: {
+            courseOnSlot: { slotId: newCourseOnSlot.slotId },
+            status: 'ACTIVE'
+          }
+        })
+
+        if (occupied >= newCourseOnSlot.slot.room.capacity) {
+          throw new Error('Selected course slot is full. Please choose another one.')
+        }
+      }
+
+      const durationMonths = newCourseOnSlot.course.durationMonths || 0
+      const newEndDate = new Date(joiningDate)
+      newEndDate.setMonth(newEndDate.getMonth() + durationMonths)
+      if (existingEnrollment.extendedDays) {
+        newEndDate.setDate(newEndDate.getDate() + existingEnrollment.extendedDays)
+      }
+
+      const updatedEnrollment = await tx.enrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          courseOnSlotId,
+          joiningDate,
+          endDate: newEndDate
+        }
+      })
+
+      const dueDay = joiningDate.getDate()
+      const unpaidFees = await tx.fee.findMany({
+        where: {
+          enrollmentId,
+          status: { in: ['UNPAID', 'PARTIAL'] }
+        }
+      })
+
+      for (const fee of unpaidFees) {
+        const cycleDate = fee.cycleDate
+        const lastDayOfMonth = new Date(cycleDate.getFullYear(), cycleDate.getMonth() + 1, 0).getDate()
+        const newDueDate = new Date(
+          cycleDate.getFullYear(),
+          cycleDate.getMonth(),
+          Math.min(dueDay, lastDayOfMonth)
+        )
+
+        await tx.fee.update({
+          where: { id: fee.id },
+          data: { dueDate: newDueDate }
+        })
+      }
+
+      return {
+        enrollment: updatedEnrollment,
+        studentId: existingEnrollment.studentId
+      }
+    })
+
+    revalidatePath('/admin/enrollment')
+    revalidatePath(`/admin/students/${result.studentId}`)
+
+    return { success: true, message: 'Enrollment updated successfully' }
+  } catch (error: any) {
+    console.error('Update Enrollment Error:', error)
+    return { success: false, error: error.message || 'Failed to update enrollment' }
+  }
+}
+
 // Helper to fetch data (Keep this if you use it in page.tsx)
 export async function getEnrollmentData() {
   const students = await prisma.student.findMany({ 
