@@ -98,7 +98,6 @@ export function EnrollmentTable({ data }: EnrollmentTableProps) {
       cell: info => (
         <EnrollmentRowActions
           enrollmentId={info.getValue()}
-          studentId={info.row.original.studentId}
           studentName={info.row.original.studentName}
           courseName={info.row.original.courseName}
           status={info.row.original.status}
