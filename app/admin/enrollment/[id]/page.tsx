@@ -78,8 +78,8 @@ export default async function EditEnrollmentPage({ params }: { params: Promise<{
             courseId: assignment.courseId,
             courseName: assignment.course.name,
             slotLabel: assignment.slot.days,
-            slotStartTime: assignment.slot.startTime,
-            slotEndTime: assignment.slot.endTime,
+            slotStartTime: assignment.slot.startTime.toISOString(),
+            slotEndTime: assignment.slot.endTime.toISOString(),
             roomName: assignment.slot.room.name,
             roomCapacity: assignment.slot.room.capacity
           }))}
