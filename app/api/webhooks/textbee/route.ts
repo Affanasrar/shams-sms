@@ -30,17 +30,23 @@ interface TextbeeWebhookPayload {
   phoneNumber?: string
 }
 
-function verifyWebhookSignature(payload: unknown, signature: string | undefined, secret: string): boolean {
+function verifyWebhookSignature(payloadBody: string, signature: string | undefined, secret: string): boolean {
   if (!signature) {
     console.warn('Missing X-Signature header')
     return false
   }
 
-  const hmac = crypto.createHmac('sha256', secret)
-  const digest = hmac.update(JSON.stringify(payload)).digest('hex')
+  const normalizedSignature = signature.startsWith('sha256=')
+    ? signature.slice(7)
+    : signature
+
+  const digest = crypto.createHmac('sha256', secret).update(payloadBody).digest('hex')
 
   try {
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))
+    return crypto.timingSafeEqual(
+      Buffer.from(normalizedSignature, 'hex'),
+      Buffer.from(digest, 'hex')
+    )
   } catch {
     return false
   }
@@ -50,7 +56,11 @@ async function handleMessageReceived(payload: TextbeeWebhookPayload) {
   console.log('Handling MESSAGE_RECEIVED:', payload)
 
   try {
-    const phoneNumber = payload.sender || ''
+    const phoneNumber = payload.sender || payload.phoneNumber || ''
+    if (!phoneNumber) {
+      console.warn('MESSAGE_RECEIVED payload has no sender or phoneNumber:', payload)
+    }
+
     const normalizedPhone = normalizePhoneNumber(phoneNumber)
     
     let studentId: string | null = null
@@ -187,11 +197,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
-    const payload = (await request.json()) as TextbeeWebhookPayload
+    // Read raw request body and verify signature against raw JSON text
+    const bodyText = await request.text()
+    const payload = JSON.parse(bodyText) as TextbeeWebhookPayload
 
     // Verify signature
-    if (!verifyWebhookSignature(payload, signature, TEXTBEE_WEBHOOK_SECRET)) {
+    if (!verifyWebhookSignature(bodyText, signature, TEXTBEE_WEBHOOK_SECRET)) {
       console.error('Invalid webhook signature')
       return NextResponse.json(
         { error: 'Invalid signature' },
