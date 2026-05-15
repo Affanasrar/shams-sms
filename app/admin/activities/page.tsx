@@ -13,13 +13,13 @@ type Activity = {
 }
 
 export default async function ActivitiesPage() {
-  // Fetch all recent activities (last 4 weeks)
-  const fourWeeksAgo = new Date()
-  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
+  // Fetch all recent activities (last 2 months)
+  const twoMonthsAgo = new Date()
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2)
 
   const enrollments = await prisma.enrollment.findMany({
     where: {
-      joiningDate: { gte: fourWeeksAgo }
+      joiningDate: { gte: twoMonthsAgo }
     },
     orderBy: { joiningDate: 'desc' },
     include: { student: true, courseOnSlot: { include: { course: true } } }
@@ -28,7 +28,7 @@ export default async function ActivitiesPage() {
   const droppedEnrollments = await prisma.enrollment.findMany({
     where: {
       status: 'DROPPED',
-      endDate: { gte: fourWeeksAgo }
+      endDate: { gte: twoMonthsAgo }
     },
     orderBy: { endDate: 'desc' },
     include: { student: true, courseOnSlot: { include: { course: true } } }
@@ -36,7 +36,7 @@ export default async function ActivitiesPage() {
 
   const transactions = await prisma.transaction.findMany({
     where: {
-      date: { gte: fourWeeksAgo }
+      date: { gte: twoMonthsAgo }
     },
     orderBy: { date: 'desc' },
     include: {
@@ -70,31 +70,21 @@ export default async function ActivitiesPage() {
     }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 
-  // Group activities by week
-  const groupedByWeek: { [key: string]: Activity[] } = {}
+  // Group activities by day
+  const groupedByDay: { [key: string]: Activity[] } = {}
 
   allActivities.forEach(activity => {
     const date = activity.timestamp
-    const year = date.getFullYear()
-    const week = getWeekNumber(date)
-    const weekStart = getWeekStart(date)
-    const weekEnd = getWeekEnd(date)
-    const key = `${year}-W${week}`
-    const displayKey = `${weekStart.toLocaleDateString('en-PK')} - ${weekEnd.toLocaleDateString('en-PK')}`
+    const key = date.toISOString().slice(0, 10)
 
-    if (!groupedByWeek[key]) {
-      groupedByWeek[key] = []
+    if (!groupedByDay[key]) {
+      groupedByDay[key] = []
     }
-    groupedByWeek[key].push(activity)
+    groupedByDay[key].push(activity)
   })
 
-  // Sort weeks in descending order
-  const sortedWeeks = Object.entries(groupedByWeek).sort(([a], [b]) => {
-    const [yearA, weekA] = a.split('-W').map(x => parseInt(x))
-    const [yearB, weekB] = b.split('-W').map(x => parseInt(x))
-    if (yearA !== yearB) return yearB - yearA
-    return weekB - weekA
-  })
+  // Sort days in descending order
+  const sortedDays = Object.entries(groupedByDay).sort(([a], [b]) => b.localeCompare(a))
 
   // Calculate summary stats
   const totalEnrollments = enrollments.length
@@ -158,17 +148,15 @@ export default async function ActivitiesPage() {
         </div>
       </div>
 
-      {/* Activities grouped by week */}
+      {/* Activities grouped by day */}
       <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b bg-gray-50">
-          <h2 className="font-semibold text-gray-900">Weekly Activity Breakdown</h2>
+          <h2 className="font-semibold text-gray-900">Daily Activity Breakdown</h2>
         </div>
 
         <div className="divide-y">
-          {sortedWeeks.map(([weekKey, activities]) => {
-            const [year, weekNum] = weekKey.split('-W').map(x => parseInt(x))
-            const weekStart = getWeekStart(new Date(year, 0, 1 + (weekNum - 1) * 7))
-            const weekEnd = getWeekEnd(weekStart)
+          {sortedDays.map(([dayKey, activities]) => {
+            const dayDate = new Date(dayKey)
             const enrollmentCount = activities.filter(a => a.type === 'enrollment').length
             const dropCount = activities.filter(a => a.type === 'drop').length
             const feeCount = activities.filter(a => a.type === 'fee').length
@@ -180,12 +168,12 @@ export default async function ActivitiesPage() {
               }, 0)
 
             return (
-              <div key={weekKey} className="p-6">
-                {/* Week Header */}
+              <div key={dayKey} className="p-6">
+                {/* Day Header */}
                 <div className="flex items-center justify-between mb-4 pb-4 border-b">
                   <div>
                     <h3 className="font-semibold text-gray-900">
-                      Week of {weekStart.toLocaleDateString('en-PK')} - {weekEnd.toLocaleDateString('en-PK')}
+                      {dayDate.toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
                     </h3>
                   </div>
                   <div className="flex gap-4 text-sm">
@@ -249,32 +237,10 @@ export default async function ActivitiesPage() {
 
         {allActivities.length === 0 && (
           <div className="p-8 text-center text-gray-500">
-            <p>No activities recorded in the past 4 weeks.</p>
+            <p>No activities recorded in the past 2 months.</p>
           </div>
         )}
       </div>
     </div>
   )
-}
-
-// Helper functions to calculate week numbers
-function getWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  const dayNum = d.getUTCDay() || 7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
-}
-
-function getWeekStart(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(d.setDate(diff))
-}
-
-function getWeekEnd(date: Date): Date {
-  const d = new Date(date)
-  d.setDate(d.getDate() + 6)
-  return d
 }
