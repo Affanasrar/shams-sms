@@ -71,6 +71,7 @@ export async function GET() {
 
     const reminderResults: Array<{ studentId: string; studentName: string; success: boolean; skipped: boolean; feeIds: string[]; outstandingAmount: number; weeklyReminderCount: number; error?: string }> = []
     let remindersSent = 0
+    let remindersFailed = 0
     let remindersSkipped = 0
 
     for (const entry of feesByStudent.values()) {
@@ -105,6 +106,19 @@ Shams Commercial Institute`
         status = 'SKIPPED'
         errorMessage = 'No phone number available'
         console.log(`⚠️ Skipping SMS for ${student.name} (${student.studentId}): no phone number.`)
+
+        await prisma.smsMessage.create({
+          data: {
+            studentId: student.id,
+            phoneNumber: student.phone || '',
+            message,
+            direction: 'OUTBOUND',
+            status: 'FAILED',
+            textbeeId: null,
+            errorMsg: errorMessage,
+            sentAt: null
+          }
+        })
       } else {
         const smsResponse = await sendTextbeeSms(student.phone, message)
         const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
@@ -119,6 +133,7 @@ Shams Commercial Institute`
           remindersSent++
           console.log(`✅ SMS reminder sent to ${student.name} (${student.phone}) for outstanding PKR ${totalOutstanding}`)
         } else {
+          remindersFailed++
           errorMessage = smsResponse.error || 'Textbee SMS send failed'
           console.error(`❌ Failed to send SMS reminder to ${student.name} (${student.phone}): ${errorMessage}`)
         }
@@ -172,12 +187,13 @@ Shams Commercial Institute`
       })
     }
 
-    console.log(`🎉 Fee Reminder Cron Completed: ${remindersSent} reminders sent, ${remindersSkipped} skipped, ${feesByStudent.size - remindersSent - remindersSkipped} failed`) 
+    console.log(`🎉 Fee Reminder Cron Completed: ${remindersSent} reminders sent, ${remindersFailed} failed, ${remindersSkipped} skipped`) 
 
     return NextResponse.json({
       success: true,
       date: todayString,
       remindersSent,
+      remindersFailed,
       remindersSkipped,
       totalStudentsProcessed: feesByStudent.size,
       results: reminderResults
