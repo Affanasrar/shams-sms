@@ -81,7 +81,7 @@ export async function POST(request: Request) {
           const dueDateStr = recentFee.dueDate.toISOString().split('T')[0]
           const amount = Number(recentFee.finalAmount)
 
-          message = `Dear ${student.name}, your fee for ${monthName} ${year} is due on ${dueDateStr}. Amount: PKR ${amount}. Student ID: ${student.studentId}. Please pay promptly to avoid late fees. - Shams Commercial Institute`
+          message = `Dear ${student.name}, your fee for ${monthName} ${year} is due on ${dueDateStr}. Amount due now: PKR ${amount}. Total outstanding: PKR ${totalOutstanding}. Student ID: ${student.studentId}. Please pay promptly to avoid late fees. - Shams Commercial Institute`
         }
 
         if (!student.phone) {
