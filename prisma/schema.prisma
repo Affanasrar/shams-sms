@@ -371,6 +371,7 @@ model SmsMessage {
   sentAt      DateTime?
   deliveredAt DateTime?
   failedAt    DateTime?
+  receivedAt  DateTime?
   errorMsg    String?
 
   createdAt   DateTime     @default(now())
