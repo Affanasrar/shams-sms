@@ -93,12 +93,29 @@ export async function POST(request: Request) {
           continue
         }
 
-        const smsSent = await sendTextbeeSms(student.phone, message)
+        const smsResponse = await sendTextbeeSms(student.phone, message)
+        const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
+        const finalStatus = smsResponse.success
+          ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
+          : 'FAILED'
+
+        await prisma.smsMessage.create({
+          data: {
+            studentId: student.id,
+            phoneNumber: student.phone,
+            message,
+            direction: 'OUTBOUND',
+            status: finalStatus,
+            textbeeId: smsResponse.textbeeId || null,
+            errorMsg: smsResponse.error || null,
+            sentAt: smsResponse.success ? new Date() : null
+          }
+        })
 
         results.push({
           studentId: student.id,
-          success: smsSent,
-          message: smsSent ? 'SMS sent successfully' : 'Failed to send SMS'
+          success: smsResponse.success,
+          message: smsResponse.success ? 'SMS sent successfully' : `Failed to send SMS: ${smsResponse.error || 'Unknown error'}`
         })
 
       } catch (error) {

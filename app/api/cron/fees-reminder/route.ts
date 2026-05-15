@@ -106,17 +106,35 @@ Shams Commercial Institute`
         errorMessage = 'No phone number available'
         console.log(`⚠️ Skipping SMS for ${student.name} (${student.studentId}): no phone number.`)
       } else {
-        const smsSent = await sendTextbeeSms(student.phone, message)
-        if (smsSent) {
-          status = 'SENT'
-          success = true
+        const smsResponse = await sendTextbeeSms(student.phone, message)
+        const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
+        const finalStatus = smsResponse.success
+          ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
+          : 'FAILED'
+
+        status = finalStatus
+        success = smsResponse.success
+
+        if (smsResponse.success) {
           remindersSent++
           console.log(`✅ SMS reminder sent to ${student.name} (${student.phone}) for outstanding PKR ${totalOutstanding}`)
         } else {
-          status = 'FAILED'
-          errorMessage = 'Textbee SMS send failed'
-          console.error(`❌ Failed to send SMS reminder to ${student.name} (${student.phone})`)
+          errorMessage = smsResponse.error || 'Textbee SMS send failed'
+          console.error(`❌ Failed to send SMS reminder to ${student.name} (${student.phone}): ${errorMessage}`)
         }
+
+        await prisma.smsMessage.create({
+          data: {
+            studentId: student.id,
+            phoneNumber: student.phone,
+            message,
+            direction: 'OUTBOUND',
+            status: finalStatus,
+            textbeeId: smsResponse.textbeeId || null,
+            errorMsg: smsResponse.error || null,
+            sentAt: smsResponse.success ? new Date() : null
+          }
+        })
       }
 
       if (skipped) {
