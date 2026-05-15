@@ -6,6 +6,12 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentFeeForCourse } from '@/lib/course-fees'
 import { sendTextbeeSms } from '@/lib/textbee'
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  return String(error ?? 'Unknown error')
+}
+
 // Note: This function is likely called by your Server Action wrapper, or needs to be adapted to receive (prevState, formData) if used directly in useActionState.
 // Assuming this is the helper function called by the server action:
 
@@ -99,8 +105,36 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
     }
   })
 
-  if (student?.phone) {
-    const message = `Dear ${student.name}, welcome to your new course! Your enrollment is confirmed. Student ID: ${student.studentId}. Please reach out if you have any questions.`
+  // Fetch enrollment with course and slot details for SMS
+  const enrollmentWithDetails = await prisma.enrollment.findUnique({
+    where: { id: newEnrollment.id },
+    include: {
+      courseOnSlot: {
+        include: {
+          course: true,
+          slot: true
+        }
+      }
+    }
+  })
+
+  if (student?.phone && enrollmentWithDetails) {
+    const course = enrollmentWithDetails.courseOnSlot.course
+    const slot = enrollmentWithDetails.courseOnSlot.slot
+    
+    // Format time as HH:MM (e.g., "09:00 - 11:30")
+    const startTime = slot.startTime.toLocaleTimeString('en-PK', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    })
+    const endTime = slot.endTime.toLocaleTimeString('en-PK', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    })
+
+    const message = `Dear ${student.name}, welcome to Shams Commercial Institute. Your enrollment in ${course.name} at ${startTime} - ${endTime} is confirmed. We look forward to supporting your academic success.`
     const smsResponse = await sendTextbeeSms(student.phone, message)
 
     const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
@@ -132,7 +166,7 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
 // ------------------------------------------------------------------
 // 👇 ADD THIS WRAPPER if you are using 'useActionState' in the Form
 // ------------------------------------------------------------------
-export async function createEnrollment(prevState: any, formData: FormData) {
+export async function createEnrollment(prevState: unknown, formData: FormData) {
   const studentId = formData.get('studentId') as string
   const courseOnSlotId = formData.get('courseOnSlotId') as string
 
@@ -145,12 +179,12 @@ export async function createEnrollment(prevState: any, formData: FormData) {
     // Redirect happens here to refresh page
     revalidatePath(`/admin/students/${studentId}`)
     return { success: true, message: "Enrolled successfully!" }
-  } catch (e: any) {
-    return { success: false, error: e.message || "Enrollment failed" }
+  } catch (error: unknown) {
+    return { success: false, error: getErrorMessage(error) || 'Enrollment failed' }
   }
 }
 
-export async function updateEnrollment(prevState: any, formData: FormData) {
+export async function updateEnrollment(prevState: unknown, formData: FormData) {
   const enrollmentId = formData.get('enrollmentId') as string
   const courseOnSlotId = formData.get('courseOnSlotId') as string
   const joiningDateRaw = formData.get('joiningDate') as string
@@ -261,9 +295,9 @@ export async function updateEnrollment(prevState: any, formData: FormData) {
     revalidatePath(`/admin/students/${result.studentId}`)
 
     return { success: true, message: 'Enrollment updated successfully' }
-  } catch (error: any) {
-    console.error('Update Enrollment Error:', error)
-    return { success: false, error: error.message || 'Failed to update enrollment' }
+  } catch (error: unknown) {
+    console.error('Update Enrollment Error:', getErrorMessage(error))
+    return { success: false, error: getErrorMessage(error) || 'Failed to update enrollment' }
   }
 }
 
@@ -412,7 +446,7 @@ export async function restoreEnrollment(formData: FormData) {
   }
 }
 
-export async function extendCourse(prevState: any, formData: FormData) {
+export async function extendCourse(prevState: unknown, formData: FormData) {
   const enrollmentId = formData.get('enrollmentId') as string
   const additionalDays = parseInt(formData.get('additionalDays') as string)
 

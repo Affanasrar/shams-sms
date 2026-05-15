@@ -3,6 +3,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { sendTextbeeSms } from '@/lib/textbee'
 
 export async function collectFee(feeId: string, adminId: string, paymentAmount?: number) {
   // 1. Fetch the Fee to check amount
@@ -33,22 +34,75 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
   }
 
   // 2. Transaction: Update Fee + Record Transaction
-  await prisma.$transaction([
-    prisma.fee.update({
+  const updatedFee = await prisma.$transaction(async (tx) => {
+    await tx.fee.update({
       where: { id: feeId },
       data: { 
         paidAmount: newPaidAmount,
         status: newStatus
       }
-    }),
-    prisma.transaction.create({
+    })
+
+    const result = await tx.fee.findUnique({
+      where: { id: feeId },
+      include: {
+        student: true,
+        enrollment: {
+          include: {
+            courseOnSlot: {
+              include: {
+                course: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    await tx.transaction.create({
       data: {
         feeId: feeId,
         amount: amountToPay,
         collectedById: adminId // Who took the cash?
       }
     })
-  ])
+
+    return result
+  })
+
+  // Send SMS for any payment event
+  if (updatedFee && updatedFee.student?.phone) {
+    const student = updatedFee.student
+    const course = updatedFee.enrollment?.courseOnSlot?.course
+    const paymentDate = new Date().toLocaleDateString('en-PK', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+
+    if (course) {
+      const message = `Dear ${student.name}, we have received your payment of PKR ${amountToPay} for ${course.name} on ${paymentDate}. Thank you for choosing Shams Commercial Institute.`
+      const smsResponse = await sendTextbeeSms(student.phone, message)
+
+      const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
+      const finalStatus = smsResponse.success
+        ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
+        : 'FAILED'
+
+      await prisma.smsMessage.create({
+        data: {
+          studentId: student.id,
+          phoneNumber: student.phone,
+          message,
+          direction: 'OUTBOUND',
+          status: finalStatus,
+          textbeeId: smsResponse.textbeeId || null,
+          errorMsg: smsResponse.error || null,
+          sentAt: smsResponse.success ? new Date() : null
+        }
+      })
+    }
+  }
 
   revalidatePath('/admin/fees')
   revalidatePath('/admin/activities')
