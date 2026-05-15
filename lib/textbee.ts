@@ -2,7 +2,7 @@ const TEXTBEE_API_KEY = process.env.TEXTBEE_API_KEY
 const TEXTBEE_DEVICE_ID = process.env.TEXTBEE_DEVICE_ID
 const TEXTBEE_BASE_URL = process.env.TEXTBEE_BASE_URL || 'https://api.textbee.dev'
 
-function normalizePhoneNumber(phone: string): string | null {
+export function normalizePhoneNumber(phone: string): string | null {
   const digits = phone.replace(/[^+0-9]/g, '')
 
   if (!digits) {

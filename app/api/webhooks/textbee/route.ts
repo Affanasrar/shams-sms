@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import prisma from '@/lib/prisma'
+import { normalizePhoneNumber } from '@/lib/textbee'
 
 const TEXTBEE_WEBHOOK_SECRET = process.env.TEXTBEE_WEBHOOK_SECRET
 
@@ -49,21 +50,45 @@ async function handleMessageReceived(payload: TextbeeWebhookPayload) {
   console.log('Handling MESSAGE_RECEIVED:', payload)
 
   try {
+    const phoneNumber = payload.sender || ''
+    const normalizedPhone = normalizePhoneNumber(phoneNumber)
+    
+    let studentId: string | null = null
+    
+    // Try to find student by normalized phone number
+    if (normalizedPhone) {
+      const student = await prisma.student.findFirst({
+        where: {
+          phone: {
+            in: [normalizedPhone, phoneNumber] // Try both normalized and original
+          }
+        },
+        select: { id: true }
+      })
+      if (student) {
+        studentId = student.id
+        console.log(`Found student ${studentId} for phone ${phoneNumber}`)
+      } else {
+        console.log(`No student found for phone ${phoneNumber} (normalized: ${normalizedPhone})`)
+      }
+    }
+
     // Create inbound SMS message record
     const smsMessage = await prisma.smsMessage.create({
       data: {
         textbeeId: payload.smsId,
-        phoneNumber: payload.sender || '',
+        phoneNumber: phoneNumber,
         message: payload.message,
         direction: 'INBOUND',
         status: 'DELIVERED',
         receivedAt: payload.receivedAt ? new Date(payload.receivedAt) : new Date(),
         deliveredAt: new Date(),
+        studentId: studentId,
       },
     })
 
-    console.log('Inbound SMS recorded:', smsMessage.id)
-    return { success: true, message: 'Inbound SMS recorded' }
+    console.log('Inbound SMS recorded:', smsMessage.id, `(studentId: ${studentId || 'null'})`)
+    return { success: true, message: 'Inbound SMS recorded', studentId }
   } catch (error) {
     console.error('Error recording inbound SMS:', error)
     throw error
