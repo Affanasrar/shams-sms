@@ -18,11 +18,11 @@ type Student = {
         name: string
       }
     }
-    fees: Array<{
+    fees?: Array<{
       id: string
       finalAmount: number
       dueDate: string
-      cycleDate: string
+      cycleDate: string | null
     }>
   }>
 }
@@ -178,17 +178,15 @@ export function SmsSender({ students, courseSlots }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="space-y-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className="space-y-4">
         {/* Message Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Custom Message</h3>
-          <p className="text-sm text-blue-800 bg-white p-2 rounded border font-mono">
+        <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-900">
+          <div className="font-semibold">Custom SMS</div>
+          <div className="mt-1 text-blue-800">Use [Student Name] and [Student ID] placeholders.</div>
+          <div className="mt-3 rounded-lg bg-white p-2 border border-blue-200 font-mono text-xs text-gray-700 min-h-[50px]">
             {customMessage || 'Enter your custom message...'}
-          </p>
-          <p className="text-xs text-blue-600 mt-2">
-            Available placeholders: [Student Name], [Student ID]
-          </p>
+          </div>
         </div>
 
         {/* Custom Message Input */}
@@ -198,8 +196,8 @@ export function SmsSender({ students, courseSlots }: Props) {
             value={customMessage}
             onChange={(e) => setCustomMessage(e.target.value)}
             placeholder="Enter your custom message. Use [Student Name] and [Student ID] as placeholders."
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            rows={3}
+            className="w-full min-h-[88px] rounded-lg border border-gray-300 bg-white p-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            rows={2}
           />
           <p className="text-xs text-gray-500 mt-1">
             Available placeholders: [Student Name], [Student ID]
@@ -267,20 +265,20 @@ export function SmsSender({ students, courseSlots }: Props) {
             </button>
           </div>
 
-          <div className="border border-gray-200 rounded-xl max-h-64 overflow-y-auto">
+          <div className="border border-gray-200 rounded-xl max-h-52 overflow-y-auto">
             {filteredStudents.map(student => {
               const recentFee = student.enrollments
-                .flatMap(enrollment => enrollment.fees)
+                .flatMap(enrollment => enrollment.fees ?? [])
                 .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())[0]
 
               const totalOutstanding = student.enrollments
-                .flatMap(enrollment => enrollment.fees)
+                .flatMap(enrollment => enrollment.fees ?? [])
                 .reduce((sum, fee) => sum + fee.finalAmount, 0)
 
               return (
                 <div
                   key={student.id}
-                  className="flex items-center p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                  className="flex items-center p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-100"
                 >
                   <input
                     type="checkbox"
@@ -323,7 +321,7 @@ export function SmsSender({ students, courseSlots }: Props) {
           <button
             onClick={handleSendSms}
             disabled={sending || selectedStudents.length === 0}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             {sending ? (
               <>
@@ -341,8 +339,8 @@ export function SmsSender({ students, courseSlots }: Props) {
 
         {/* Results */}
         {results.length > 0 && (
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Send Results</h3>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Send Results</h3>
             <div className="space-y-2">
               {results.map((result, index) => {
                 const student = students.find(s => s.id === result.studentId)

@@ -15,6 +15,7 @@ import {
   Trash2,
   ChevronLeft,
   MessageSquare,
+  Inbox,
   UserX,
 } from "lucide-react"
 import { Button } from "./button"

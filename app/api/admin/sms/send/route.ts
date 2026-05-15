@@ -2,10 +2,19 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sendTextbeeSms } from '@/lib/textbee'
+import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function POST(request: Request) {
   try {
-    const { studentIds, customMessage, courseId } = await request.json()
+    const { studentIds, customMessage } = await request.json()
+
+    const { isAdmin } = await verifyAdminApiRole()
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      )
+    }
 
     if (!Array.isArray(studentIds) || studentIds.length === 0) {
       return NextResponse.json(

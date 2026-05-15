@@ -123,6 +123,7 @@ model Student {
   results     Result[]
   discounts   StudentDiscount[]
   feeReminderLogs FeeReminderLog[]
+  smsMessages SmsMessage[]
 }
 
 model Enrollment {
@@ -340,4 +341,42 @@ model ReportFormat {
 
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+}
+
+// --------------------------------------
+// 7. SMS & Messaging
+// --------------------------------------
+enum SmsDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum SmsStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model SmsMessage {
+  id          String       @id @default(uuid())
+  textbeeId   String?      @unique
+  batchId     String?
+  studentId   String?
+  phoneNumber String
+  message     String
+  direction   SmsDirection @default(OUTBOUND)
+  status      SmsStatus    @default(PENDING)
+
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  failedAt    DateTime?
+  errorMsg    String?
+
+  createdAt   DateTime     @default(now())
+
+  student     Student?     @relation(fields: [studentId], references: [id])
+
+  @@index([studentId, createdAt])
+  @@index([phoneNumber, createdAt])
 }

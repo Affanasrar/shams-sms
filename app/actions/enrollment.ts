@@ -4,6 +4,7 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getCurrentFeeForCourse } from '@/lib/course-fees'
+import { sendTextbeeSms } from '@/lib/textbee'
 
 // Note: This function is likely called by your Server Action wrapper, or needs to be adapted to receive (prevState, formData) if used directly in useActionState.
 // Assuming this is the helper function called by the server action:
@@ -12,12 +13,11 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
   console.log(`⚡ Attempting to enroll Student ${studentId} into Slot Assignment ${courseOnSlotId}`)
 
   // Start a transaction to ensure data integrity
-  return await prisma.$transaction(async (tx) => {
-    
+  const newEnrollment = await prisma.$transaction(async (tx) => {
     // 1. Get the Target Slot and its Room Capacity
     const targetAssignment = await tx.courseOnSlot.findUnique({
       where: { id: courseOnSlotId },
-      include: { 
+      include: {
         slot: {
           include: { room: true }
         },
@@ -26,22 +26,22 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
     })
 
     if (!targetAssignment) {
-      throw new Error("Invalid Course/Slot selection")
+      throw new Error('Invalid Course/Slot selection')
     }
 
     const slotId = targetAssignment.slotId
     const roomName = targetAssignment.slot.room.name
     const roomCapacity = targetAssignment.slot.room.capacity
     const courseDuration = targetAssignment.course.durationMonths
-    const courseFee = await getCurrentFeeForCourse(targetAssignment.courseId) // Get current fee for new enrollment
+    const courseFee = await getCurrentFeeForCourse(targetAssignment.courseId)
 
     // 2. Count Total Occupancy in this Slot
     const currentOccupancy = await tx.enrollment.count({
       where: {
         courseOnSlot: {
-          slotId: slotId 
+          slotId: slotId
         },
-        status: 'ACTIVE' 
+        status: 'ACTIVE'
       }
     })
 
@@ -68,35 +68,65 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
       }
     })
 
-    // ---------------------------------------------------------
-    // 6. 👇 NEW: GENERATE THE FIRST INVOICE IMMEDIATELY
-    // Normalize `cycleDate` to the first day of the month so
-    // it matches cron job expectations and avoids duplicates.
-    // ---------------------------------------------------------
+    // 6. Generate the first invoice immediately
     const cycleDate = new Date(today.getFullYear(), today.getMonth(), 1)
 
     await tx.fee.create({
       data: {
         studentId: studentId,
         enrollmentId: newEnrollment.id,
-        amount: courseFee,       // Charge the Course Fee
-        discountAmount: 0,       // No discount on initial enrollment fee
-        finalAmount: courseFee,  // Same as amount initially (no discount)
-        rolloverAmount: 0,       // No rollover on first fee
-        dueDate: today,          // Due Today
-        cycleDate: cycleDate,    // Billing cycle normalized to month start
+        amount: courseFee,
+        discountAmount: 0,
+        finalAmount: courseFee,
+        rolloverAmount: 0,
+        dueDate: today,
+        cycleDate: cycleDate,
         status: 'UNPAID'
       }
     })
 
-    console.log(`✅ Success! Enrolled & Billed.`)
+    console.log('✅ Success! Enrolled & Billed.')
     return newEnrollment
   })
 
-  // 👇 FIX: Revalidate caches so newly enrolled students appear immediately
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      studentId: true
+    }
+  })
+
+  if (student?.phone) {
+    const message = `Dear ${student.name}, welcome to your new course! Your enrollment is confirmed. Student ID: ${student.studentId}. Please reach out if you have any questions.`
+    const smsResponse = await sendTextbeeSms(student.phone, message)
+
+    const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
+    const finalStatus = smsResponse.success
+      ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
+      : 'FAILED'
+
+    await prisma.smsMessage.create({
+      data: {
+        studentId: student.id,
+        phoneNumber: student.phone,
+        message,
+        direction: 'OUTBOUND',
+        status: finalStatus,
+        textbeeId: smsResponse.textbeeId || null,
+        errorMsg: smsResponse.error || null,
+        sentAt: smsResponse.success ? new Date() : null
+      }
+    })
+  }
+
   revalidatePath('/admin/enrollment')
   revalidatePath(`/admin/students/${studentId}`)
   revalidatePath('/admin/enrollment/new')
+
+  return newEnrollment
 }
 
 // ------------------------------------------------------------------
