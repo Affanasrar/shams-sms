@@ -122,16 +122,18 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
     const course = enrollmentWithDetails.courseOnSlot.course
     const slot = enrollmentWithDetails.courseOnSlot.slot
     
-    // Format time as HH:MM (e.g., "09:00 - 11:30")
-    const startTime = slot.startTime.toLocaleTimeString('en-PK', { 
-      hour: '2-digit', 
+    // Format time as HH:MM (e.g., "09:00 - 11:30") in Pakistan timezone
+    const startTime = new Date(slot.startTime).toLocaleTimeString('en-PK', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false,
+      timeZone: 'Asia/Karachi'
     })
-    const endTime = slot.endTime.toLocaleTimeString('en-PK', { 
-      hour: '2-digit', 
+    const endTime = new Date(slot.endTime).toLocaleTimeString('en-PK', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false,
+      timeZone: 'Asia/Karachi'
     })
 
     const message = `Dear ${student.name}, welcome to Shams Commercial Institute. Your enrollment in ${course.name} at ${startTime} - ${endTime} is confirmed. We look forward to supporting your academic success.`

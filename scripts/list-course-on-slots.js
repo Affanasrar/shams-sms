@@ -26,7 +26,7 @@ async function main() {
     if (a.slot) {
       console.log(`  Room: ${a.slot.room?.name || a.slot.roomId}`)
       console.log(`  Days: ${a.slot.days}`)
-      console.log(`  Time: ${new Date(a.slot.startTime).toLocaleTimeString()} - ${new Date(a.slot.endTime).toLocaleTimeString()}`)
+      console.log(`  Time: ${new Date(a.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} - ${new Date(a.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}`)
     }
     console.log(`Teacher: ${a.teacher ? `${a.teacher.firstName || ''} ${a.teacher.lastName || ''}`.trim() + ` (ID: ${a.teacherId})` : `Unassigned (ID: ${a.teacherId})`}`)
     console.log('---')
