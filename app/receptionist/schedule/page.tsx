@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma'
 import { PageLayout, PageHeader } from '@/components/ui'
-import { ReceptionistSchedulePanel, type SlotGroup } from '@/components/receptionist/receptionist-schedule-panel'
+import { ReceptionistSchedulePanel, type ReceptionistRoomGroup } from '@/components/receptionist/receptionist-schedule-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +15,7 @@ type ScheduleAssignment = {
     room: { name: string; capacity: number }
   }
   enrollments: {
+    id: string
     student: { id: string; name: string; fatherName: string; phone: string }
   }[]
 }
@@ -39,19 +40,17 @@ export default async function ReceptionistSchedulePage() {
         }
       }
     },
-    orderBy: {
-      slot: {
-        startTime: 'asc'
-      }
-    }
+    orderBy: [
+      { slot: { room: { name: 'asc' } } },
+      { slot: { startTime: 'asc' } }
+    ]
   })
 
-  const groups = new Map<string, SlotGroup>()
+  const roomGroups = new Map<string, ReceptionistRoomGroup>()
 
   assignments.forEach((assignment) => {
-    const slot = assignment.slot
-    const slotKey = slot.id
-    const studentList = assignment.enrollments.map((enrollment) => ({
+    const { slot, course, enrollments } = assignment
+    const studentList = enrollments.map((enrollment) => ({
       id: enrollment.student.id,
       enrollmentId: enrollment.id,
       name: enrollment.student.name,
@@ -59,43 +58,75 @@ export default async function ReceptionistSchedulePage() {
       phone: enrollment.student.phone
     }))
 
-    if (!groups.has(slotKey)) {
-      groups.set(slotKey, {
-        slotId: slot.id,
-        days: slot.days,
-        startTime: slot.startTime.toISOString(),
-        endTime: slot.endTime.toISOString(),
-        room: { name: slot.room.name, capacity: slot.room.capacity },
-        assignments: [],
+    const roomKey = slot.room.name
+    const timingKey = slot.id
+
+    const timing = {
+      slotId: slot.id,
+      days: slot.days,
+      startTime: slot.startTime.toISOString(),
+      endTime: slot.endTime.toISOString(),
+      assignments: [
+        {
+          id: assignment.id,
+          courseName: course.name,
+          enrolledCount: studentList.length,
+          students: studentList
+        }
+      ],
+      totalEnrolled: studentList.length,
+      seatsLeft: 0
+    }
+
+    if (!roomGroups.has(roomKey)) {
+      roomGroups.set(roomKey, {
+        roomName: slot.room.name,
+        roomCapacity: slot.room.capacity,
+        timings: [],
         totalEnrolled: 0,
+        totalCourses: 0,
         seatsLeft: 0
       })
     }
 
-    const existing = groups.get(slotKey)!
-    existing.assignments.push({
-      id: assignment.id,
-      courseName: assignment.course.name,
-      enrolledCount: studentList.length,
-      students: studentList
-    })
-    existing.totalEnrolled += studentList.length
+    const roomGroup = roomGroups.get(roomKey)!
+    const existingTiming = roomGroup.timings.find((item) => item.slotId === timingKey)
+
+    if (existingTiming) {
+      existingTiming.assignments.push(...timing.assignments)
+      existingTiming.totalEnrolled += timing.totalEnrolled
+    } else {
+      roomGroup.timings.push(timing)
+    }
+
+    roomGroup.totalEnrolled += timing.totalEnrolled
+    roomGroup.totalCourses += 1
   })
 
-  const slotGroups: SlotGroup[] = Array.from(groups.values()).map((group) => {
-    const totalEnrolled = group.totalEnrolled
-    const seatsLeft = Math.max(0, group.room.capacity - totalEnrolled)
-    return { ...group, seatsLeft }
-  })
+  const roomGroupArray: ReceptionistRoomGroup[] = Array.from(roomGroups.values())
+    .map((room) => {
+      const seatsLeft = Math.max(0, room.roomCapacity - room.totalEnrolled)
+      return {
+        ...room,
+        seatsLeft,
+        timings: room.timings
+          .sort((a, b) => a.startTime.localeCompare(b.startTime))
+          .map((timing) => ({
+            ...timing,
+            seatsLeft: Math.max(0, room.roomCapacity - timing.totalEnrolled)
+          }))
+      }
+    })
+    .sort((a, b) => a.roomName.localeCompare(b.roomName))
 
   return (
     <PageLayout>
       <PageHeader
         title="Receptionist Schedule"
-        description="Search batch timings, review all courses in the same room and slot, and open the student list with one tap."
+        description="Search room-based schedules, expand a room to view timing slots, and tap into course details cleanly."
       />
 
-      <ReceptionistSchedulePanel slotGroups={slotGroups} />
+      <ReceptionistSchedulePanel roomGroups={roomGroupArray} />
     </PageLayout>
   )
 }
