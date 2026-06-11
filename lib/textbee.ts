@@ -42,8 +42,17 @@ type TextbeeResponse = {
   status?: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED'
 }
 
-function isValidSmsStatus(status: unknown): status is 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' {
-  return ['PENDING', 'SENT', 'DELIVERED', 'FAILED'].includes(String(status))
+function normalizeSmsStatus(status: unknown): 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' {
+  if (typeof status !== 'string') {
+    return 'PENDING'
+  }
+
+  const normalizedStatus = status.trim().toUpperCase()
+  if (['PENDING', 'SENT', 'DELIVERED', 'FAILED'].includes(normalizedStatus)) {
+    return normalizedStatus as 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED'
+  }
+
+  return 'PENDING'
 }
 
 export async function sendTextbeeSms(phone: string, message: string): Promise<TextbeeResponse> {
@@ -93,12 +102,19 @@ export async function sendTextbeeSms(phone: string, message: string): Promise<Te
     }
 
     // Safely extract values with validation
-    const textbeeId = result.data?._id || result._id || null
-    const apiStatus = result.data?.status || result.status || 'PENDING'
-    const status = isValidSmsStatus(apiStatus) ? apiStatus : 'PENDING'
+    const textbeeId =
+      result?.data?._id ||
+      result?.data?.smsId ||
+      result?.data?.id ||
+      result?._id ||
+      result?.smsId ||
+      result?.id ||
+      null
+    const apiStatus = result?.data?.status || result?.status || 'PENDING'
+    const status = normalizeSmsStatus(apiStatus)
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       textbeeId,
       status
     }

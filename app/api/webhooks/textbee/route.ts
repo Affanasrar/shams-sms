@@ -120,6 +120,14 @@ async function handleMessageSent(payload: TextbeeWebhookPayload) {
       },
     })
 
+    if (updated.count === 0) {
+      console.warn('Textbee MESSAGE_SENT webhook did not match any SMS records', {
+        smsId: payload.smsId,
+        phoneNumber: payload.recipient || payload.phoneNumber,
+        status: payload.status
+      })
+    }
+
     console.log(`Updated ${updated.count} SMS record(s) to SENT status`)
     return { success: true, message: 'SMS marked as sent' }
   } catch (error) {
@@ -144,6 +152,14 @@ async function handleMessageDelivered(payload: TextbeeWebhookPayload) {
       },
     })
 
+    if (updated.count === 0) {
+      console.warn('Textbee MESSAGE_DELIVERED webhook did not match any SMS records', {
+        smsId: payload.smsId,
+        phoneNumber: payload.recipient || payload.phoneNumber,
+        status: payload.status
+      })
+    }
+
     console.log(`Updated ${updated.count} SMS record(s) to DELIVERED status`)
     return { success: true, message: 'SMS marked as delivered' }
   } catch (error) {
@@ -167,6 +183,14 @@ async function handleMessageFailed(payload: TextbeeWebhookPayload) {
         errorMsg: payload.errorMessage ? `[${payload.errorCode}] ${payload.errorMessage}` : null,
       },
     })
+
+    if (updated.count === 0) {
+      console.warn('Textbee MESSAGE_FAILED webhook did not match any SMS records', {
+        smsId: payload.smsId,
+        phoneNumber: payload.recipient || payload.phoneNumber,
+        status: payload.status
+      })
+    }
 
     console.log(`Updated ${updated.count} SMS record(s) to FAILED status`)
     return { success: true, message: 'SMS marked as failed' }
