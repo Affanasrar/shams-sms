@@ -311,7 +311,7 @@ export function ReceptionistSchedulePanel({ roomGroups }: ReceptionistSchedulePa
                 )}
               </article>
             )
-          )}
+          })
         )}
       </div>
     </div>
