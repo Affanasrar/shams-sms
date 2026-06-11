@@ -147,6 +147,7 @@ async function generateMonthlyReport(month: number, year: number) {
     totalStudents,
     fees: fees.map(fee => ({
       id: fee.id,
+      enrollmentId: fee.enrollment?.id,
       studentId: fee.student.studentId,
       studentName: fee.student.name,
       fatherName: fee.student.fatherName,
@@ -219,6 +220,7 @@ async function generateStudentReport(studentId: string) {
     totalFees,
     fees: fees.map(fee => ({
       id: fee.id,
+      enrollmentId: fee.enrollment?.id,
       courseName: fee.enrollment?.courseOnSlot?.course?.name || 'Unknown Course',
       amount: Number(fee.finalAmount),
       status: fee.status,
@@ -282,6 +284,7 @@ async function generateCourseReport(courseId: string) {
         .sort((a, b) => new Date(b.transactions[0].date).getTime() - new Date(a.transactions[0].date).getTime())[0]?.transactions[0].date
 
       return {
+        enrollmentId: enrollment.id,
         id: enrollment.student.id,
         studentId: enrollment.student.studentId,
         name: enrollment.student.name,

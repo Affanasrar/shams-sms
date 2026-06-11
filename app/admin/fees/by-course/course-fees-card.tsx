@@ -83,6 +83,7 @@ export function CourseFeeCard({ course }: Props) {
                 <th className="px-6 py-3">Student ID</th>
                 <th className="px-6 py-3">Student Name</th>
                 <th className="px-6 py-3">Father's Name</th>
+                <th className="px-6 py-3">Father's Name</th>
                 <th className="px-6 py-3">Total Fees</th>
                 <th className="px-6 py-3">Paid</th>
                 <th className="px-6 py-3">Pending</th>

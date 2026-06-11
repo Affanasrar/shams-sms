@@ -26,7 +26,12 @@ export default async function CheckRolePage() {
 
     // By default, we assume anyone YOU manually created in Clerk is a TEACHER
     // (Unless it's you, the Super Admin)
-    const role = email.includes("admin") ? "ADMIN" : "TEACHER"
+    const lowerEmail = email.toLowerCase()
+    const role = lowerEmail.includes("admin")
+      ? "ADMIN"
+      : lowerEmail.includes("reception")
+      ? "RECEPTIONIST"
+      : "TEACHER"
 
     dbUser = await prisma.user.create({
       data: {
@@ -34,7 +39,7 @@ export default async function CheckRolePage() {
         email: email,
         firstName: user.firstName || "New",
         lastName: user.lastName || "Teacher",
-        role: role as "ADMIN" | "TEACHER"
+        role: role as "ADMIN" | "TEACHER" | "RECEPTIONIST"
       }
     })
   }
@@ -44,6 +49,8 @@ export default async function CheckRolePage() {
     redirect("/admin")
   } else if (dbUser.role === 'TEACHER') {
     redirect("/teacher")
+  } else if (dbUser.role === 'RECEPTIONIST') {
+    redirect("/receptionist")
   } else {
     // Fallback for students or parents if you add them later
     return <div>Role not assigned. Contact Admin.</div>

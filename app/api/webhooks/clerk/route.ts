@@ -57,14 +57,21 @@ export async function POST(req: Request) {
     const email = email_addresses[0].email_address;
 
     try {
-        // 👇 FIXED: Use firstName and lastName instead of 'name'
+        // 👇 Auto-assign receptionist role when the sign-up email hints at it
+        const lowerEmail = email.toLowerCase()
+        const role = lowerEmail.includes('admin')
+          ? 'ADMIN'
+          : lowerEmail.includes('reception')
+          ? 'RECEPTIONIST'
+          : 'TEACHER'
+
         await prisma.user.create({
             data: {
                 clerkId: id,
                 email: email,
                 firstName: first_name, 
                 lastName: last_name,
-                role: 'TEACHER' // Default role
+                role
             }
         })
         console.log(`User ${id} created in DB`)

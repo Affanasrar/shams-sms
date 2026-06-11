@@ -94,3 +94,33 @@ export async function requireTeacherRole() {
   
   return teacher
 }
+
+/**
+ * Verify that the current user is authenticated and has RECEPTIONIST role
+ */
+export async function verifyReceptionistRole() {
+  const { userId } = await auth()
+  
+  if (!userId) {
+    return null
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId }
+  })
+
+  return user?.role === 'RECEPTIONIST' ? user : null
+}
+
+/**
+ * Require receptionist role - redirects to home if not authorized
+ */
+export async function requireReceptionistRole() {
+  const receptionist = await verifyReceptionistRole()
+  
+  if (!receptionist) {
+    redirect('/')
+  }
+  
+  return receptionist
+}

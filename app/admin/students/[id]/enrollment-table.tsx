@@ -68,6 +68,7 @@ export function EnrollmentTable({ enrollments }: EnrollmentTableProps) {
 
               return (
                 <tr key={enr.id}>
+                  <td className="p-4 font-medium font-mono text-xs text-slate-700">{enr.id}</td>
                   <td className="p-4 font-medium">{enr.courseOnSlot.course.name}</td>
                   <td className="p-4 text-gray-500">
                     {enr.courseOnSlot.slot.days} <br/>

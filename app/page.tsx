@@ -17,7 +17,12 @@ export default async function HomePage() {
 
   if (!dbUser) {
     const email = user.emailAddresses[0]?.emailAddress ?? "";
-    const role = email.includes("admin") ? "ADMIN" : "TEACHER";
+    const lowerEmail = email.toLowerCase();
+    const role = lowerEmail.includes("admin")
+      ? "ADMIN"
+      : lowerEmail.includes("reception")
+      ? "RECEPTIONIST"
+      : "TEACHER";
 
     dbUser = await prisma.user.create({
       data: {
@@ -25,7 +30,7 @@ export default async function HomePage() {
         email,
         firstName: user.firstName || "New",
         lastName: user.lastName || "Teacher",
-        role: role as "ADMIN" | "TEACHER",
+        role: role as "ADMIN" | "TEACHER" | "RECEPTIONIST",
       },
     });
   }
@@ -36,6 +41,10 @@ export default async function HomePage() {
 
   if (dbUser.role === "TEACHER") {
     redirect("/teacher");
+  }
+
+  if (dbUser.role === "RECEPTIONIST") {
+    redirect("/receptionist");
   }
 
   return <div>Role not assigned. Contact Admin.</div>;
