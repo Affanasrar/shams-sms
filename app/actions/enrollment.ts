@@ -55,7 +55,9 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
 
     // 3. The Guard Clause
     if (currentOccupancy >= roomCapacity) {
-      throw new Error(`Room Capacity Exceeded! (${currentOccupancy}/${roomCapacity} seats taken in ${roomName})`)
+      throw new Error(
+        `Selected course slot is full. ${roomName} has reached its capacity of ${roomCapacity} students.`
+      )
     }
 
     // 4. Calculate End Date

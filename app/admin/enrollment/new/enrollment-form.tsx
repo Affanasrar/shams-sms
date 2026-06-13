@@ -147,7 +147,23 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       await enrollStudent(selectedStudent, selectedAssignmentId)
       router.push('/admin/enrollment')
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      let errorMessage = 'An error occurred'
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === 'string') {
+        errorMessage = err
+      } else if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+        errorMessage = (err as any).message
+      }
+
+      if (
+        errorMessage.includes('Room Capacity Exceeded') ||
+        errorMessage.includes('Selected course slot is full') ||
+        errorMessage.includes('slot is full')
+      ) {
+        errorMessage = 'Enrollment is full. Please choose another course slot.'
+      }
+
       setError(errorMessage)
     } finally {
       setLoading(false)
