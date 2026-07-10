@@ -1,13 +1,12 @@
 // app/admin/students/[id]/page.tsx
 import { getStudentProfile } from '@/app/actions/get-student-profile'
-import { Phone, Calendar, ArrowLeft, MessageSquare } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Wallet, BadgeCheck, CreditCard, Edit3 } from 'lucide-react'
 import Link from 'next/link'
 import { unstable_noStore as noStore } from 'next/cache'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { EnrollmentTable } from './enrollment-table'
 import prisma from '@/lib/prisma'
@@ -80,80 +79,110 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
   const totalPaid = student.fees.reduce((sum: number, fee: FeeData) => sum + Number(fee.paidAmount), 0)
   const totalFees = student.fees.reduce((sum: number, fee: FeeData) => sum + Number(fee.finalAmount), 0)
+  const activeEnrollments = student.enrollments.filter((enrollment: EnrollmentData) => enrollment.status === 'ACTIVE').length
+  const smsEnabled = student.smsReminderEnabled
 
   return (
-    <div className="space-y-8">
-      {/* Back Navigation */}
-      <Link
-        href="/admin/students"
-        className="inline-flex items-center gap-2 text-primary hover:underline transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Back to Students
-      </Link>
-
-      {/* Student Header Card */}
-      <Card className="p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
+    <div className="space-y-6">
+      <div className="rounded-3xl border border-slate-200 bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 p-6 text-white shadow-2xl shadow-slate-900/20 md:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl space-y-4">
+            <div className="flex items-center gap-3 text-white/75">
+              <Link href="/admin/students" className="rounded-full border border-white/15 p-2 transition hover:bg-white/10 hover:text-white">
+                <ArrowLeft size={18} />
+              </Link>
+              <span className="text-xs uppercase tracking-[0.3em]">Student profile</span>
+            </div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10 text-3xl font-semibold text-white backdrop-blur">
                 {student.name.charAt(0)}
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">{student.name}</h1>
-                <p className="text-sm text-muted-foreground">ID: {student.studentId}</p>
-                <p className="text-sm text-muted-foreground">Father: {student.fatherName}</p>
+                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{student.name}</h1>
+                <p className="mt-2 text-sm text-white/70">{student.studentId} • Father: {student.fatherName}</p>
+                <p className="mt-1 text-sm text-white/60">Joined {formatDate(student.admission)}</p>
               </div>
             </div>
-          </div>
-
-          {/* Balance Indicator */}
-          <div
-            className={`p-6 rounded-lg text-center min-w-max ${
-              totalDue > 0
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-emerald-50 border border-emerald-200'
-            }`}
-          >
-            <p className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Current Due</p>
-            <p className={`text-3xl font-bold ${totalDue > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-              {formatCurrency(totalDue)}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Link
-            href={`/admin/students/${student.studentId}/edit`}
-            className="inline-flex items-center justify-center rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-primary shadow-sm transition hover:bg-muted"
-          >
-            Edit Profile
-          </Link>
-        </div>
-
-        {/* Contact Information */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-border">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="w-4 h-4" />
-            <span>{student.phone || 'No phone number'}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>Joined: {formatDate(student.admission)}</span>
-          </div>
-          <div className="col-span-2 md:col-span-4 flex items-start gap-2 text-sm text-muted-foreground">
-            <div className="mt-0.5">
-              <span className="text-sm font-medium text-foreground">Address:</span>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/admin/students/${student.studentId}/edit`}
+                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+              >
+                <Edit3 size={16} />
+                Edit Profile
+              </Link>
+              <Link
+                href={`/admin/fees?studentId=${student.id}`}
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+              >
+                <CreditCard size={16} />
+                Collect Payment
+              </Link>
             </div>
-            <span>{student.address || 'No address provided'}</span>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:w-lg xl:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/55">Current due</p>
+              <p className={`mt-2 text-3xl font-semibold ${totalDue > 0 ? 'text-rose-300' : 'text-emerald-300'}`}>{formatCurrency(totalDue)}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/55">Active enrollments</p>
+              <p className="mt-2 text-3xl font-semibold">{activeEnrollments}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/55">SMS reminders</p>
+              <p className="mt-2 text-lg font-semibold">{smsEnabled ? 'Enabled' : 'Disabled'}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/55">Phone</p>
+              <p className="mt-2 text-lg font-semibold">{student.phone || 'Not set'}</p>
+            </div>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Tabbed Interface */}
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Total fees</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(totalFees)}</p>
+            </div>
+            <Wallet className="h-6 w-6 text-slate-500" />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Total paid</p>
+              <p className="mt-2 text-2xl font-semibold text-emerald-600">{formatCurrency(totalPaid)}</p>
+            </div>
+            <BadgeCheck className="h-6 w-6 text-emerald-600" />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Outstanding</p>
+              <p className="mt-2 text-2xl font-semibold text-rose-600">{formatCurrency(totalDue)}</p>
+            </div>
+            <CreditCard className="h-6 w-6 text-rose-600" />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Communications</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">{smsLogs.length}</p>
+            </div>
+            <MessageSquare className="h-6 w-6 text-slate-500" />
+          </div>
+        </div>
+      </div>
+
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid h-auto w-full grid-cols-4 gap-2 rounded-2xl bg-slate-100 p-2">
           <TabsTrigger value="general">General Info</TabsTrigger>
           <TabsTrigger value="financial">Financial</TabsTrigger>
           <TabsTrigger value="academic">Academic</TabsTrigger>
@@ -162,50 +191,45 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
         {/* General Tab */}
         <TabsContent value="general" className="space-y-6">
-          <Card className="p-6">
-            <h2 className="text-xl font-bold tracking-tight mb-6">Active Enrollments</h2>
+          <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
             <EnrollmentTable enrollments={cleanEnrollments} />
           </Card>
         </TabsContent>
 
         {/* Financial Tab - Ledger View */}
         <TabsContent value="financial" className="space-y-6">
-          <Card className="p-6">
-            <h2 className="text-xl font-bold tracking-tight mb-6">Fee Ledger</h2>
-            
-            {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Due</p>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(totalFees)}
-                </p>
+          <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900">Fee Ledger</h2>
+              <p className="text-sm text-slate-500">The financial history for this student.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 border-b border-slate-200 p-6 md:grid-cols-3">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Total Due</p>
+                <p className="text-2xl font-semibold text-slate-900">{formatCurrency(totalFees)}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Paid</p>
-                <p className="text-2xl font-bold text-emerald-600">
-                  {formatCurrency(totalPaid)}
-                </p>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Total Paid</p>
+                <p className="text-2xl font-semibold text-emerald-600">{formatCurrency(totalPaid)}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Outstanding</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {formatCurrency(totalDue)}
-                </p>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Outstanding</p>
+                <p className="text-2xl font-semibold text-rose-600">{formatCurrency(totalDue)}</p>
               </div>
             </div>
 
             {/* Fee Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto p-6">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-semibold">Course</th>
-                    <th className="text-left py-3 px-4 font-semibold">Total Fee</th>
-                    <th className="text-left py-3 px-4 font-semibold">Paid</th>
-                    <th className="text-left py-3 px-4 font-semibold">Outstanding</th>
-                    <th className="text-left py-3 px-4 font-semibold">Due Date</th>
-                    <th className="text-left py-3 px-4 font-semibold">Status</th>
+                <thead className="text-slate-500">
+                  <tr className="border-b border-slate-200">
+                    <th className="px-4 py-3 text-left font-medium">Course</th>
+                    <th className="px-4 py-3 text-left font-medium">Total Fee</th>
+                    <th className="px-4 py-3 text-left font-medium">Paid</th>
+                    <th className="px-4 py-3 text-left font-medium">Outstanding</th>
+                    <th className="px-4 py-3 text-left font-medium">Due Date</th>
+                    <th className="px-4 py-3 text-left font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,11 +239,11 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                     const courseCode = enrollment ? enrollment.courseOnSlot.course.code || "---" : "---"
 
                     return (
-                      <tr key={fee.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                      <tr key={fee.id} className="border-b border-slate-100 transition hover:bg-slate-50/70">
                         <td className="py-3 px-4">
                           <div>
-                            <p className="font-medium">{courseName}</p>
-                            <p className="text-xs text-muted-foreground">{courseCode}</p>
+                            <p className="font-medium text-slate-900">{courseName}</p>
+                            <p className="text-xs text-slate-500">{courseCode}</p>
                           </div>
                         </td>
                         <td className="py-3 px-4">{formatCurrency(Number(fee.finalAmount))}</td>
@@ -229,7 +253,9 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                         </td>
                         <td className="py-3 px-4 text-xs">{formatDate(fee.dueDate)}</td>
                         <td className="py-3 px-4">
-                          <StatusBadge status={fee.status as "PAID" | "PENDING" | "OVERDUE" | "UNPAID" | "PARTIAL"} />
+                          <Badge variant={fee.status === 'PAID' ? 'default' : fee.status === 'PARTIAL' ? 'secondary' : 'destructive'}>
+                            {fee.status}
+                          </Badge>
                         </td>
                       </tr>
                     )
@@ -245,7 +271,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             )}
 
             {totalDue > 0 && (
-              <Button className="mt-6" asChild>
+              <Button className="mt-6 rounded-2xl" asChild>
                 <Link href={`/admin/fees?student=${student.id}`}>Collect Payment</Link>
               </Button>
             )}
@@ -256,31 +282,33 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
         <TabsContent value="academic" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Exam Results */}
-            <Card className="p-6">
-              <h3 className="text-lg font-bold tracking-tight mb-4">🏆 Exam Results</h3>
+            <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+              <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900">Exam Results</h3>
+              </div>
               {student.results.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="py-8 text-center text-slate-500">
                   No exams taken yet.
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 p-6">
                   {student.results.map((res: ResultData) => (
                     <div
                       key={res.id}
-                      className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                      className="rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h4 className="font-medium">{res.course.name}</h4>
-                          <p className="text-xs text-muted-foreground">Attempt {res.attempt}</p>
+                          <h4 className="font-medium text-slate-900">{res.course.name}</h4>
+                          <p className="text-xs text-slate-500">Attempt {res.attempt}</p>
                         </div>
                         <Badge variant="secondary">{res.grade}</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                          Marks: <span className="font-bold text-foreground">{Number(res.marks)} / {Number(res.total)}</span>
+                        <p className="text-sm text-slate-500">
+                          Marks: <span className="font-semibold text-slate-900">{Number(res.marks)} / {Number(res.total)}</span>
                         </p>
-                        <p className="text-sm font-semibold text-primary">
+                        <p className="text-sm font-semibold text-slate-900">
                           {((Number(res.marks) / Number(res.total)) * 100).toFixed(1)}%
                         </p>
                       </div>
@@ -291,27 +319,29 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             </Card>
 
             {/* Student Summary */}
-            <Card className="p-6">
-              <h3 className="text-lg font-bold tracking-tight mb-4">📊 Summary</h3>
+            <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+              <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900">Summary</h3>
+              </div>
               
-              <div className="space-y-4">
+              <div className="space-y-4 p-6">
                 {student.enrollments.length > 0 && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Active Courses</p>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Active Courses</p>
                     <p className="text-2xl font-bold">{student.enrollments.length}</p>
                   </div>
                 )}
 
                 {student.results.length > 0 && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Exams Completed</p>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Exams Completed</p>
                     <p className="text-2xl font-bold">{student.results.length}</p>
                   </div>
                 )}
 
                 {student.fees.length > 0 && (
-                  <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Enrollment Status</p>
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">Enrollment Status</p>
                     <p className="text-lg font-semibold text-emerald-600">
                       {student.enrollments.some((e: EnrollmentData) => e.status === 'ACTIVE') ? 'Active' : 
                        student.enrollments.some((e: EnrollmentData) => e.status === 'COMPLETED') ? 'Completed' : 'Inactive'}
@@ -319,7 +349,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                   </div>
                 )}
 
-                <Button variant="outline" className="w-full mt-4">
+                <Button variant="outline" className="mt-4 w-full rounded-2xl">
                   Download Transcript
                 </Button>
               </div>
@@ -329,22 +359,24 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
         {/* Communications Tab */}
         <TabsContent value="communications" className="space-y-6">
-          <Card className="p-6">
+          <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
             <div className="flex items-center gap-2 mb-6">
               <MessageSquare className="w-5 h-5 text-primary" />
               <h2 className="text-xl font-bold tracking-tight">SMS History</h2>
             </div>
+            </div>
 
             {/* SMS Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-600 font-medium">Total SMS Sent</p>
+            <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-4">
+              <div className="rounded-2xl bg-blue-50 p-4">
+                <p className="text-sm font-medium text-blue-600">Total SMS Sent</p>
                 <p className="text-2xl font-bold text-blue-700">
                   {smsLogs.filter(log => log.status === 'SENT').length}
                 </p>
               </div>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-600 font-medium">This Week</p>
+              <div className="rounded-2xl bg-green-50 p-4">
+                <p className="text-sm font-medium text-green-600">This Week</p>
                 <p className="text-2xl font-bold text-green-700">
                   {smsLogs.filter(log => {
                     const logDate = new Date(log.sentAt)
@@ -354,14 +386,14 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                   }).length}
                 </p>
               </div>
-              <div className="p-4 bg-yellow-50 rounded-lg">
-                <p className="text-sm text-yellow-600 font-medium">Skipped</p>
+              <div className="rounded-2xl bg-yellow-50 p-4">
+                <p className="text-sm font-medium text-yellow-600">Skipped</p>
                 <p className="text-2xl font-bold text-yellow-700">
                   {smsLogs.filter(log => log.status === 'SKIPPED').length}
                 </p>
               </div>
-              <div className="p-4 bg-red-50 rounded-lg">
-                <p className="text-sm text-red-600 font-medium">Failed</p>
+              <div className="rounded-2xl bg-red-50 p-4">
+                <p className="text-sm font-medium text-red-600">Failed</p>
                 <p className="text-2xl font-bold text-red-700">
                   {smsLogs.filter(log => log.status === 'FAILED').length}
                 </p>
@@ -369,17 +401,17 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
             </div>
 
             {/* SMS Log History */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent SMS Activity</h3>
+            <div className="space-y-3 px-6 pb-6">
+              <h3 className="mb-4 text-lg font-semibold text-slate-900">Recent SMS Activity</h3>
               
               {smsLogs.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="py-8 text-center text-slate-500">
                   No SMS records found for this student.
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {smsLogs.map((log) => (
-                    <div key={log.id} className="border border-border rounded-lg p-4 bg-muted/20">
+                    <div key={log.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Badge 
@@ -392,22 +424,22 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                             <span className="text-xs text-muted-foreground">Week: {log.week}</span>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-slate-500">
                           {formatDate(log.sentAt)}
                         </span>
                       </div>
                       
-                      <div className="text-sm text-gray-700 mb-2">
+                      <div className="mb-2 text-sm text-slate-700">
                         {log.details}
                       </div>
                       
                       {log.error && (
-                        <div className="text-sm text-red-600 mb-2">
+                        <div className="mb-2 text-sm text-red-600">
                           Error: {log.error}
                         </div>
                       )}
                       
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-slate-500">
                         Fee IDs: {log.feeIds.join(', ')}
                       </div>
                     </div>

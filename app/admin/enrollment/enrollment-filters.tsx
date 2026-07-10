@@ -2,7 +2,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Filter, Search } from 'lucide-react'
+import { Filter, Search, X } from 'lucide-react'
 import { useState } from 'react'
 
 type Props = {
@@ -47,60 +47,58 @@ export function EnrollmentFilters({ courses, slots }: Props) {
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg border shadow-sm space-y-4">
-      <div className="flex items-center gap-2 text-gray-500 font-medium">
-        <Filter size={18} /> Filters:
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <Filter size={16} className="text-indigo-600" />
+        Filter enrollments
       </div>
 
-      <div className="flex flex-wrap gap-4 items-center">
-        {/* Search by Name or ID */}
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+      <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.9fr_auto]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search by student name or ID..."
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-2xl border border-slate-300 bg-white/90 py-2.5 pl-10 pr-3 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
           />
         </div>
 
-        {/* Course Filter */}
         <select
           value={currentCourse}
           onChange={(e) => handleFilterChange('courseId', e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black min-w-[200px]"
+          className="w-full rounded-2xl border border-slate-300 bg-white/90 px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
         >
           <option value="">All Courses</option>
-          {courses.map(c => (
+          {courses.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
 
-        {/* Slot Filter */}
         <select
           value={currentSlot}
           onChange={(e) => handleFilterChange('slotId', e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black min-w-[250px]"
+          className="w-full rounded-2xl border border-slate-300 bg-white/90 px-3 py-2.5 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
         >
           <option value="">All Slots / Rooms</option>
-          {slots.map(s => (
+          {slots.map((s) => (
             <option key={s.id} value={s.id}>
               {s.days} • {new Date(s.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} ({s.room.name})
             </option>
           ))}
         </select>
 
-        {/* Reset Button */}
         {(currentCourse || currentSlot || searchInput) && (
           <button
             onClick={() => {
               setSearchInput('')
               router.push('/admin/enrollment')
             }}
-            className="text-sm text-red-600 hover:underline font-medium whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
           >
-            Clear All
+            <X size={14} />
+            Clear
           </button>
         )}
       </div>

@@ -21,6 +21,14 @@ const SendSmsSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    const { isAdmin } = await verifyAdminApiRole()
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: 'Forbidden - Admin access required' },
+        { status: 403 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const studentId = searchParams.get('studentId')
     const logsOnly = searchParams.get('logs') === 'true'
@@ -148,7 +156,7 @@ export async function GET(request: NextRequest) {
         message: log.message,
         direction: log.direction,
         status: log.status,
-        createdAt: log.createdAt
+        createdAt: log.createdAt.toISOString()
       }))
 
       return NextResponse.json(serializableLogs)
@@ -177,7 +185,10 @@ export async function GET(request: NextRequest) {
         }
       })
 
-      return NextResponse.json(messages)
+      return NextResponse.json(messages.map(message => ({
+        ...message,
+        createdAt: message.createdAt.toISOString()
+      })))
     }
 
     // Fetch all students with SMS conversations
@@ -211,7 +222,13 @@ export async function GET(request: NextRequest) {
       return dateB.getTime() - dateA.getTime()
     })
 
-    return NextResponse.json(sorted)
+    return NextResponse.json(sorted.map(student => ({
+      ...student,
+      smsMessages: student.smsMessages.map(message => ({
+        ...message,
+        createdAt: message.createdAt.toISOString()
+      }))
+    })))
   } catch (error) {
     console.error('GET /api/admin/sms/inbox error:', error instanceof Error ? error.message : String(error))
     return NextResponse.json(

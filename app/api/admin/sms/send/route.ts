@@ -1,13 +1,17 @@
 // app/api/admin/sms/send/route.ts
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 import prisma from '@/lib/prisma'
 import { sendTextbeeSms } from '@/lib/textbee'
 import { verifyAdminApiRole } from '@/lib/auth-utils'
 
+const BulkSmsSchema = z.object({
+  studentIds: z.array(z.string().uuid()).min(1, 'At least one student must be selected'),
+  customMessage: z.string().optional().default('')
+})
+
 export async function POST(request: Request) {
   try {
-    const { studentIds, customMessage } = await request.json()
-
     const { isAdmin } = await verifyAdminApiRole()
     if (!isAdmin) {
       return NextResponse.json(
@@ -16,7 +20,26 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!Array.isArray(studentIds) || studentIds.length === 0) {
+    const body = await request.json()
+    const parsed = BulkSmsSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request data',
+          details: parsed.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
+        { status: 400 }
+      )
+    }
+
+    const studentIds = Array.from(new Set(parsed.data.studentIds))
+    const customMessage = parsed.data.customMessage.trim()
+
+    if (studentIds.length === 0) {
       return NextResponse.json(
         { error: 'At least one student must be selected' },
         { status: 400 }
@@ -56,7 +79,7 @@ export async function POST(request: Request) {
       try {
         let message = ''
 
-        if (customMessage) {
+        if (customMessage.length > 0) {
           // Use custom message with placeholder replacement
           message = customMessage
             .replace(/\[Student Name\]/g, student.name)

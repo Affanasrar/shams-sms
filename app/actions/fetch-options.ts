@@ -15,6 +15,13 @@ export async function getEnrollmentOptions() {
   const assignments = await prisma.courseOnSlot.findMany({
     include: {
       course: true,
+      teacher: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true
+        }
+      },
       slot: { include: { room: true } },
       enrollments: { where: { status: 'ACTIVE' } } // Count only active enrollments
     }

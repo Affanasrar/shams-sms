@@ -1,7 +1,30 @@
 // app/api/admin/fees/dashboard/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { verifyAdminApiRole } from '@/lib/auth-utils'
+
+function formatSlotLabel(slot: {
+  days: string
+  startTime: Date
+  endTime: Date
+  room?: { name: string }
+}) {
+  const start = slot.startTime.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Karachi'
+  })
+  const end = slot.endTime.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Karachi'
+  })
+
+  return `${start} - ${end}${slot.room?.name ? ` • ${slot.room.name}` : ''}`
+}
 
 export async function GET(request: NextRequest) {
   // ✅ ROLE VERIFICATION: Verify admin access
@@ -37,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause
-    const whereClause: any = {
+    const whereClause: Prisma.FeeWhereInput = {
       dueDate: {
         gte: startDate,
         lt: endDate
@@ -72,7 +95,12 @@ export async function GET(request: NextRequest) {
           include: {
             courseOnSlot: {
               include: {
-                course: true
+                course: true,
+                slot: {
+                  include: {
+                    room: true
+                  }
+                }
               }
             }
           }
@@ -101,6 +129,7 @@ export async function GET(request: NextRequest) {
           studentName: fee.student.name,
           fatherName: fee.student.fatherName,
           courses: [] as { id: string; name: string }[],
+          timingSlots: [] as string[],
           dueDate: null as string | null,
           month: new Date(startDate).toLocaleString('default', { month: 'long' }),
           year: year,
@@ -115,10 +144,16 @@ export async function GET(request: NextRequest) {
       const studentFee = studentFeesMap.get(studentId)
       const courseName = fee.enrollment?.courseOnSlot.course.name || 'General Fee'
       const courseId = fee.enrollment?.courseOnSlot.course.id
+      const slot = fee.enrollment?.courseOnSlot.slot
+      const slotLabel = slot ? formatSlotLabel(slot) : 'Unassigned timing'
       
       // Add unique courses
-      if (courseId && !studentFee.courses.some((c: any) => c.id === courseId)) {
+      if (courseId && !studentFee.courses.some((course: { id: string; name: string }) => course.id === courseId)) {
         studentFee.courses.push({ id: courseId, name: courseName })
+      }
+
+      if (!studentFee.timingSlots.includes(slotLabel)) {
+        studentFee.timingSlots.push(slotLabel)
       }
 
       studentFee.totalAmount += Number(fee.finalAmount)

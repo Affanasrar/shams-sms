@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CalendarIcon, Search, Filter, Download, X } from 'lucide-react'
+import { CalendarIcon, Search, Filter, Download, X, Sparkles } from 'lucide-react'
 
 type Course = {
   id: string
@@ -15,6 +15,7 @@ type StudentFees = {
   studentName: string
   fatherName: string
   courses: { id: string; name: string }[]
+  timingSlots: string[]
   dueDate: string | null
   month: string
   year: number
@@ -50,44 +51,61 @@ export function FeesDashboard({ courses }: Props) {
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i)
 
   const fetchFeesData = async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      
-      if (useCustomDateRange && startDate && endDate) {
-        params.append('startDate', startDate)
-        params.append('endDate', endDate)
-      } else {
-        params.append('month', selectedMonth.toString())
-        params.append('year', selectedYear.toString())
-      }
-      
-      if (selectedCourse) params.append('courseId', selectedCourse)
-      if (selectedStatus) params.append('status', selectedStatus)
-      if (searchTerm) params.append('search', searchTerm)
+    const params = new URLSearchParams()
 
-      const response = await fetch(`/api/admin/fees/dashboard?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setFeesData(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch fees data:', error)
+    if (useCustomDateRange && startDate && endDate) {
+      params.append('startDate', startDate)
+      params.append('endDate', endDate)
+    } else {
+      params.append('month', selectedMonth.toString())
+      params.append('year', selectedYear.toString())
     }
-    setLoading(false)
+
+    if (selectedCourse) params.append('courseId', selectedCourse)
+    if (selectedStatus) params.append('status', selectedStatus)
+    if (searchTerm) params.append('search', searchTerm)
+
+    const response = await fetch(`/api/admin/fees/dashboard?${params}`)
+    if (response.ok) {
+      return response.json() as Promise<StudentFees[]>
+    }
+
+    throw new Error('Failed to fetch fees data')
   }
 
   useEffect(() => {
-    fetchFeesData()
+    let cancelled = false
 
-    // Poll every 30 seconds for real-time updates
-    const interval = setInterval(fetchFeesData, 30000)
+    const loadFeesData = async () => {
+      setLoading(true)
+      try {
+        const data = await fetchFeesData()
+        if (!cancelled) {
+          setFeesData(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch fees data:', error)
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
 
-    return () => clearInterval(interval)
+    loadFeesData()
+
+    const interval = setInterval(loadFeesData, 30000)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
   }, [selectedMonth, selectedYear, selectedCourse, selectedStatus, useCustomDateRange, searchTerm, startDate, endDate])
 
   const handleSearch = () => {
-    fetchFeesData()
+    void fetchFeesData()
+      .then(setFeesData)
+      .catch(error => console.error('Failed to fetch fees data:', error))
   }
 
   const handleClearFilters = () => {
@@ -134,50 +152,62 @@ export function FeesDashboard({ courses }: Props) {
   const partialStudents = feesData.filter(f => f.status === 'PARTIAL').length
   const unpaidStudents = feesData.filter(f => f.status === 'UNPAID').length
   const collectionPercentage = totalFees > 0 ? ((totalPaid / totalFees) * 100).toFixed(2) : 0
-  const overdueCount = feesData.filter(f => {
-    const dueDate = new Date(f.lastPayment || new Date())
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    return f.pendingAmount > 0 && dueDate < thirtyDaysAgo
-  }).length
-
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-lg border shadow-sm">
-        <div className="space-y-4">
-          {/* Filter Mode Selection */}
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2">
+      <div className="rounded-3xl border bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-slate-600">
+              <Sparkles size={14} />
+              Filters
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900">Refine the view</h3>
+            <p className="text-sm text-slate-500">Use a month or a custom range, then narrow it by course, status, or student.</p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button onClick={handleExportReport} className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
+              <Download size={16} />
+              Export Report
+            </button>
+            <button onClick={handleClearFilters} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+              <X size={16} />
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-5">
+          <div className="flex flex-wrap gap-4 rounded-2xl bg-slate-50 p-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
               <input
                 type="radio"
                 checked={!useCustomDateRange}
                 onChange={() => setUseCustomDateRange(false)}
-                className="w-4 h-4"
+                className="h-4 w-4"
               />
-              <span className="text-sm font-medium">Month/Year</span>
+              Month / Year
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
               <input
                 type="radio"
                 checked={useCustomDateRange}
                 onChange={() => setUseCustomDateRange(true)}
-                className="w-4 h-4"
+                className="h-4 w-4"
               />
-              <span className="text-sm font-medium">Custom Date Range</span>
+              Custom Date Range
             </label>
           </div>
 
-          {/* Date Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             {!useCustomDateRange ? (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Month</label>
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
                     {months.map((month, index) => (
                       <option key={index + 1} value={index + 1}>{month}</option>
@@ -186,11 +216,11 @@ export function FeesDashboard({ courses }: Props) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Year</label>
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
                     {years.map(year => (
                       <option key={year} value={year}>{year}</option>
@@ -201,33 +231,33 @@ export function FeesDashboard({ courses }: Props) {
             ) : (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">End Date</label>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   />
                 </div>
               </>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
                 <option value="">All Statuses</option>
                 <option value="PAID">Paid</option>
@@ -237,11 +267,11 @@ export function FeesDashboard({ courses }: Props) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Course</label>
               <select
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
                 <option value="">All Courses</option>
                 {courses.map(course => (
@@ -251,134 +281,73 @@ export function FeesDashboard({ courses }: Props) {
             </div>
           </div>
 
-          {/* Search Bar */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search Student</label>
-            <div className="flex gap-2">
+            <label className="mb-1 block text-sm font-medium text-slate-700">Search Student</label>
+            <div className="flex flex-col gap-2 md:flex-row">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Student name or ID..."
-                className="flex-1 border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <button
                 onClick={handleSearch}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
               >
                 <Search size={16} />
                 Search
               </button>
-              <button
-                onClick={handleClearFilters}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 flex items-center gap-2"
-              >
-                <X size={16} />
-                Clear
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Summary for filtered data */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-600">Total Fees</p>
-              <p className="text-lg font-bold text-gray-900">PKR {totalFees.toLocaleString()}</p>
-            </div>
-            <CalendarIcon className="h-6 w-6 text-blue-600" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Total Fees</p>
+          <div className="mt-2 flex items-end justify-between gap-4">
+            <p className="text-2xl font-semibold text-slate-900">PKR {totalFees.toLocaleString()}</p>
+            <CalendarIcon className="h-6 w-6 text-sky-600" />
           </div>
         </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-600">Collected</p>
-              <p className="text-lg font-bold text-green-600">PKR {totalPaid.toLocaleString()}</p>
-            </div>
-            <Download className="h-6 w-6 text-green-600" />
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Collected</p>
+          <div className="mt-2 flex items-end justify-between gap-4">
+            <p className="text-2xl font-semibold text-emerald-600">PKR {totalPaid.toLocaleString()}</p>
+            <Download className="h-6 w-6 text-emerald-600" />
           </div>
         </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-600">Pending</p>
-              <p className="text-lg font-bold text-red-600">PKR {totalPending.toLocaleString()}</p>
-            </div>
-            <Filter className="h-6 w-6 text-red-600" />
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Pending</p>
+          <div className="mt-2 flex items-end justify-between gap-4">
+            <p className="text-2xl font-semibold text-rose-600">PKR {totalPending.toLocaleString()}</p>
+            <Filter className="h-6 w-6 text-rose-600" />
           </div>
         </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-600">Collection %</p>
-              <p className="text-lg font-bold text-purple-600">{collectionPercentage}%</p>
-            </div>
-            <div className="h-6 w-6 text-purple-600 font-bold">%</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-600">Pending Students</p>
-              <p className="text-lg font-bold text-orange-600">{totalStudentsWithPendingFees}</p>
-            </div>
-            <Filter className="h-6 w-6 text-orange-600" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-gray-600">Overdue (30+ days)</p>
-              <p className="text-lg font-bold text-red-700">{overdueCount}</p>
-            </div>
-            <Filter className="h-6 w-6 text-red-700" />
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Collection %</p>
+          <div className="mt-2 flex items-end justify-between gap-4">
+            <p className="text-2xl font-semibold text-violet-600">{collectionPercentage}%</p>
+            <div className="rounded-full bg-violet-50 px-2 py-1 text-sm font-semibold text-violet-600">%</div>
           </div>
         </div>
       </div>
 
-      {/* Status Breakdown */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm">
-          <p className="text-sm font-medium text-green-700">Paid</p>
-          <p className="text-2xl font-bold text-green-600">{paidStudents}</p>
-          <p className="text-xs text-gray-600 mt-1">Students with full payment</p>
-        </div>
-
-        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 shadow-sm">
-          <p className="text-sm font-medium text-yellow-700">Partial</p>
-          <p className="text-2xl font-bold text-yellow-600">{partialStudents}</p>
-          <p className="text-xs text-gray-600 mt-1">Students with partial payment</p>
-        </div>
-
-        <div className="bg-red-50 p-4 rounded-lg border border-red-200 shadow-sm">
-          <p className="text-sm font-medium text-red-700">Unpaid</p>
-          <p className="text-2xl font-bold text-red-600">{unpaidStudents}</p>
-          <p className="text-xs text-gray-600 mt-1">Students with no payment</p>
-        </div>
-      </div>
-
-      {/* Fees Table */}
-      <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
-          <h3 className="font-semibold text-gray-900">
-            Student Fees - {months[selectedMonth - 1]} {selectedYear}
-          </h3>
-          <button 
-            onClick={handleExportReport}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 text-sm"
-          >
-            <Download size={16} />
-            Export Report
-          </button>
+      <div className="rounded-3xl border bg-white shadow-sm overflow-hidden">
+        <div className="flex flex-col gap-3 border-b bg-slate-50 px-6 py-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h3 className="font-semibold text-slate-900">
+              Student Fees - {months[selectedMonth - 1]} {selectedYear}
+            </h3>
+            <p className="text-sm text-slate-500">
+              Showing {feesData.length} student{feesData.length !== 1 ? 's' : ''} with fee activity in the selected range.
+            </p>
+          </div>
+          <div className="text-sm text-slate-500">
+            {totalStudentsWithPendingFees} pending, {paidStudents} paid, {partialStudents} partial, {unpaidStudents} unpaid
+          </div>
         </div>
 
         {loading ? (
@@ -394,6 +363,7 @@ export function FeesDashboard({ courses }: Props) {
                   <th className="px-6 py-3">Student ID</th>
                   <th className="px-6 py-3">Student Name</th>
                   <th className="px-6 py-3">Courses</th>
+                  <th className="px-6 py-3">Timing / Lab</th>
                   <th className="px-6 py-3">Due Date</th>
                   <th className="px-6 py-3">Total Amount</th>
                   <th className="px-6 py-3">Paid Amount</th>
@@ -434,6 +404,28 @@ export function FeesDashboard({ courses }: Props) {
                         )}
                       </div>
                     </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      <div className="flex flex-col gap-1">
+                        {fee.timingSlots.length > 1 ? (
+                          <>
+                            {fee.timingSlots.slice(0, 2).map((slot) => (
+                              <div key={slot} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
+                                {slot}
+                              </div>
+                            ))}
+                            <div className="text-xs font-semibold text-slate-600">
+                              +{fee.timingSlots.length - 2} more
+                            </div>
+                          </>
+                        ) : (
+                          fee.timingSlots.map((slot) => (
+                            <div key={slot} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
+                              {slot}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 font-semibold text-red-600">
                       {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-US', { 
                         year: 'numeric', 
@@ -468,7 +460,7 @@ export function FeesDashboard({ courses }: Props) {
 
                 {feesData.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="p-8 text-center text-gray-500">
+                    <td colSpan={10} className="p-8 text-center text-gray-500">
                       No fees data found for the selected filters.
                     </td>
                   </tr>

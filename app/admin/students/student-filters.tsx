@@ -31,34 +31,37 @@ export function StudentFilters() {
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg border shadow-sm space-y-4">
-      <div className="flex items-center gap-2 text-gray-500 font-medium">
-        <Filter size={18} /> Filters:
-      </div>
-
-      <div className="flex flex-wrap gap-4 items-center">
-        {/* Search by Name, ID, Phone, or Father's Name */}
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search by name, ID, phone, or father's name..."
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-          />
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+            <Filter size={14} /> Filters
+          </div>
+          <p className="mt-2 text-sm text-slate-500">Search by name, ID, phone, or father&apos;s name.</p>
         </div>
 
-        {/* Reset Button */}
-        {searchInput && (
-          <button
-            onClick={handleClearFilters}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition"
-          >
-            <X size={16} />
-            Clear
-          </button>
-        )}
+        <div className="flex w-full flex-col gap-3 lg:max-w-2xl lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search students..."
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200"
+            />
+          </div>
+
+          {searchInput && (
+            <button
+              onClick={handleClearFilters}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              <X size={16} />
+              Clear
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

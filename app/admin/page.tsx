@@ -3,10 +3,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Users, AlertTriangle, TrendingUp, Calendar } from 'lucide-react'
+import { Users, AlertTriangle, TrendingUp, Calendar, Sparkles, ShieldCheck, BadgeCheck } from 'lucide-react'
 import { MetricCard } from '@/components/ui'
 import { Button } from '@/components/ui/button'
-import FeeTrendChart from '@/components/ui/fee-trend-chart'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 
@@ -73,124 +72,110 @@ export default function AdminDashboard() {
 
   if (loading || !data) {
     return (
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Dashboard Overview</h1>
-          <p className="text-slate-600">Loading...</p>
+      <div className="space-y-6">
+        <div className="premium-panel p-8">
+          <h1 className="text-3xl font-semibold tracking-tight">Dashboard Overview</h1>
+          <p className="mt-2 text-slate-600">Loading your latest insights…</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Dashboard Overview</h1>
-        <p className="text-slate-600">Welcome back! Here's your school's performance at a glance.</p>
-      </div>
-
-      {/* Top Row: High-Level Metrics in Bento Grid */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
-        <MetricCard
-          title="Total Students"
-          value={data.totalStudents ?? 'N/A'}
-          icon={Users}
-          iconColor="text-blue-600"
-          valueColor="text-slate-900"
-        />
-        <MetricCard
-          title="Active Enrollments"
-          value={data.activeEnrollments ?? 'N/A'}
-          icon={Calendar}
-          iconColor="text-green-600"
-          valueColor="text-slate-900"
-        />
-        <MetricCard
-          title="Present Today"
-          value={data.todaysAttendance ?? 'N/A'}
-          icon={TrendingUp}
-          iconColor="text-emerald-600"
-          valueColor="text-slate-900"
-        />
-        <MetricCard
-          title="Pending Fees"
-          value={`${data.pendingFees ?? 0} • PKR ${Number(data.pendingAmount || 0).toLocaleString('en-PK')}`}
-          icon={AlertTriangle}
-          iconColor="text-red-600"
-          valueColor="text-red-600"
-        />
-        <MetricCard
-          title="Overdue Fees"
-          value={`${data.overdueFees ?? 0} • PKR ${Number(data.overdueAmount || 0).toLocaleString('en-PK')}`}
-          icon={AlertTriangle}
-          iconColor="text-rose-600"
-          valueColor="text-rose-600"
-        />
-      </div>
-
-      {/* Center Panel: Fee Collection Trends Chart */}
-      <div className="p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <section className="premium-panel overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 text-white">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-xl font-bold tracking-tight" style={{ color: '#0f172a' }}>Fee Collection Trends</h2>
-            <p className="text-sm" style={{ color: '#64748b' }}>6-month collection analysis</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-200">Admin control center</p>
+            <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">Welcome back, your school is performing beautifully.</h1>
+            <p className="mt-3 max-w-2xl text-sm text-slate-300 sm:text-base">A refined view of attendance, payments, enrollments, and live activity across your institution.</p>
           </div>
-          <Button variant="outline" size="sm">Export</Button>
+          <Button variant="outline" className="border-white/20 bg-white/10 text-white hover:bg-white/20">
+            Export summary
+          </Button>
+        </div>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <MetricCard title="Total Students" value={data.totalStudents ?? 'N/A'} icon={Users} iconColor="text-indigo-600" />
+        <MetricCard title="Active Enrollments" value={data.activeEnrollments ?? 'N/A'} icon={Calendar} iconColor="text-emerald-600" />
+        <MetricCard title="Present Today" value={data.todaysAttendance ?? 'N/A'} icon={TrendingUp} iconColor="text-sky-600" />
+        <MetricCard title="Pending Fees" value={`${data.pendingFees ?? 0} • PKR ${Number(data.pendingAmount || 0).toLocaleString('en-PK')}`} icon={AlertTriangle} iconColor="text-amber-600" valueColor="text-amber-600" />
+        <MetricCard title="Overdue Fees" value={`${data.overdueFees ?? 0} • PKR ${Number(data.overdueAmount || 0).toLocaleString('en-PK')}`} icon={AlertTriangle} iconColor="text-rose-600" valueColor="text-rose-600" />
+      </div>
+
+      <div className="premium-panel p-6">
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">Operational snapshot</h2>
+            <p className="text-sm text-slate-500">A polished view of what matters most for today.</p>
+          </div>
+          <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">Live insight</div>
         </div>
 
-        <div className="w-full h-80">
-          <FeeTrendChart data={data.feeTrendData} />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center gap-2 text-slate-700">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
+              <p className="font-semibold">Enrollment momentum</p>
+            </div>
+            <p className="mt-4 text-3xl font-semibold text-slate-950">{data.activeEnrollments ?? 0}</p>
+            <p className="mt-2 text-sm text-slate-500">Active enrollments across current sessions</p>
+          </div>
+
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center gap-2 text-slate-700">
+              <ShieldCheck className="h-5 w-5 text-emerald-600" />
+              <p className="font-semibold">Attendance readiness</p>
+            </div>
+            <p className="mt-4 text-3xl font-semibold text-slate-950">{data.todaysAttendance ?? 0}</p>
+            <p className="mt-2 text-sm text-slate-500">Students marked present for today</p>
+          </div>
+
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center gap-2 text-slate-700">
+              <BadgeCheck className="h-5 w-5 text-amber-600" />
+              <p className="font-semibold">Financial attention</p>
+            </div>
+            <p className="mt-4 text-3xl font-semibold text-slate-950">PKR {Number(data.pendingAmount || 0).toLocaleString('en-PK')}</p>
+            <p className="mt-2 text-sm text-slate-500">{data.pendingFees ?? 0} pending fees awaiting follow-up</p>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Grid: Side Panel with Live Activities */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        {/* Recent Activities */}
-        <div className="lg:col-span-2 p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
-          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#0f172a' }}>Live Activity Feed</h2>
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_0.8fr]">
+        <div className="premium-panel p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">Live activity feed</h2>
+              <p className="text-sm text-slate-500">Recent updates from your operations.</p>
+            </div>
+          </div>
           <div className="space-y-4">
             {data.recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-slate-200 last:border-0 last:pb-0">
-                <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
-                  activity.type === 'fee'
-                    ? 'bg-emerald-500'
-                    : activity.type === 'drop'
-                    ? 'bg-yellow-500'
-                    : 'bg-blue-500'
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium" style={{ color: '#0f172a' }}>{activity.message}</p>
-                  <p className="text-xs mt-1" style={{ color: '#64748b' }}>{activity.time}</p>
+              <div key={activity.id} className="flex items-start gap-3 border-b border-slate-200 pb-4 last:border-0 last:pb-0">
+                <div className={`mt-1 h-2.5 w-2.5 rounded-full ${activity.type === 'fee' ? 'bg-emerald-500' : activity.type === 'drop' ? 'bg-amber-500' : 'bg-sky-500'}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-800">{activity.message}</p>
+                  <p className="mt-1 text-xs text-slate-500">{activity.time}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <Button variant="outline" className="w-full mt-6" asChild>
-            <Link href="/admin/activities">View All Activities</Link>
+          <Button variant="outline" className="mt-6 w-full" asChild>
+            <Link href="/admin/activities">View all activities</Link>
           </Button>
         </div>
 
-        {/* Quick Actions */}
-        <div className="p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
-          <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: '#0f172a' }}>Quick Actions</h2>
-          <div className="space-y-3">
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/students/new">+ New Student</Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/enrollment/new">+ New Enrollment</Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/fees/dashboard">Collect Fees</Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/attendance">Mark Attendance</Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/fees/reports">View Reports</Link>
-            </Button>
+        <div className="premium-panel p-6">
+          <h2 className="text-xl font-semibold tracking-tight">Quick actions</h2>
+          <div className="mt-5 space-y-3">
+            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/students/new">+ New student</Link></Button>
+            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/enrollment/new">+ New enrollment</Link></Button>
+            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/fees/dashboard">Collect fees</Link></Button>
+            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/attendance">Mark attendance</Link></Button>
+            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/fees/reports">View reports</Link></Button>
           </div>
         </div>
       </div>

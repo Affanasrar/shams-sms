@@ -5,7 +5,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { enrollStudent } from '@/app/actions/enrollment'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, Check, AlertCircle, Clock, MapPin, BookOpen, ArrowRight, Loader2 } from 'lucide-react'
+import { Search, Check, AlertCircle, Clock, MapPin, BookOpen, ArrowRight, Loader2, User } from 'lucide-react'
 
 // Types
 interface Student {
@@ -37,6 +37,12 @@ interface Course {
   baseFee: number
 }
 
+interface Teacher {
+  id: string
+  firstName: string | null
+  lastName: string | null
+}
+
 interface Enrollment {
   id: string
   studentId: string
@@ -52,6 +58,7 @@ export interface CourseOnSlot {
   slotId: string
   courseId: string
   teacherId: string | null
+  teacher: Teacher | null
   slot: Slot
   course: Course
   enrollments: Enrollment[]
@@ -172,12 +179,21 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
 
   const isFormValid = selectedStudent && selectedCourseId && selectedAssignmentId
 
+  const getTeacherLabel = (assignment: CourseOnSlot) => {
+    if (!assignment.teacher) {
+      return 'Teacher TBD'
+    }
+
+    const names = [assignment.teacher.firstName, assignment.teacher.lastName].filter(Boolean)
+    return names.length > 0 ? names.join(' ') : 'Teacher TBD'
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Error Alert */}
       {error && (
         <div className="flex gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-red-900">Enrollment Failed</p>
             <p className="text-sm text-red-700 mt-1">{error}</p>
@@ -186,7 +202,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       )}
 
       {/* Step 1: Student Selection */}
-      <div className="border rounded-lg p-6 bg-white hover:shadow-md transition-shadow">
+      <div className="rounded-[24px] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)] transition-shadow hover:shadow-[0_18px_55px_-22px_rgba(15,23,42,0.34)]">
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -205,7 +221,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
             <input
               type="text"
               placeholder="Search by Student ID, Name, or Father's Name..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full rounded-2xl border border-slate-300 bg-white/90 py-3 pl-10 pr-4 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={studentSearch}
               onChange={(e) => {
                 setStudentSearch(e.target.value)
@@ -254,7 +270,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
           {selectedStudentData && (
             <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start gap-3">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-200 flex-shrink-0 mt-0.5">
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-green-200 shrink-0 mt-0.5">
                   <Check className="w-4 h-4 text-green-700" />
                 </div>
                 <div>
@@ -276,7 +292,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       </div>
 
       {/* Step 2: Course Selection */}
-      <div className={`border rounded-lg p-6 transition-all ${selectedStudent ? 'bg-white hover:shadow-md' : 'bg-gray-50 opacity-60'}`}>
+      <div className={`rounded-[24px] border border-slate-200/80 p-6 transition-all ${selectedStudent ? 'bg-white/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)]' : 'bg-slate-50/80 opacity-70'}`}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -292,7 +308,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
         <select 
           required
           disabled={!selectedStudent}
-          className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-gray-100 disabled:text-gray-500 transition-colors"
+          className="w-full rounded-2xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-500"
           value={selectedCourseId}
           onChange={(e) => handleCourseChange(e.target.value)}
         >
@@ -316,7 +332,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       </div>
 
       {/* Step 3: Time Slot Selection */}
-      <div className={`border rounded-lg p-6 transition-all ${selectedCourseId ? 'bg-white hover:shadow-md' : 'bg-gray-50 opacity-60'}`}>
+      <div className={`rounded-[24px] border border-slate-200/80 p-6 transition-all ${selectedCourseId ? 'bg-white/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)]' : 'bg-slate-50/80 opacity-70'}`}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -347,9 +363,10 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
               const isFull = remainingCapacity === 0
               const isNearlyFull = remainingCapacity > 0 && remainingCapacity <= 2
               const capacityPercentage = (enrolledCount / totalCapacity) * 100
+              const teacherLabel = getTeacherLabel(a)
               
               return (
-                <label key={a.id} className={`flex p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAssignmentId === a.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+                <label key={a.id} className={`flex cursor-pointer rounded-[20px] border-2 p-4 transition-all ${selectedAssignmentId === a.id ? 'border-indigo-500 bg-indigo-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
                   <input
                     type="radio"
                     name="slot"
@@ -369,6 +386,11 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <MapPin className="w-4 h-4" />
                       <span>{a.slot.room.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+                      <User className="w-4 h-4" />
+                      <span className="font-medium">Teacher:</span>
+                      <span>{teacherLabel}</span>
                     </div>
                     
                     {/* Capacity Bar */}
@@ -411,7 +433,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
 
       {/* Summary Section */}
       {selectedAssignmentData && (
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
+        <div className="rounded-[24px] border border-indigo-200 bg-gradient-to-br from-indigo-50 to-slate-50 p-6 shadow-sm">
           <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Check className="w-5 h-5 text-green-600" />
             Enrollment Summary
@@ -436,6 +458,11 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
             </div>
             
             <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+              <span className="text-sm font-medium text-gray-600">Teacher</span>
+              <span className="text-sm font-semibold text-gray-900">{selectedAssignmentData.teacher ? getTeacherLabel(selectedAssignmentData) : 'TBD'}</span>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
               <span className="text-sm font-medium text-gray-600">Location</span>
               <span className="text-sm font-semibold text-gray-900">{selectedAssignmentData.slot.room.name}</span>
             </div>
@@ -447,10 +474,10 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       <button 
         type="submit" 
         disabled={!isFormValid || loading}
-        className={`w-full py-3 px-4 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transition-all ${
+        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-semibold text-white transition-all ${
           isFormValid && !loading
-            ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer' 
-            : 'bg-gray-300 cursor-not-allowed'
+            ? 'cursor-pointer bg-slate-900 hover:bg-slate-800' 
+            : 'cursor-not-allowed bg-slate-300'
         }`}
       >
         {loading ? (

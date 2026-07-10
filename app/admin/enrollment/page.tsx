@@ -1,51 +1,42 @@
 // app/admin/enrollment/page.tsx
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { BookOpen, CalendarDays, Plus, Sparkles, Users } from 'lucide-react'
 import { EnrollmentFilters } from './enrollment-filters'
-import { PageLayout, PageHeader } from '@/components/ui'
+import { PageLayout } from '@/components/ui'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { subDays } from 'date-fns'
 import { EnrollmentTable, EnrollmentRow } from '@/components/enrollment/enrollment-table'
+import { Prisma } from '@prisma/client'
 
-// 👇 FIX: Force dynamic rendering to ensure fresh data after enrollments
 export const dynamic = 'force-dynamic'
 
-// 👇 Define the props type correctly for Next.js 15+
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function EnrollmentIndex(props: Props) {
-  // 1. 👇 AWAIT the searchParams (Critical Fix)
   const searchParams = await props.searchParams
-  
+
   const courseId = searchParams.courseId as string | undefined
   const slotId = searchParams.slotId as string | undefined
   const searchQuery = searchParams.search as string | undefined
 
-  // date range for joining date, default last 30 days
   const now = new Date()
   const startDate = searchParams.start ? new Date(searchParams.start as string) : subDays(now, 30)
   const endDate = searchParams.end ? new Date(searchParams.end as string) : now
   endDate.setHours(23, 59, 59, 999)
 
-  // Helper function to convert Decimals to plain JSON objects
-  // Prisma Decimal objects can't be passed to client components
-  // Using JSON.stringify/parse converts Decimals to their string representation
-  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
-    // Convert Decimal instances to numbers if they have toFixed method
+  const toJSON = <T,>(data: T): T => JSON.parse(JSON.stringify(data, (_, value) => {
     if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
       return Number(value)
     }
     return value
-  }))
+  })) as T
 
-  // 2. Fetch Filter Options
   const coursesData = await prisma.course.findMany({ orderBy: { name: 'asc' } })
   const courses: typeof coursesData = toJSON(coursesData)
-  
-  // Fetch slots - filter by course if one is selected
+
   const slotsData = await prisma.slot.findMany({
     where: courseId ? {
       courses: {
@@ -57,33 +48,28 @@ export default async function EnrollmentIndex(props: Props) {
     include: { room: true },
     orderBy: { startTime: 'asc' }
   })
-  // Convert to plain objects, ensuring room exists
+
   const slots = slotsData
-    .filter(s => s.room) // Only include slots with a room
-    .map(s => ({
+    .filter((s) => s.room)
+    .map((s) => ({
       id: s.id,
       startTime: s.startTime,
       days: s.days,
       room: { name: s.room!.name }
     }))
 
-  // 3. Build Dynamic Query
-  // We start with the base requirement: Status must be ACTIVE
-  const whereClause: any = {
+  const whereClause: Prisma.EnrollmentWhereInput = {
     status: 'ACTIVE'
   }
 
-  // Apply date range filter only when user explicitly requests it
   if (searchParams.start || searchParams.end) {
     whereClause.joiningDate = { gte: startDate, lte: endDate }
   }
 
-  // If a Course is selected, add it to the filter
   if (courseId) {
     whereClause.courseOnSlot = { courseId: courseId }
   }
 
-  // If a Slot is selected, add it to the filter
   if (slotId) {
     if (whereClause.courseOnSlot) {
       whereClause.courseOnSlot.slotId = slotId
@@ -92,7 +78,6 @@ export default async function EnrollmentIndex(props: Props) {
     }
   }
 
-  // If search query exists, filter by student name or ID
   if (searchQuery && searchQuery.trim()) {
     whereClause.OR = [
       { student: { name: { contains: searchQuery, mode: 'insensitive' } } },
@@ -100,7 +85,6 @@ export default async function EnrollmentIndex(props: Props) {
     ]
   }
 
-  // 4. Fetch Enrollments
   const enrollmentsData = await prisma.enrollment.findMany({
     where: whereClause,
     include: {
@@ -115,11 +99,8 @@ export default async function EnrollmentIndex(props: Props) {
     orderBy: { joiningDate: 'desc' }
   })
 
-  // Convert Decimals to numbers in enrollments
   const enrollments: typeof enrollmentsData = toJSON(enrollmentsData)
 
-  // 5. Fetch all slots with enrollment counts for each course
-  // This helps us show available timings when changing student slots
   const slotsWithEnrollmentsData = await prisma.courseOnSlot.findMany({
     include: {
       course: true,
@@ -137,7 +118,6 @@ export default async function EnrollmentIndex(props: Props) {
     orderBy: { slot: { startTime: 'asc' } }
   })
 
-  // Convert Decimals to numbers in slotsWithEnrollments
   const slotsWithEnrollments: typeof slotsWithEnrollmentsData = toJSON(slotsWithEnrollmentsData)
 
   const rows: EnrollmentRow[] = enrollments.map((record) => ({
@@ -171,54 +151,93 @@ export default async function EnrollmentIndex(props: Props) {
       })),
   }))
 
+  const activeCount = rows.length
+  const courseCount = new Set(rows.map((row) => row.courseName)).size
+  const slotCount = new Set(rows.map((row) => row.currentSlotId)).size
+
   return (
-    <PageLayout>
-      <PageHeader
-        title="Active Enrollments"
-        description="Manage student enrollments across all courses and time slots"
-        backHref="/admin"
-        backLabel="Back to Dashboard"
-        actions={
-          <>
+    <PageLayout className="space-y-6">
+      <section className="rounded-[32px] border border-slate-200/80 bg-white/80 p-6 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
+              <Sparkles size={16} />
+              Premium enrollment hub
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Active Enrollments</h1>
+              <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+                Keep every active student placement organized with a calmer, faster workflow for course, slot, and student management.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
             <DateRangePicker />
             <Link
               href="/admin/enrollment/new"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               <Plus size={16} />
               New Enrollment
             </Link>
-          </>
-        }
-      />
+          </div>
+        </div>
 
-      {/* Render the Filters */}
-      <EnrollmentFilters courses={courses} slots={slots} />
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+              <Users size={16} className="text-indigo-600" />
+              Active students
+            </div>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{activeCount}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+              <BookOpen size={16} className="text-emerald-600" />
+              Courses in view
+            </div>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{courseCount}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
+              <CalendarDays size={16} className="text-amber-600" />
+              Active slots
+            </div>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{slotCount}</p>
+          </div>
+        </div>
+      </section>
 
-      <div className="px-6 py-4">
-        <p className="text-sm text-gray-600">
-          Showing <span className="font-semibold">{rows.length}</span> enrollment{rows.length !== 1 ? 's' : ''}
-          {(courseId || slotId || searchQuery) && (
-            <span> •
-              {searchQuery && ` Search: "${searchQuery}"`}
-              {searchQuery && (courseId || slotId) && ' •'}
-              {courseId && ` Course: ${courses.find(c => c.id === courseId)?.name}`}
-              {courseId && slotId && ' •'}
-              {slotId && ` Slot: ${slots.find(s => s.id === slotId)?.days}`}
-            </span>
-          )}
-        </p>
+      <section className="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:p-5">
+        <EnrollmentFilters courses={courses} slots={slots} />
+      </section>
+
+      <section className="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:p-5">
+        <div className="mb-4 flex flex-col gap-2 border-b border-slate-200/80 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Enrollment roster</p>
+            <p className="text-sm text-slate-500">A clear view of current placements and available options.</p>
+          </div>
+          <div className="text-sm text-slate-600">
+            Showing <span className="font-semibold text-slate-900">{rows.length}</span> active enrollment{rows.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+
         {(courseId || slotId || searchQuery) && (
-          <Link
-            href="/admin/enrollment"
-            className="text-sm text-blue-600 hover:text-blue-800 underline"
-          >
-            Clear filters
-          </Link>
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <span>Filtered by</span>
+            {searchQuery && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">{searchQuery}</span>}
+            {courseId && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">{courses.find((c) => c.id === courseId)?.name}</span>}
+            {slotId && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">{slots.find((s) => s.id === slotId)?.days}</span>}
+            <Link href="/admin/enrollment" className="ml-1 font-semibold text-indigo-600 hover:text-indigo-700">
+              Clear all
+            </Link>
+          </div>
         )}
-      </div>
 
-      <EnrollmentTable data={rows} />
+        <EnrollmentTable data={rows} />
+      </section>
     </PageLayout>
   )
 }

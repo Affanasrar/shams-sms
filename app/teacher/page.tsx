@@ -80,74 +80,64 @@ export default async function TeacherDashboard() {
 
   return (
     <PageLayout>
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-900 to-blue-700 p-4 md:p-8 rounded-2xl text-white shadow-lg">
-        <h1 className="text-2xl md:text-3xl font-bold">Hello, {dbUser.firstName || "Teacher"}! 👋</h1>
-        <p className="text-blue-100 mt-2 text-sm md:text-base">Ready to inspire some minds today?</p>
+      <section className="premium-panel overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white sm:p-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-200">Teacher portal</p>
+            <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">Hello, {dbUser.firstName || "Teacher"}! Your day is ready.</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">Move through your classes, attendance, and reports with clarity and calm.</p>
+          </div>
+          <Link href="/teacher/reports" className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20">
+            <FileText size={16} /> Reports
+          </Link>
+        </div>
+      </section>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard label="My classes" value={myClasses.length} />
+        <StatCard label="Active students" value={myClasses.reduce((acc, c) => acc + c._count.enrollments, 0)} />
+        <StatCard label="Pending exams" value="0" />
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard label="My Classes" value={myClasses.length} />
-        <StatCard label="Active Students" value={myClasses.reduce((acc, c) => acc + c._count.enrollments, 0)} />
-        <StatCard label="Pending Exams" value="0" />
-      </div>
-
-      <div className="mt-4">
-        <a
-          href="/teacher/reports"
-          className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition font-medium text-sm"
-        >
-          <FileText size={16} />
-          Reports
-        </a>
-      </div>
-
-      {/* Class List */}
-      <div>
-        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <Clock className="text-blue-600"/> My Teaching Schedule
-        </h2>
+      <div className="premium-panel p-6">
+        <div className="mb-5 flex items-center gap-2">
+          <Clock className="text-indigo-600" />
+          <h2 className="text-xl font-semibold tracking-tight">My teaching schedule</h2>
+        </div>
 
         <div className="grid gap-4 md:gap-6">
           {myClasses.length === 0 ? (
-            <div className="text-center p-8 md:p-12 bg-white rounded-xl border border-dashed border-gray-300">
-              <p className="text-gray-500 italic mb-2">No classes assigned to you yet.</p>
-              <p className="text-sm text-blue-600">Admin needs to assign classes in Configuration.</p>
+            <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+              <p className="text-slate-500">No classes assigned to you yet.</p>
+              <p className="mt-2 text-sm text-indigo-600">An admin needs to assign your classes first.</p>
             </div>
           ) : (
             myClasses.map((cls) => (
-              <div key={cls.id} className="bg-white border hover:border-blue-500 rounded-xl p-4 md:p-6 shadow-sm transition-all group">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-2">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900">{cls.course.name}</h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                      <MapPin size={16}/> {cls.slot.room.name}
+              <div key={cls.id} className="group rounded-[24px] border border-slate-200 bg-white/90 p-5 shadow-[0_16px_50px_-24px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:border-indigo-300">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">{cls.course.name}</h3>
+                    <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+                      <MapPin size={16} /> {cls.slot.room.name}
                     </div>
                   </div>
-                  <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase self-start">
+                  <span className="self-start rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-indigo-700">
                     {cls.slot.days}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm border-t pt-4 mt-2 gap-2">
-                  <div className="flex items-center gap-1.5 font-mono text-gray-600">
-                    <Clock size={16}/>
+                <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 font-mono">
+                    <Clock size={16} />
                     {new Date(cls.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
                   </div>
-
-                  <div className="flex items-center gap-1.5 text-gray-600">
-                    <Users size={16}/>
-                    {cls._count.enrollments} Students
+                  <div className="flex items-center gap-2">
+                    <Users size={16} /> {cls._count.enrollments} students
                   </div>
                 </div>
 
-                {/* Quick Action Button */}
-                <Link
-                  href={`/teacher/attendance/${cls.id}`}
-                  className="mt-4 w-full bg-gray-900 text-white py-3 md:py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100 md:group-hover:bg-gray-800"
-                >
-                  Mark Attendance <ArrowRight size={16} />
+                <Link href={`/teacher/attendance/${cls.id}`} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800">
+                  Mark attendance <ArrowRight size={16} />
                 </Link>
               </div>
             ))
@@ -160,9 +150,9 @@ export default async function TeacherDashboard() {
 
 function StatCard({ label, value }: { label: string, value: string | number }) {
   return (
-    <div className="bg-white p-4 md:p-6 rounded-xl border shadow-sm text-center">
-      <div className="text-2xl md:text-3xl font-bold text-blue-600 mb-1">{value}</div>
-      <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">{label}</div>
+    <div className="premium-panel p-5 text-center">
+      <div className="text-2xl font-semibold text-indigo-600 sm:text-3xl">{value}</div>
+      <div className="mt-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">{label}</div>
     </div>
   )
 }
