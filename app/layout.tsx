@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import DynamicClientProviders from "@/components/ui/dynamic-client-providers";
 
@@ -63,6 +64,7 @@ export default function RootLayout({
         </head>
         <body className="min-h-screen antialiased" style={{ fontFamily: fontStack.sansSerif }}>
           <DynamicClientProviders>{children}</DynamicClientProviders>
+          <Analytics />
           {showSpeedInsights ? <SpeedInsights /> : null}
         </body>
       </html>
