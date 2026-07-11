@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma'
-import { PageLayout, PageHeader } from '@/components/ui'
+import { PageLayout } from '@/components/ui'
 import { ReceptionistSchedulePanel, type ReceptionistRoomGroup } from '@/components/receptionist/receptionist-schedule-panel'
+import { ReceptionistSummaryGrid } from '@/components/receptionist/receptionist-summary-grid'
+import { BadgeCheck, CalendarDays, Layers3, Users } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -82,6 +84,7 @@ export default async function ReceptionistSchedulePage() {
       roomGroups.set(roomKey, {
         roomName: slot.room.name,
         roomCapacity: slot.room.capacity,
+        totalCapacity: 0,
         timings: [],
         totalEnrolled: 0,
         totalCourses: 0,
@@ -105,9 +108,11 @@ export default async function ReceptionistSchedulePage() {
 
   const roomGroupArray: ReceptionistRoomGroup[] = Array.from(roomGroups.values())
     .map((room) => {
-      const seatsLeft = Math.max(0, room.roomCapacity - room.totalEnrolled)
+      const totalCapacity = room.timings.length * room.roomCapacity
+      const seatsLeft = room.timings.reduce((sum, timing) => sum + Math.max(0, room.roomCapacity - timing.totalEnrolled), 0)
       return {
         ...room,
+        totalCapacity,
         seatsLeft,
         timings: room.timings
           .sort((a, b) => a.startTime.localeCompare(b.startTime))
@@ -119,14 +124,38 @@ export default async function ReceptionistSchedulePage() {
     })
     .sort((a, b) => a.roomName.localeCompare(b.roomName))
 
+  const totalTimings = roomGroupArray.reduce((sum, room) => sum + room.timings.length, 0)
+  const totalStudents = roomGroupArray.reduce((sum, room) => sum + room.totalEnrolled, 0)
+
   return (
     <PageLayout>
-      <PageHeader
-        title="Receptionist Schedule"
-        description="Search room-based schedules, expand a room to view timing slots, and tap into course details cleanly."
-      />
+      <section className="overflow-hidden rounded-[2rem] border border-slate-900/90 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#0f172a_50%,#111827_100%)] p-6 text-white shadow-2xl shadow-slate-900/20 md:p-8">
+        <div className="space-y-8">
+          <div className="max-w-3xl space-y-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200">
+              <BadgeCheck size={12} />
+              Schedule control
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Room-based schedules with clarity and breathing room.</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
+                Search rooms, inspect timings, and expand only what you need without loading the whole page with noise.
+              </p>
+            </div>
+          </div>
+          <ReceptionistSummaryGrid
+            items={[
+              { label: 'Rooms', value: roomGroupArray.length, icon: <CalendarDays size={16} /> },
+              { label: 'Timings', value: totalTimings, icon: <Layers3 size={16} /> },
+              { label: 'Students', value: totalStudents, icon: <Users size={16} /> },
+              { label: 'View', value: 'Expandable', icon: <BadgeCheck size={16} /> }
+            ]}
+          />
+        </div>
+      </section>
 
       <ReceptionistSchedulePanel roomGroups={roomGroupArray} />
     </PageLayout>
   )
 }
+

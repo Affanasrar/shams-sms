@@ -3,7 +3,8 @@
 import { createStudent } from '@/app/actions/student'
 import { useActionState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ReceptionistSummaryGrid } from '@/components/receptionist/receptionist-summary-grid'
+import { ArrowLeft, BadgeCheck, Sparkles, UserPlus } from 'lucide-react'
 
 const initialState = { success: false, error: '' }
 
@@ -11,73 +12,88 @@ export default function ReceptionistAdmissionPage() {
   const [state, formAction, isPending] = useActionState(createStudent, initialState)
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/receptionist" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={20} />
-          Back to Receptionist Home
-        </Link>
-      </div>
-
-      <h1 className="text-2xl font-bold mb-6">🎓 New Student Admission</h1>
-
-      <form action={formAction} className="space-y-6 bg-white p-8 rounded-lg border shadow-sm">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <input
-            type="text"
-            name="name"
-            required
-            placeholder="e.g. Muhammad Ali"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Father's Name</label>
-          <input
-            type="text"
-            name="fatherName"
-            required
-            placeholder="e.g. Ahmed Khan"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-          <input
-            type="tel"
-            name="phone"
-            required
-            placeholder="0300-1234567"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address (Optional)</label>
-          <textarea
-            name="address"
-            rows={3}
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-cyan-500 outline-none"
-          />
-        </div>
-
-        {state?.error && (
-          <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
-            ⚠️ {state.error}
+    <div className="space-y-6">
+      <section className="overflow-hidden rounded-[2rem] border border-slate-900/90 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#0f172a_50%,#111827_100%)] p-6 text-white shadow-2xl shadow-slate-900/20 md:p-8">
+        <div className="space-y-8">
+          <div className="max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200">
+              <Sparkles size={12} />
+              Admission desk
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Capture a new student in a calm, guided flow.</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
+                Keep the intake focused with a minimal form, a clear action, and consistent front-desk styling.
+              </p>
+            </div>
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full bg-cyan-600 text-white py-3 rounded font-medium hover:bg-cyan-700 transition disabled:opacity-50"
-        >
-          {isPending ? 'Saving...' : 'Confirm Admission'}
-        </button>
-      </form>
+          <ReceptionistSummaryGrid
+            items={[
+              { label: 'Step', value: '1 / 1', icon: <UserPlus size={16} /> },
+              { label: 'Focus', value: 'Admission', icon: <BadgeCheck size={16} /> }
+            ]}
+          />
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+        <div className="mb-6 flex items-center gap-3 rounded-3xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-cyan-800">
+          <UserPlus size={18} />
+          <p className="text-sm font-medium">Add the student details below, then confirm admission.</p>
+        </div>
+
+        <div className="mb-6 flex items-center gap-4">
+          <Link href="/receptionist" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+            <ArrowLeft size={16} />
+            Back to dashboard
+          </Link>
+        </div>
+
+        <form action={formAction} className="space-y-5">
+          <Field label="Full Name" name="name" placeholder="e.g. Muhammad Ali" />
+          <Field label="Father's Name" name="fatherName" placeholder="e.g. Ahmed Khan" />
+          <Field label="Phone Number" name="phone" placeholder="0300-1234567" type="tel" />
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Address <span className="text-slate-400">(optional)</span></label>
+            <textarea
+              name="address"
+              rows={4}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:bg-white"
+            />
+          </div>
+
+          {state?.error && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {state.error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isPending}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPending ? 'Saving admission...' : 'Confirm admission'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }
+
+function Field({ label, name, placeholder, type = 'text' }: { label: string; name: string; placeholder: string; type?: string }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-slate-700">{label}</label>
+      <input
+        type={type}
+        name={name}
+        required
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:bg-white"
+      />
+    </div>
+  )
+}
+

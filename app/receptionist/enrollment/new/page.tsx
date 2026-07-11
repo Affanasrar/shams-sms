@@ -1,7 +1,8 @@
 import { EnrollmentForm, type CourseOnSlot } from '@/app/admin/enrollment/new/enrollment-form'
 import { getEnrollmentOptions } from '@/app/actions/fetch-options'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { ReceptionistSummaryGrid } from '@/components/receptionist/receptionist-summary-grid'
+import { ArrowLeft, BookOpen, BadgeCheck, Sparkles } from 'lucide-react'
 import { unstable_noStore as noStore } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
@@ -38,42 +39,50 @@ export default async function NewReceptionistEnrollmentPage() {
   })) as CourseOnSlot[]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-sky-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <Link href="/receptionist" className="inline-flex items-center gap-2 text-cyan-600 hover:text-cyan-700 font-medium transition-colors mb-6">
-            <ArrowLeft size={18} />
-            Back to Receptionist Home
-          </Link>
-
-          <div className="flex items-start justify-between gap-4">
+    <div className="space-y-6">
+      <section className="overflow-hidden rounded-[2rem] border border-slate-900/90 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#0f172a_50%,#111827_100%)] p-6 text-white shadow-2xl shadow-slate-900/20 md:p-8">
+        <div className="space-y-8">
+          <div className="max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200">
+              <Sparkles size={12} />
+              Enrollment workspace
+            </div>
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-cyan-100 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-cyan-600" />
-                </div>
-                <h1 className="text-3xl font-bold text-slate-900">Student Enrollment</h1>
-              </div>
-              <p className="text-slate-600">Select an admitted student and assign them to the right course slot in one fast flow.</p>
+              <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Assign a student to the right course slot in one clean flow.</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
+                The form below keeps the intake focused while preserving the seat availability and timing context.
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-slate-100">
-          <div className="bg-gradient-to-r from-cyan-600 to-sky-600 px-6 py-4">
-            <p className="text-white font-medium">Quick Enrollment Workspace</p>
-          </div>
-          <div className="p-8">
-            <EnrollmentForm students={data.students} assignments={safeAssignments} />
-          </div>
+          <ReceptionistSummaryGrid
+            items={[
+              { label: 'Assignments', value: safeAssignments.length, icon: <BookOpen size={16} /> },
+              { label: 'Admitted students', value: data.students.length, icon: <BadgeCheck size={16} /> }
+            ]}
+          />
         </div>
+      </section>
 
-        <div className="mt-8 p-4 bg-white rounded-3xl border border-slate-200 shadow-sm">
-          <p className="text-sm text-slate-600">
-            Tip: Use the search box to pick the student faster and then select the course timing slot with visible seat availability.
-          </p>
+      <div className="mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-slate-50/80 px-6 py-4">
+          <Link href="/receptionist" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+            <ArrowLeft size={16} />
+            Back to dashboard
+          </Link>
         </div>
+        <div className="border-b border-cyan-100 bg-[linear-gradient(90deg,rgba(6,182,212,0.12),rgba(14,165,233,0.08))] px-6 py-4">
+          <p className="text-sm font-medium text-cyan-900">Quick enrollment workspace</p>
+        </div>
+        <div className="p-6 md:p-8">
+          <EnrollmentForm students={data.students} assignments={safeAssignments} />
+        </div>
+      </div>
+
+      <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 shadow-sm">
+        Tip: use the search box to pick the student first, then choose the course timing slot with visible seat availability.
       </div>
     </div>
   )
 }
+
