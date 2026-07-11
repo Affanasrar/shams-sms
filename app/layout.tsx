@@ -43,8 +43,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const showSpeedInsights = process.env.NODE_ENV !== "production";
-
   return (
     <ClerkProvider
       signInForceRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL}
@@ -65,7 +63,7 @@ export default function RootLayout({
         <body className="min-h-screen antialiased" style={{ fontFamily: fontStack.sansSerif }}>
           <DynamicClientProviders>{children}</DynamicClientProviders>
           <Analytics />
-          {showSpeedInsights ? <SpeedInsights /> : null}
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
