@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // --------------------------------------
@@ -104,6 +103,7 @@ model CourseOnSlot {
 // --------------------------------------
 enum EnrollStatus {
   ACTIVE
+  PENDING_COMPLETION // Course duration ended, awaiting admin action (still occupies seat)
   COMPLETED
   DROPPED
 }
@@ -135,6 +135,7 @@ model Enrollment {
   status         EnrollStatus @default(ACTIVE)
   endDate        DateTime?    
   extendedDays   Int          @default(0)     // For "Student need some more days" [cite: 188]
+  completedAt    DateTime?    // When admin marks as COMPLETED
 
   student      Student      @relation(fields: [studentId], references: [id])
   courseOnSlot CourseOnSlot @relation(fields: [courseOnSlotId], references: [id])
@@ -231,12 +232,27 @@ model Transaction {
   collectedBy User @relation(fields: [collectedById], references: [id])
 }
 
+enum ExpenseCategory {
+  RENT
+  SALARY
+  UTILITIES
+  SUPPLIES
+  MAINTENANCE
+  MARKETING
+  OTHER
+}
+
 model Expense {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   title       String
   amount      Decimal
-  date        DateTime @default(now())
+  category    ExpenseCategory @default(OTHER)
+  date        DateTime        @default(now())
   description String?
+  createdById String?
+
+  @@index([date])
+  @@index([category])
 }
 
 // --------------------------------------
@@ -381,4 +397,23 @@ model SmsMessage {
 
   @@index([studentId, createdAt])
   @@index([phoneNumber, createdAt])
+}
+
+// --------------------------------------
+// 8. Audit Logging
+// --------------------------------------
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   @default("") // e.g., "FEE_COLLECTED", "STUDENT_EDITED", "ENROLLMENT_DROPPED"
+  entity      String   @default("") // e.g., "Fee", "Student", "Enrollment"
+  entityId    String   @default("") // ID of the affected record
+  userId      String?  // Who performed the action
+  userName    String?  // Name for display (denormalized)
+  details     Json?    // Before/after snapshot or additional context
+  createdAt   DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
 }

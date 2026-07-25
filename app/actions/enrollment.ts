@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getCurrentFeeForCourse } from '@/lib/course-fees'
 import { sendTextbeeSms } from '@/lib/textbee'
+import { logAudit } from '@/lib/audit'
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
@@ -159,6 +160,17 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
       }
     })
   }
+
+  // Audit log
+  await logAudit({
+    action: 'ENROLLMENT_CREATED',
+    entity: 'Enrollment',
+    entityId: newEnrollment.id,
+    details: {
+      studentName: student?.name,
+      courseName: enrollmentWithDetails?.courseOnSlot?.course?.name,
+    },
+  })
 
   revalidatePath('/admin/enrollment')
   revalidatePath(`/admin/students/${studentId}`)
@@ -356,6 +368,17 @@ export async function dropStudent(formData: FormData) {
         status: 'DROPPED',
         endDate: new Date()
       }
+    })
+
+    // Audit log
+    await logAudit({
+      action: 'ENROLLMENT_DROPPED',
+      entity: 'Enrollment',
+      entityId: enrollmentId,
+      details: {
+        studentId: enrollment.studentId,
+        refund,
+      },
     })
 
     // Refresh the relevant pages

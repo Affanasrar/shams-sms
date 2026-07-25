@@ -17,6 +17,8 @@ import {
   MessageSquare,
   UserX,
   Sparkles,
+  GraduationCap,
+  Receipt,
 } from "lucide-react"
 import { Button } from "./button"
 import { cn } from "@/lib/utils"
@@ -46,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Operations",
     items: [
       { icon: <BookOpen size={18} />, label: "Enrollment", href: "/admin/enrollment" },
+      { icon: <GraduationCap size={18} />, label: "Completions", href: "/admin/completed-students" },
       { icon: <UserX size={18} />, label: "Dropped Students", href: "/admin/dropped-students" },
       { icon: <Trash2 size={18} />, label: "Cleanup", href: "/admin/students/cleanup" },
       { icon: <Calendar size={18} />, label: "Schedule", href: "/admin/schedule" },
@@ -55,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Finance & Communication",
     items: [
       { icon: <DollarSign size={18} />, label: "Fees", href: "/admin/fees/dashboard" },
+      { icon: <Receipt size={18} />, label: "Expenses", href: "/admin/expenses" },
       { icon: <BookOpen size={18} />, label: "Results", href: "/admin/results/new" },
       { icon: <MessageSquare size={18} />, label: "SMS", href: "/admin/sms" },
     ],
@@ -77,7 +81,7 @@ export function CollapsibleSidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-20 flex h-screen flex-col border-r bg-slate-950/95 text-slate-100 shadow-[20px_0_60px_-30px_rgba(2,6,23,0.9)] backdrop-blur-xl transition-all duration-300",
+        "hidden md:flex fixed left-0 top-0 z-20 h-screen flex-col border-r bg-slate-950/95 text-slate-100 shadow-[20px_0_60px_-30px_rgba(2,6,23,0.9)] backdrop-blur-xl transition-all duration-300",
         collapsed ? "w-20" : "w-64"
       )}
     >

@@ -1,8 +1,20 @@
 // lib/prisma.ts
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const prismaClientSingleton = () => {
-  return new PrismaClient()
+  let connectionString = process.env.DATABASE_URL
+  if (
+    connectionString &&
+    connectionString.includes('sslmode=require') &&
+    !connectionString.includes('uselibpqcompat=true')
+  ) {
+    const separator = connectionString.includes('?') ? '&' : '?'
+    connectionString += `${separator}uselibpqcompat=true`
+  }
+
+  const adapter = new PrismaPg({ connectionString })
+  return new PrismaClient({ adapter })
 }
 
 type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>

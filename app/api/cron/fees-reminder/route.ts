@@ -1,5 +1,5 @@
 // app/api/cron/fees-reminder/route.ts
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sendTextbeeSms } from '@/lib/textbee'
 
@@ -11,7 +11,14 @@ function getWeekString(date: Date): string {
   return `${year}-W${week.toString().padStart(2, '0')}`
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 🔒 Verify cron secret to prevent unauthorized access
+  const authHeader = request.headers.get('authorization')
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    console.warn('⚠️ Unauthorized cron job access attempt on /api/cron/fees-reminder')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     console.log('⏳ Daily Fee Reminder Cron Started: checking unpaid fees and sending SMS reminders...')
 

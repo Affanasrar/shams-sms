@@ -1,10 +1,17 @@
 // app/api/cron/fees/route.ts
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getFeeForStudent } from '@/lib/course-fees'
 
 // Function name must be GET (uppercase)
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // 🔒 Verify cron secret to prevent unauthorized access
+  const authHeader = request.headers.get('authorization')
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    console.warn('⚠️ Unauthorized cron job access attempt on /api/cron/fees')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     console.log("⏳ Daily Cron Job Started: Checking current month fees...")
 
@@ -34,6 +41,56 @@ export async function GET() {
 
     console.log(`📚 Found ${activeEnrollments.length} active enrollments`)
 
+    // 🚀 BATCH FETCH: Pre-load all data needed for the loop to eliminate N+1 queries
+    // Instead of querying per-enrollment, we fetch everything in 3 bulk queries
+
+    // 1. Batch fetch all existing fees for the current cycle date
+    const existingFeesForCycle = await prisma.fee.findMany({
+      where: {
+        cycleDate: cycleDate,
+        enrollmentId: { in: activeEnrollments.map(e => e.id) }
+      },
+      select: { enrollmentId: true }
+    })
+    const existingFeeSet = new Set(existingFeesForCycle.map(f => f.enrollmentId))
+
+    // 2. Batch fetch all unpaid/partial fees from previous months (for rollover calculation)
+    const allUnpaidPreviousFees = await prisma.fee.findMany({
+      where: {
+        enrollmentId: { in: activeEnrollments.map(e => e.id) },
+        cycleDate: { lt: cycleDate },
+        status: { in: ['UNPAID', 'PARTIAL'] }
+      },
+      select: {
+        enrollmentId: true,
+        finalAmount: true,
+        paidAmount: true
+      }
+    })
+    // Group unpaid fees by enrollmentId
+    const unpaidFeesByEnrollment = new Map<string, typeof allUnpaidPreviousFees>()
+    for (const fee of allUnpaidPreviousFees) {
+      const existing = unpaidFeesByEnrollment.get(fee.enrollmentId!) || []
+      existing.push(fee)
+      unpaidFeesByEnrollment.set(fee.enrollmentId!, existing)
+    }
+
+    // 3. Batch fetch all active discounts
+    const allDiscounts = await prisma.studentDiscount.findMany({
+      where: {
+        enrollmentId: { in: activeEnrollments.map(e => e.id) }
+      }
+    })
+    // Group discounts by enrollmentId
+    const discountsByEnrollment = new Map<string, typeof allDiscounts>()
+    for (const discount of allDiscounts) {
+      const existing = discountsByEnrollment.get(discount.enrollmentId) || []
+      existing.push(discount)
+      discountsByEnrollment.set(discount.enrollmentId, existing)
+    }
+
+    console.log(`📊 Pre-fetched: ${existingFeeSet.size} existing fees, ${allUnpaidPreviousFees.length} unpaid fees, ${allDiscounts.length} discounts`)
+
     let feesCreated = 0
     let feesSkipped = 0
 
@@ -45,16 +102,8 @@ export async function GET() {
         continue
       }
 
-      // ⭐ CRITICAL: Check if fee already exists for this cycle
-      // Use exact cycleDate match for this enrollment
-      const existingFee = await prisma.fee.findFirst({
-        where: {
-          enrollmentId: enrollment.id,
-          cycleDate: cycleDate
-        }
-      })
-
-      if (existingFee) {
+      // ⭐ CRITICAL: Check if fee already exists for this cycle (using pre-fetched Set)
+      if (existingFeeSet.has(enrollment.id)) {
         feesSkipped++
         continue
       }
@@ -72,10 +121,8 @@ export async function GET() {
       }
 
       // ⭐ CRITICAL: Only process fees for the CURRENT MONTH
-      // Prevent fees from being created for past or future months
       const expectedCycleMonth = new Date(joiningDate.getFullYear(), joiningDate.getMonth() + monthsDiff, 1)
       
-      // Verify the calculated cycle date matches our current month processing
       if (expectedCycleMonth.getFullYear() !== currentYear || expectedCycleMonth.getMonth() !== currentMonth) {
         console.log(`⏭️ Skipped ${enrollment.student.name} - Not due this month (Month ${monthNumber} cycles in different month)`)
         feesSkipped++
@@ -83,42 +130,28 @@ export async function GET() {
       }
 
       // Calculate due date based on student's joining date
-      // Use the same day of month as joining date
       const joiningDay = joiningDate.getDate()
       let dueDate = new Date(currentYear, currentMonth, joiningDay)
 
-      // If the calculated due date is invalid (e.g., Feb 30), use the last day of the month
       const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
       if (joiningDay > lastDayOfMonth) {
         dueDate = new Date(currentYear, currentMonth, lastDayOfMonth)
       }
 
       // ⭐ CRITICAL FIX: Only create fee if due date has already passed (or is today)
-      // Set time to midnight for proper date comparison
       const nowAtMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       const dueDateAtMidnight = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate())
       
-      // Don't create fees for future due dates
       if (dueDateAtMidnight > nowAtMidnight) {
         console.log(`⏩ Skipped ${enrollment.student.name} - Due date (${dueDate.toISOString().split('T')[0]}) is in the future`)
         feesSkipped++
         continue
       }
 
-      // 🔄 Calculate rollover amount from ALL unpaid previous fees (cumulative)
-      const unpaidPreviousFees = await prisma.fee.findMany({
-        where: {
-          enrollmentId: enrollment.id,
-          cycleDate: {
-            lt: cycleDate // Get all fees before the current month
-          },
-          status: { in: ['UNPAID', 'PARTIAL'] }
-        }
-      })
-
+      // 🔄 Calculate rollover amount from pre-fetched unpaid fees
+      const unpaidPreviousFees = unpaidFeesByEnrollment.get(enrollment.id) || []
       let rolloverAmount = 0
       if (unpaidPreviousFees.length > 0) {
-        // Calculate total unpaid balance from ALL previous months
         rolloverAmount = unpaidPreviousFees.reduce((sum, fee) => {
           const unpaidBalance = Number(fee.finalAmount) - Number(fee.paidAmount)
           return sum + Math.max(0, unpaidBalance)
@@ -126,26 +159,22 @@ export async function GET() {
       }
 
       // Get the fee amount for this specific student based on their enrollment date
+      // (This still queries individually since it depends on enrollment-specific fee history)
       const studentFee = await getFeeForStudent(enrollment.id)
 
-      // 🎯 Check for active discounts that apply to this month
-      const activeDiscounts = await prisma.studentDiscount.findMany({
-        where: {
-          enrollmentId: enrollment.id,
-          applicableFromMonth: { lte: monthNumber },
-          OR: [
-            { applicableToMonth: { gte: monthNumber } },
-            { applicableToMonth: null } // Include entire-course discounts
-          ]
-        }
-      })
+      // 🎯 Check for active discounts from pre-fetched data
+      const enrollmentDiscounts = discountsByEnrollment.get(enrollment.id) || []
+      const activeDiscounts = enrollmentDiscounts.filter(d =>
+        d.applicableFromMonth <= monthNumber &&
+        (d.applicableToMonth === null || d.applicableToMonth >= monthNumber)
+      )
 
       // Calculate discount amount if any discount applies
       let discountAmount = 0
       let discountId: string | undefined
       
       if (activeDiscounts.length > 0) {
-        const discount = activeDiscounts[0] // Use the first matching discount
+        const discount = activeDiscounts[0]
         discountId = discount.id
         
         if (discount.discountType === 'FIXED') {
@@ -155,8 +184,7 @@ export async function GET() {
         }
       }
 
-      // Create the current month fee WITHOUT rollover in finalAmount
-      // Keep fees separate by month - each month stands alone
+      // Create the current month fee
       const baseAmount = studentFee - discountAmount
       
       await prisma.fee.upsert({
@@ -169,17 +197,17 @@ export async function GET() {
         create: {
           studentId: enrollment.studentId,
           enrollmentId: enrollment.id,
-          amount: studentFee,       // Use student's specific fee
+          amount: studentFee,
           discountAmount: discountAmount,
-          rolloverAmount: rolloverAmount, // Track previous month balance for reporting only
-          finalAmount: baseAmount, // Total = current month - discount (NO rollover)
+          rolloverAmount: rolloverAmount,
+          finalAmount: baseAmount,
           dueDate: dueDate,
           cycleDate: cycleDate,
           status: 'UNPAID',
           discountId: discountId
         },
         update: {
-          amount: studentFee,       // Use student's specific fee
+          amount: studentFee,
           discountAmount: discountAmount,
           rolloverAmount: rolloverAmount,
           finalAmount: baseAmount,
@@ -190,8 +218,6 @@ export async function GET() {
 
       const dueIsToday = dueDateAtMidnight.getTime() === nowAtMidnight.getTime()
       if (dueIsToday && enrollment.student.phone) {
-        // SMS sending is now handled manually through the admin dashboard
-        // This log entry helps track when fees become due for manual SMS sending
         console.log(`📅 Fee due today for ${enrollment.student.name} (${enrollment.student.phone}) - Amount: PKR ${baseAmount}`)
       }
 

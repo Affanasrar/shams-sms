@@ -4,37 +4,41 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { sendTextbeeSms } from '@/lib/textbee'
+import { logAudit } from '@/lib/audit'
 
 export async function collectFee(feeId: string, adminId: string, paymentAmount?: number) {
-  // 1. Fetch the Fee to check amount
-  const fee = await prisma.fee.findUnique({ where: { id: feeId } })
-  if (!fee) return { success: false, error: "Fee not found" }
-  if (fee.status === 'PAID') return { success: false, error: "Already Paid" }
-
-  // If no payment amount provided, use the full final amount (backward compatibility)
-  const amountToPay = paymentAmount || Number(fee.finalAmount)
-
-  // Validate payment amount
-  if (amountToPay <= 0) return { success: false, error: "Invalid payment amount" }
-  if (amountToPay > Number(fee.finalAmount) - Number(fee.paidAmount)) {
-    return { success: false, error: "Payment amount exceeds remaining balance" }
-  }
-
-  // Calculate new paid amount and determine status
-  const newPaidAmount = Number(fee.paidAmount) + amountToPay
-  const remainingAmount = Number(fee.finalAmount) - newPaidAmount
-
-  let newStatus: 'UNPAID' | 'PARTIAL' | 'PAID'
-  if (remainingAmount <= 0) {
-    newStatus = 'PAID'
-  } else if (newPaidAmount > 0) {
-    newStatus = 'PARTIAL'
-  } else {
-    newStatus = 'UNPAID'
-  }
-
-  // 2. Transaction: Update Fee + Record Transaction
+  // All fee validation and updates happen inside a single transaction
+  // to prevent race conditions (e.g., two admins clicking "Collect" simultaneously)
   const updatedFee = await prisma.$transaction(async (tx) => {
+    // 1. Fetch the Fee atomically within the transaction
+    const fee = await tx.fee.findUnique({ where: { id: feeId } })
+    if (!fee) throw new Error("Fee not found")
+    if (fee.status === 'PAID') throw new Error("Already Paid")
+
+    // If no payment amount provided, use the full remaining balance
+    const remainingBalance = Number(fee.finalAmount) - Number(fee.paidAmount)
+    const amountToPay = paymentAmount || remainingBalance
+
+    // Validate payment amount
+    if (amountToPay <= 0) throw new Error("Invalid payment amount")
+    if (amountToPay > remainingBalance) {
+      throw new Error("Payment amount exceeds remaining balance")
+    }
+
+    // Calculate new paid amount and determine status
+    const newPaidAmount = Number(fee.paidAmount) + amountToPay
+    const newRemainingAmount = Number(fee.finalAmount) - newPaidAmount
+
+    let newStatus: 'UNPAID' | 'PARTIAL' | 'PAID'
+    if (newRemainingAmount <= 0) {
+      newStatus = 'PAID'
+    } else if (newPaidAmount > 0) {
+      newStatus = 'PARTIAL'
+    } else {
+      newStatus = 'UNPAID'
+    }
+
+    // 2. Update fee status
     await tx.fee.update({
       where: { id: feeId },
       data: { 
@@ -43,6 +47,7 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
       }
     })
 
+    // 3. Fetch updated fee with relations for SMS
     const result = await tx.fee.findUnique({
       where: { id: feeId },
       include: {
@@ -59,21 +64,30 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
       }
     })
 
+    // 4. Record the transaction
     await tx.transaction.create({
       data: {
         feeId: feeId,
         amount: amountToPay,
-        collectedById: adminId // Who took the cash?
+        collectedById: adminId
       }
     })
 
-    return result
+    return { fee: result, amountPaid: amountToPay }
+  }).catch((error: Error) => {
+    return { error: error.message }
   })
 
+  // Handle transaction errors
+  if ('error' in updatedFee) {
+    return { success: false, error: updatedFee.error }
+  }
+
   // Send SMS for any payment event
-  if (updatedFee && updatedFee.student?.phone) {
-    const student = updatedFee.student
-    const course = updatedFee.enrollment?.courseOnSlot?.course
+  const feeData = updatedFee.fee
+  if (feeData && feeData.student?.phone) {
+    const student = feeData.student
+    const course = feeData.enrollment?.courseOnSlot?.course
     const paymentDate = new Date().toLocaleDateString('en-PK', {
       year: 'numeric',
       month: 'long',
@@ -81,7 +95,7 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
     })
 
     if (course) {
-      const message = `Dear ${student.name}, we have received your payment of PKR ${amountToPay} for ${course.name} on ${paymentDate}. Thank you for choosing Shams Commercial Institute.`
+      const message = `Dear ${student.name}, we have received your payment of PKR ${updatedFee.amountPaid} for ${course.name} on ${paymentDate}. Thank you for choosing Shams Commercial Institute.`
       const smsResponse = await sendTextbeeSms(student.phone, message)
 
       const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
@@ -104,7 +118,25 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
     }
   }
 
+  // Audit log
+  const feeResult = updatedFee.fee
+  if (feeResult) {
+    await logAudit({
+      action: 'FEE_COLLECTED',
+      entity: 'Fee',
+      entityId: feeId,
+      userId: adminId,
+      details: {
+        studentName: feeResult.student?.name,
+        amountPaid: updatedFee.amountPaid,
+        newStatus: feeResult.status,
+        totalPaid: Number(feeResult.paidAmount),
+        totalDue: Number(feeResult.finalAmount),
+      },
+    })
+  }
+
   revalidatePath('/admin/fees')
   revalidatePath('/admin/activities')
   return { success: true }
-}
+}
