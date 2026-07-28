@@ -107,38 +107,38 @@ export default function AdminDashboard() {
       <div className="premium-panel p-6">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">Operational snapshot</h2>
-            <p className="text-sm text-slate-500">A polished view of what matters most for today.</p>
+            <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Operational snapshot</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">A polished view of what matters most for today.</p>
           </div>
-          <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">Live insight</div>
+          <div className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border dark:border-indigo-800/50">Live insight</div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center gap-2 text-slate-700">
-              <Sparkles className="h-5 w-5 text-indigo-600" />
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               <p className="font-semibold">Enrollment momentum</p>
             </div>
-            <p className="mt-4 text-3xl font-semibold text-slate-950">{data.activeEnrollments ?? 0}</p>
-            <p className="mt-2 text-sm text-slate-500">Active enrollments across current sessions</p>
+            <p className="mt-4 text-3xl font-semibold text-slate-950 dark:text-white">{data.activeEnrollments ?? 0}</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Active enrollments across current sessions</p>
           </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center gap-2 text-slate-700">
-              <ShieldCheck className="h-5 w-5 text-emerald-600" />
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               <p className="font-semibold">Attendance readiness</p>
             </div>
-            <p className="mt-4 text-3xl font-semibold text-slate-950">{data.todaysAttendance ?? 0}</p>
-            <p className="mt-2 text-sm text-slate-500">Students marked present for today</p>
+            <p className="mt-4 text-3xl font-semibold text-slate-950 dark:text-white">{data.todaysAttendance ?? 0}</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Students marked present for today</p>
           </div>
 
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center gap-2 text-slate-700">
-              <BadgeCheck className="h-5 w-5 text-amber-600" />
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/60">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <BadgeCheck className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <p className="font-semibold">Financial attention</p>
             </div>
-            <p className="mt-4 text-3xl font-semibold text-slate-950">PKR {Number(data.pendingAmount || 0).toLocaleString('en-PK')}</p>
-            <p className="mt-2 text-sm text-slate-500">{data.pendingFees ?? 0} pending fees awaiting follow-up</p>
+            <p className="mt-4 text-3xl font-semibold text-slate-950 dark:text-white">PKR {Number(data.pendingAmount || 0).toLocaleString('en-PK')}</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{data.pendingFees ?? 0} pending fees awaiting follow-up</p>
           </div>
         </div>
       </div>
@@ -147,38 +147,38 @@ export default function AdminDashboard() {
         <div className="premium-panel p-6">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold tracking-tight">Live activity feed</h2>
-              <p className="text-sm text-slate-500">Recent updates from your operations.</p>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Live activity feed</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Recent updates from your operations.</p>
             </div>
           </div>
           <div className="space-y-4">
             {data.recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-3 border-b border-slate-200 pb-4 last:border-0 last:pb-0">
+              <div key={activity.id} className="flex items-start gap-3 border-b border-slate-200 pb-4 last:border-0 last:pb-0 dark:border-slate-800">
                 <div className={`mt-1 h-2.5 w-2.5 rounded-full ${activity.type === 'fee' ? 'bg-emerald-500' : activity.type === 'drop' ? 'bg-amber-500' : 'bg-sky-500'}`} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-800">{activity.message}</p>
-                  <p className="mt-1 text-xs text-slate-500">{activity.time}</p>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{activity.message}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{activity.time}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <Button variant="outline" className="mt-6 w-full" asChild>
+          <Button variant="outline" className="mt-6 w-full dark:border-slate-800 dark:hover:bg-slate-800" asChild>
             <Link href="/admin/activities">View all activities</Link>
           </Button>
         </div>
 
         <div className="premium-panel p-6">
-          <h2 className="text-xl font-semibold tracking-tight">Quick actions</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Quick actions</h2>
           <div className="mt-5 space-y-3">
-            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/students/new">+ New student</Link></Button>
-            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/enrollment/new">+ New enrollment</Link></Button>
-            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/fees/dashboard">Collect fees</Link></Button>
-            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/attendance">Mark attendance</Link></Button>
-            <Button asChild className="w-full justify-start" variant="outline"><Link href="/admin/fees/reports">View reports</Link></Button>
+            <Button asChild className="w-full justify-start dark:border-slate-800 dark:hover:bg-slate-800" variant="outline"><Link href="/admin/students/new">+ New student</Link></Button>
+            <Button asChild className="w-full justify-start dark:border-slate-800 dark:hover:bg-slate-800" variant="outline"><Link href="/admin/enrollment/new">+ New enrollment</Link></Button>
+            <Button asChild className="w-full justify-start dark:border-slate-800 dark:hover:bg-slate-800" variant="outline"><Link href="/admin/fees/dashboard">Collect fees</Link></Button>
+            <Button asChild className="w-full justify-start dark:border-slate-800 dark:hover:bg-slate-800" variant="outline"><Link href="/admin/attendance">Mark attendance</Link></Button>
+            <Button asChild className="w-full justify-start dark:border-slate-800 dark:hover:bg-slate-800" variant="outline"><Link href="/admin/fees/reports">View reports</Link></Button>
           </div>
         </div>
       </div>
     </div>
   )
-}
+}

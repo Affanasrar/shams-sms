@@ -1,11 +1,11 @@
 // app/admin/expenses/expenses-client.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createExpense, deleteExpense } from '@/app/actions/expenses'
 import {
   DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Trash2,
-  Receipt, ArrowUpRight, ArrowDownRight, X
+  Receipt, ArrowUpRight, ArrowDownRight, X, Calendar, Filter, ChevronDown, ChevronRight
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -22,6 +22,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 const CATEGORIES = Object.keys(CATEGORY_LABELS)
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
 type Expense = {
   id: string; title: string; amount: string; category: string
   date: string; description: string | null; createdById: string | null
@@ -37,10 +42,42 @@ type Summary = {
 type Props = { initialExpenses: Expense[]; initialSummary: Summary }
 
 export default function ExpensesClient({ initialExpenses, initialSummary }: Props) {
+  const currentDate = new Date()
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth())
+  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear())
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
+
+  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses)
+  const [summary, setSummary] = useState<Summary>(initialSummary)
+  const [loadingData, setLoadingData] = useState(false)
+
   const [showAddForm, setShowAddForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const summary = initialSummary
+  
+  // Accordion expanded state for grouped view
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({})
+
+  // Fetch updated data whenever month, year or category changes
+  useEffect(() => {
+    const fetchMonthData = async () => {
+      setLoadingData(true)
+      try {
+        const res = await fetch(`/api/admin/expenses?month=${selectedMonth}&year=${selectedYear}&category=${selectedCategory}`)
+        if (res.ok) {
+          const data = await res.json()
+          setExpenses(data.expenses)
+          setSummary(data.summary)
+        }
+      } catch (err) {
+        console.error('Failed to load month expenses:', err)
+      } finally {
+        setLoadingData(false)
+      }
+    }
+
+    fetchMonthData()
+  }, [selectedMonth, selectedYear, selectedCategory])
 
   const expenseChange = summary.totalPrevExpenses > 0
     ? ((summary.totalExpenses - summary.totalPrevExpenses) / summary.totalPrevExpenses * 100).toFixed(1)
@@ -54,8 +91,19 @@ export default function ExpensesClient({ initialExpenses, initialSummary }: Prop
     setLoading(true); setMessage(null)
     const result = await createExpense(null, formData)
     setLoading(false)
-    if (result.success) { setShowAddForm(false); setMessage({ type: 'success', text: result.message || 'Added' }) }
-    else { setMessage({ type: 'error', text: result.error || 'Failed' }) }
+    if (result.success) {
+      setShowAddForm(false);
+      setMessage({ type: 'success', text: result.message || 'Added' })
+      // Re-trigger current month fetch
+      const res = await fetch(`/api/admin/expenses?month=${selectedMonth}&year=${selectedYear}&category=${selectedCategory}`)
+      if (res.ok) {
+        const data = await res.json()
+        setExpenses(data.expenses)
+        setSummary(data.summary)
+      }
+    } else {
+      setMessage({ type: 'error', text: result.error || 'Failed' })
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -63,164 +111,308 @@ export default function ExpensesClient({ initialExpenses, initialSummary }: Prop
     setMessage(null)
     const fd = new FormData(); fd.set('expenseId', id)
     const result = await deleteExpense(fd)
-    setMessage({ type: result.success ? 'success' : 'error', text: result.message || result.error || '' })
+    if (result.success) {
+      setMessage({ type: 'success', text: result.message || 'Deleted' })
+      const res = await fetch(`/api/admin/expenses?month=${selectedMonth}&year=${selectedYear}&category=${selectedCategory}`)
+      if (res.ok) {
+        const data = await res.json()
+        setExpenses(data.expenses)
+        setSummary(data.summary)
+      }
+    } else {
+      setMessage({ type: 'error', text: result.error || 'Failed' })
+    }
   }
 
   const formatCurrency = (n: number) => `PKR ${n.toLocaleString('en-PK')}`
+
+  // Group current expenses by day or month for expanded view
+  const groupedExpenses = expenses.reduce((acc, exp) => {
+    const d = new Date(exp.date)
+    const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    if (!acc[monthKey]) acc[monthKey] = []
+    acc[monthKey].push(exp)
+    return acc
+  }, {} as Record<string, Expense[]>)
+
+  const toggleMonthExpand = (key: string) => {
+    setExpandedMonths(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - 2 + i)
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Receipt className="text-indigo-600" size={28} />
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Receipt className="text-indigo-600 dark:text-indigo-400" size={28} />
             Expense Tracker
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Track and manage institute expenses</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Track and analyze monthly institute expenses
+          </p>
         </div>
-        <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium flex items-center gap-2">
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium flex items-center gap-2 transition shadow-sm"
+        >
           <Plus size={16} /> Add Expense
         </button>
       </div>
 
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+        <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'}`}>
           {message.text}
         </div>
       )}
 
+      {/* Month & Year Selection Bar */}
+      <div className="card-surface p-4 flex flex-col md:flex-row items-center justify-between gap-4 dark:bg-slate-900/80 dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
+            <span>Select Period:</span>
+          </div>
+
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          >
+            {MONTH_NAMES.map((m, idx) => (
+              <option key={m} value={idx}>{m}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          >
+            {years.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+
+          <div className="flex items-center gap-2 ml-2">
+            <Filter size={16} className="text-slate-400" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            >
+              <option value="ALL">All Categories</option>
+              {CATEGORIES.map(c => (
+                <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1.5 rounded-full border border-indigo-100 dark:border-indigo-800/40">
+          Showing {MONTH_NAMES[selectedMonth]} {selectedYear}
+        </div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard title="Total Expenses" value={formatCurrency(summary.totalExpenses)} change={`${expenseChange}%`} isUp={Number(expenseChange) > 0} icon={<TrendingDown className="text-red-500" size={20} />} color="red" />
-        <SummaryCard title="Total Income" value={formatCurrency(summary.totalIncome)} subtitle="From fee payments" icon={<TrendingUp className="text-green-500" size={20} />} color="green" />
-        <SummaryCard title="Net Profit" value={formatCurrency(summary.netProfit)} subtitle="Income − Expenses" icon={<DollarSign className={summary.netProfit >= 0 ? 'text-green-500' : 'text-red-500'} size={20} />} color={summary.netProfit >= 0 ? 'green' : 'red'} />
-        <SummaryCard title="Expenses Count" value={String(summary.expenseCount)} subtitle="This month" icon={<PieChart className="text-indigo-500" size={20} />} color="indigo" />
+        <SummaryCard title="Total Expenses" value={formatCurrency(summary.totalExpenses)} change={`${expenseChange}%`} isUp={Number(expenseChange) > 0} icon={<TrendingDown className="text-rose-500" size={20} />} color="rose" />
+        <SummaryCard title="Total Income" value={formatCurrency(summary.totalIncome)} subtitle="From fee collections" icon={<TrendingUp className="text-emerald-500" size={20} />} color="emerald" />
+        <SummaryCard title="Net Profit" value={formatCurrency(summary.netProfit)} subtitle="Income − Expenses" icon={<DollarSign className={summary.netProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'} size={20} />} color={summary.netProfit >= 0 ? 'emerald' : 'rose'} />
+        <SummaryCard title="Expense Items" value={String(summary.expenseCount)} subtitle={`In ${MONTH_NAMES[selectedMonth]}`} icon={<PieChart className="text-indigo-500" size={20} />} color="indigo" />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Income vs Expenses */}
-        <div className="bg-white rounded-xl border shadow-sm p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">Income vs Expenses (6 Months)</h3>
+        {/* Income vs Expenses Bar Chart */}
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-slate-900 dark:text-white">Income vs Expenses (6 Months)</h3>
+            <span className="text-xs text-slate-400">Click bar to select month</span>
+          </div>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={summary.monthlyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} />
+            <BarChart
+              data={summary.monthlyTrend}
+              onClick={(state: any) => {
+                if (state && state.activePayload && state.activePayload.length > 0) {
+                  const monthStr = state.activePayload[0].payload.month // e.g. "Jul 2026"
+                  const parts = monthStr.split(' ')
+                  if (parts.length === 2) {
+                    const mIdx = MONTH_NAMES.findIndex(m => m.startsWith(parts[0]))
+                    if (mIdx !== -1) setSelectedMonth(mIdx)
+                    setSelectedYear(parseInt(parts[1]))
+                  }
+                }
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} />
+              <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} />
+              <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
               <Legend />
-              <Bar dataKey="income" fill="#10b981" name="Income" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expenses" fill="#ef4444" name="Expenses" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income" fill="#10b981" name="Income" radius={[6, 6, 0, 0]} cursor="pointer" />
+              <Bar dataKey="expenses" fill="#f43f5e" name="Expenses" radius={[6, 6, 0, 0]} cursor="pointer" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Category Breakdown */}
-        <div className="bg-white rounded-xl border shadow-sm p-5">
-          <h3 className="font-semibold text-gray-900 mb-4">Expense Categories</h3>
+        {/* Category Breakdown Pie Chart */}
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
+            Expense Breakdown ({MONTH_NAMES[selectedMonth]})
+          </h3>
           {pieData.length === 0 ? (
-            <div className="flex items-center justify-center h-[280px] text-gray-400 text-sm">No expenses this month</div>
+            <div className="flex items-center justify-center h-[280px] text-slate-400 text-sm">
+              No expenses recorded for {MONTH_NAMES[selectedMonth]} {selectedYear}
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <RechartsPieChart>
                 <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}>
                   {pieData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
                 </Pie>
-                <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} />
+                <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
               </RechartsPieChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* Expenses Table */}
-      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b">
-          <h3 className="font-semibold text-gray-900">Recent Expenses</h3>
+      {/* Expandable Expenses List / Accordion */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-slate-900 dark:text-white text-lg flex items-center gap-2">
+            <Receipt className="text-indigo-600 dark:text-indigo-400" size={20} />
+            Expenses for {MONTH_NAMES[selectedMonth]} {selectedYear}
+          </h3>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {expenses.length} record{expenses.length !== 1 ? 's' : ''}
+          </span>
         </div>
-        {initialExpenses.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <Receipt size={40} className="mx-auto mb-3 opacity-30" />
-            <p>No expenses recorded this month</p>
+
+        {loadingData ? (
+          <div className="card-surface p-12 text-center text-slate-500 dark:text-slate-400">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+            <p className="text-sm">Updating expense details...</p>
+          </div>
+        ) : expenses.length === 0 ? (
+          <div className="card-surface p-12 text-center text-slate-400 dark:bg-slate-900/80 dark:border-slate-800">
+            <Receipt size={44} className="mx-auto mb-3 opacity-30" />
+            <p className="text-base font-medium text-slate-700 dark:text-slate-300">No expenses recorded for this month</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Click &quot;Add Expense&quot; above to log a new expense</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Title</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Category</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Amount</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Date</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {initialExpenses.map((expense) => (
-                  <tr key={expense.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{expense.title}</div>
-                      {expense.description && <div className="text-xs text-gray-500 mt-0.5">{expense.description}</div>}
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: `${CATEGORY_COLORS[expense.category]}15`, color: CATEGORY_COLORS[expense.category] }}>
-                        {CATEGORY_LABELS[expense.category] || expense.category}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900">PKR {Number(expense.amount).toLocaleString('en-PK')}</td>
-                    <td className="px-4 py-3 hidden md:table-cell text-gray-500">
-                      {new Date(expense.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button onClick={() => handleDelete(expense.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded">
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          Object.entries(groupedExpenses).map(([monthTitle, monthExpensesList]) => {
+            const isExpanded = expandedMonths[monthTitle] !== false // Default open
+            const monthTotal = monthExpensesList.reduce((s, e) => s + Number(e.amount), 0)
+
+            return (
+              <div key={monthTitle} className="card-surface overflow-hidden dark:bg-slate-900/80 dark:border-slate-800">
+                {/* Month Accordion Header */}
+                <button
+                  onClick={() => toggleMonthExpand(monthTitle)}
+                  className="w-full px-5 py-4 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    {isExpanded ? <ChevronDown size={18} className="text-slate-500" /> : <ChevronRight size={18} className="text-slate-500" />}
+                    <h4 className="font-bold text-slate-900 dark:text-white text-base">{monthTitle}</h4>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800/40">
+                      {monthExpensesList.length} items
+                    </span>
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-white text-base">
+                    Subtotal: {formatCurrency(monthTotal)}
+                  </div>
+                </button>
+
+                {/* Month Expenses Table */}
+                {isExpanded && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 text-slate-600 dark:text-slate-400">
+                          <th className="px-5 py-3 font-medium">Expense Title</th>
+                          <th className="px-5 py-3 font-medium hidden sm:table-cell">Category</th>
+                          <th className="px-5 py-3 font-medium">Amount</th>
+                          <th className="px-5 py-3 font-medium hidden md:table-cell">Date</th>
+                          <th className="px-5 py-3 font-medium text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                        {monthExpensesList.map((expense) => (
+                          <tr key={expense.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                            <td className="px-5 py-3.5">
+                              <div className="font-medium text-slate-900 dark:text-white">{expense.title}</div>
+                              {expense.description && <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{expense.description}</div>}
+                            </td>
+                            <td className="px-5 py-3.5 hidden sm:table-cell">
+                              <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: `${CATEGORY_COLORS[expense.category]}20`, color: CATEGORY_COLORS[expense.category] }}>
+                                {CATEGORY_LABELS[expense.category] || expense.category}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">PKR {Number(expense.amount).toLocaleString('en-PK')}</td>
+                            <td className="px-5 py-3.5 hidden md:table-cell text-slate-500 dark:text-slate-400">
+                              {new Date(expense.date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </td>
+                            <td className="px-5 py-3.5 text-right">
+                              <button
+                                onClick={() => handleDelete(expense.id)}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition"
+                                title="Delete expense"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )
+          })
         )}
       </div>
 
       {/* Add Expense Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs">
+          <div className="card-surface p-6 w-full max-w-md mx-4 dark:bg-slate-900 dark:border-slate-800">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Add Expense</h2>
-              <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-gray-100 rounded"><X size={18} /></button>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Add New Expense</h2>
+              <button onClick={() => setShowAddForm(false)} className="p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"><X size={18} /></button>
             </div>
             <form action={handleAdd} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                <input name="title" required className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Monthly Rent" />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
+                <input name="title" required className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" placeholder="e.g. Monthly Rent" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (PKR) *</label>
-                  <input name="amount" type="number" min="1" step="0.01" required className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount (PKR) *</label>
+                  <input name="amount" type="number" min="1" step="0.01" required className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                  <select name="category" required className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category *</label>
+                  <select name="category" required className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white">
                     {CATEGORIES.map(c => (<option key={c} value={c}>{CATEGORY_LABELS[c]}</option>))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Date</label>
+                <input name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea name="description" rows={2} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Optional notes..." />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                <textarea name="description" rows={2} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" placeholder="Optional notes..." />
               </div>
               <div className="flex gap-3 justify-end pt-2">
-                <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-                <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium">
+                <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Cancel</button>
+                <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50 text-sm font-medium">
                   {loading ? 'Adding...' : 'Add Expense'}
                 </button>
               </div>
@@ -237,19 +429,20 @@ function SummaryCard({ title, value, change, isUp, subtitle, icon, color }: {
   icon: React.ReactNode; color: string
 }) {
   return (
-    <div className="bg-white rounded-xl border shadow-sm p-5">
+    <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-gray-500">{title}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{title}</span>
         {icon}
       </div>
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
+      <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
       {change && (
-        <div className={`flex items-center gap-1 text-xs mt-1 ${isUp ? 'text-red-500' : 'text-green-500'}`}>
+        <div className={`flex items-center gap-1 text-xs mt-1 font-medium ${isUp ? 'text-rose-500' : 'text-emerald-500'}`}>
           {isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-          {change} vs last month
+          {change} vs prev month
         </div>
       )}
-      {subtitle && <div className="text-xs text-gray-400 mt-1">{subtitle}</div>}
+      {subtitle && <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{subtitle}</div>}
     </div>
   )
 }
+

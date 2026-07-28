@@ -69,59 +69,111 @@ export async function GET(request: NextRequest) {
     })
     const pendingAmount = Number((pendingSums._sum.finalAmount || 0)) - Number((pendingSums._sum.paidAmount || 0))
 
-    // Recent activities: fetch enrollments (new + dropped) and fee transactions
-    const recentEnrollments = await prisma.enrollment.findMany({
-      take: 10,
-      orderBy: { joiningDate: 'desc' },
-      include: { student: true, courseOnSlot: { include: { course: true } } }
+    // Recent activities: query AuditLog first, fallback to transactions/enrollments
+    const auditLogs = await prisma.auditLog.findMany({
+      take: 8,
+      orderBy: { createdAt: 'desc' }
     })
 
-    // also grab most recent drops (status DROPPED) by endDate
-    const recentDrops = await prisma.enrollment.findMany({
-      take: 10,
-      where: { status: 'DROPPED' },
-      orderBy: { endDate: 'desc' },
-      include: { student: true, courseOnSlot: { include: { course: true } } }
-    })
+    let recentActivities = []
 
-    // Fetch recent fee transactions
-    const recentTransactions = await prisma.transaction.findMany({
-      take: 10,
-      orderBy: { date: 'desc' },
-      include: {
-        fee: {
-          include: { student: true }
-        },
-        collectedBy: true
-      }
-    })
+    if (auditLogs.length > 0) {
+      recentActivities = auditLogs.map(log => {
+        const details = (log.details as Record<string, any>) || {}
+        let type: 'fee' | 'drop' | 'enrollment' = 'enrollment'
+        let message = ''
 
-    // Combine and sort all activities by timestamp
-    const allActivities = [
-      ...recentEnrollments.map(e => ({
-        id: e.id,
-        type: 'enrollment' as const,
-        message: `${e.student.name} enrolled in ${e.courseOnSlot.course.name}`,
-        timestamp: e.joiningDate,
-        time: e.joiningDate.toLocaleString('en-PK')
-      })),
-      ...recentDrops.map(e => ({
-        id: `drop-${e.id}`,
-        type: 'drop' as const,
-        message: `${e.student.name} dropped from ${e.courseOnSlot.course.name}`,
-        timestamp: e.endDate || new Date(),
-        time: (e.endDate || new Date()).toLocaleString('en-PK')
-      })),
-      ...recentTransactions.map(t => ({
-        id: t.id,
-        type: 'fee' as const,
-        message: `${t.fee.student.name} paid PKR ${Number(t.amount).toLocaleString('en-PK')} towards fees`,
-        timestamp: t.date,
-        time: t.date.toLocaleString('en-PK')
-      }))
-    ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).slice(0, 8)
+        if (log.action.startsWith('FEE')) {
+          type = 'fee'
+          message = details.studentName
+            ? `${details.studentName} paid PKR ${Number(details.amountPaid || 0).toLocaleString('en-PK')}`
+            : `Fee collection recorded`
+        } else if (log.action === 'ENROLLMENT_DROPPED') {
+          type = 'drop'
+          message = details.studentName
+            ? `${details.studentName} dropped from ${details.courseName || 'course'}`
+            : `Student enrollment dropped`
+        } else if (log.action === 'ENROLLMENT_COMPLETED') {
+          type = 'fee'
+          message = details.studentName
+            ? `${details.studentName} completed ${details.courseName || 'course'}`
+            : `Course completion recorded`
+        } else if (log.action === 'ENROLLMENT_EXTENDED') {
+          type = 'enrollment'
+          message = details.studentName
+            ? `${details.studentName}'s enrollment extended by ${details.additionalMonths || 1} month(s)`
+            : `Course extension recorded`
+        } else if (log.action === 'ENROLLMENT_CREATED') {
+          type = 'enrollment'
+          message = details.studentName
+            ? `${details.studentName} enrolled in ${details.courseName || 'course'}`
+            : `New enrollment created`
+        } else {
+          message = `${log.action.replace(/_/g, ' ')} on ${log.entity}`
+        }
 
-    const recentActivities = allActivities
+        const date = new Date(log.createdAt)
+        const now = new Date()
+        const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+        let timeAgo = `${diffMinutes}m ago`
+        if (diffMinutes < 1) timeAgo = 'Just now'
+        else if (diffMinutes >= 60 && diffMinutes < 1440) timeAgo = `${Math.floor(diffMinutes / 60)}h ago`
+        else if (diffMinutes >= 1440) timeAgo = `${Math.floor(diffMinutes / 1440)}d ago`
+
+        return {
+          id: log.id,
+          type,
+          message,
+          timestamp: log.createdAt,
+          time: timeAgo
+        }
+      })
+    } else {
+      const recentEnrollments = await prisma.enrollment.findMany({
+        take: 5,
+        orderBy: { joiningDate: 'desc' },
+        include: { student: true, courseOnSlot: { include: { course: true } } }
+      })
+
+      const recentDrops = await prisma.enrollment.findMany({
+        take: 5,
+        where: { status: 'DROPPED' },
+        orderBy: { endDate: 'desc' },
+        include: { student: true, courseOnSlot: { include: { course: true } } }
+      })
+
+      const recentTransactions = await prisma.transaction.findMany({
+        take: 5,
+        orderBy: { date: 'desc' },
+        include: { fee: { include: { student: true } } }
+      })
+
+      const combined = [
+        ...recentEnrollments.map(e => ({
+          id: e.id,
+          type: 'enrollment' as const,
+          message: `${e.student.name} enrolled in ${e.courseOnSlot.course.name}`,
+          timestamp: e.joiningDate,
+          time: new Date(e.joiningDate).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })
+        })),
+        ...recentDrops.map(e => ({
+          id: `drop-${e.id}`,
+          type: 'drop' as const,
+          message: `${e.student.name} dropped from ${e.courseOnSlot.course.name}`,
+          timestamp: e.endDate || new Date(),
+          time: new Date(e.endDate || new Date()).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })
+        })),
+        ...recentTransactions.map(t => ({
+          id: t.id,
+          type: 'fee' as const,
+          message: `${t.fee.student.name} paid PKR ${Number(t.amount).toLocaleString('en-PK')} towards fees`,
+          timestamp: t.date,
+          time: new Date(t.date).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })
+        }))
+      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8)
+
+      recentActivities = combined
+    }
 
     // Fee trend: last 6 months
     const now = new Date()

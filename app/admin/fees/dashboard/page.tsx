@@ -129,39 +129,39 @@ export default function FeesDashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-        <div className="rounded-2xl border bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Fees this month</p>
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Fees this month</p>
           <div className="mt-2 flex items-end justify-between gap-4">
-            <p className="text-2xl font-semibold text-slate-900">PKR {summaryData.totalFeesThisMonth.toLocaleString()}</p>
-            <Calendar className="h-6 w-6 text-sky-600" />
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">PKR {summaryData.totalFeesThisMonth.toLocaleString()}</p>
+            <Calendar className="h-6 w-6 text-sky-600 dark:text-sky-400" />
           </div>
         </div>
-        <div className="rounded-2xl border bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Collected this month</p>
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Collected this month</p>
           <div className="mt-2 flex items-end justify-between gap-4">
-            <p className="text-2xl font-semibold text-emerald-600">PKR {summaryData.paidFeesThisMonth.toLocaleString()}</p>
-            <DollarSign className="h-6 w-6 text-emerald-600" />
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">PKR {summaryData.paidFeesThisMonth.toLocaleString()}</p>
+            <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
         </div>
-        <div className="rounded-2xl border bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Pending students</p>
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Pending students</p>
           <div className="mt-2 flex items-end justify-between gap-4">
-            <p className="text-2xl font-semibold text-orange-600">{summaryData.studentsWithPendingFeesCount}</p>
-            <Users className="h-6 w-6 text-orange-600" />
+            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{summaryData.studentsWithPendingFeesCount}</p>
+            <Users className="h-6 w-6 text-amber-600 dark:text-amber-400" />
           </div>
         </div>
-        <div className="rounded-2xl border bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Overdue fees</p>
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Overdue fees</p>
           <div className="mt-2 flex items-end justify-between gap-4">
-            <p className="text-2xl font-semibold text-rose-600">{summaryData.overdueFeesCount}</p>
-            <DollarSign className="h-6 w-6 text-rose-600" />
+            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{summaryData.overdueFeesCount}</p>
+            <DollarSign className="h-6 w-6 text-rose-600 dark:text-rose-400" />
           </div>
         </div>
-        <Link href="/admin/fees/discounts" className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-100">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Discounts</p>
+        <Link href="/admin/fees/discounts" className="group card-surface p-5 transition hover:-translate-y-0.5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Discounts</p>
           <div className="mt-2 flex items-end justify-between gap-4">
-            <p className="text-lg font-semibold text-slate-900">Manage student discounts</p>
-            <ArrowRight className="h-5 w-5 text-slate-500 transition group-hover:translate-x-0.5" />
+            <p className="text-base font-bold text-slate-900 dark:text-white">Manage student discounts</p>
+            <ArrowRight className="h-5 w-5 text-slate-500 dark:text-slate-400 transition group-hover:translate-x-0.5" />
           </div>
         </Link>
       </div>

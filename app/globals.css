@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --font-geist-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -117,6 +117,10 @@
     background-attachment: fixed;
   }
 
+  .dark body {
+    background-image: radial-gradient(circle at top left, rgba(79, 70, 229, 0.15), transparent 28%), radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.1), transparent 34%);
+  }
+
   h1 { @apply text-3xl font-bold tracking-tight; }
   h2 { @apply text-2xl font-bold tracking-tight; }
   h3 { @apply text-xl font-semibold tracking-tight; }
@@ -178,11 +182,11 @@
   }
 
   .card-surface {
-    @apply rounded-[24px] border border-white/70 bg-white/80 shadow-[0_20px_60px_-24px_rgba(15,23,42,0.3)] backdrop-blur-xl;
+    @apply rounded-[24px] border border-white/70 bg-white/80 shadow-[0_20px_60px_-24px_rgba(15,23,42,0.3)] backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-2xl dark:shadow-slate-950/50;
   }
 
   .premium-panel {
-    @apply rounded-[28px] border border-white/70 bg-white/80 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl;
+    @apply rounded-[28px] border border-slate-200/80 bg-white/80 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/80 dark:shadow-2xl dark:shadow-slate-950/50;
   }
 
   .hero-glow {
@@ -240,4 +244,60 @@ html {
     padding-right: max(padding-right, env(safe-area-inset-right));
   }
 }
+
+/* Global Dark Mode Overrides for Hardcoded Light Classes */
+.dark {
+  color-scheme: dark;
+}
+
+.dark .bg-white {
+  background-color: oklch(0.17 0.02 250);
+}
+
+.dark .bg-white\/80 {
+  background-color: oklch(0.17 0.02 250 / 0.85);
+}
+
+.dark .bg-slate-50,
+.dark .bg-gray-50 {
+  background-color: oklch(0.15 0.02 250);
+}
+
+.dark .bg-slate-100,
+.dark .bg-gray-100 {
+  background-color: oklch(0.20 0.02 250);
+}
+
+.dark .border-slate-200,
+.dark .border-slate-100,
+.dark .border-gray-200,
+.dark .border-gray-100 {
+  border-color: oklch(0.25 0.02 250);
+}
+
+.dark .text-slate-950,
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: oklch(0.96 0.002 250);
+}
+
+.dark .text-slate-600,
+.dark .text-slate-500,
+.dark .text-gray-600,
+.dark .text-gray-500 {
+  color: oklch(0.68 0.02 250);
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: oklch(0.15 0.02 250);
+  color: oklch(0.96 0.002 250);
+  border-color: oklch(0.25 0.02 250);
+}
+
 

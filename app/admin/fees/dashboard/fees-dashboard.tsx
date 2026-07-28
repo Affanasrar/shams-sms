@@ -42,6 +42,8 @@ export function FeesDashboard({ courses }: Props) {
   const [feesData, setFeesData] = useState<StudentFees[]>([])
   const [loading, setLoading] = useState(false)
   const [useCustomDateRange, setUseCustomDateRange] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 25
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -352,122 +354,155 @@ export function FeesDashboard({ courses }: Props) {
 
         {loading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 mt-2">Loading fees data...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">Loading fees data...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50 border-b text-gray-600">
-                <tr>
-                  <th className="px-6 py-3">Student ID</th>
-                  <th className="px-6 py-3">Student Name</th>
-                  <th className="px-6 py-3">Courses</th>
-                  <th className="px-6 py-3">Timing / Lab</th>
-                  <th className="px-6 py-3">Due Date</th>
-                  <th className="px-6 py-3">Total Amount</th>
-                  <th className="px-6 py-3">Paid Amount</th>
-                  <th className="px-6 py-3">Pending Amount</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {feesData.map((fee, index) => (
-                  <tr key={`${fee.studentId}-${index}`} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-mono text-xs text-blue-600 font-medium">
-                      {fee.studentId}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-gray-900">
-                      {fee.studentName}
-                      <div className="text-xs text-gray-500">s/o {fee.fatherName}</div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <div className="flex flex-col gap-1">
-                        {fee.courses.length > 2 ? (
-                          <>
-                            {fee.courses.slice(0, 2).map((course) => (
-                              <div key={course.id} className="text-xs bg-blue-50 px-2 py-1 rounded">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+                  <tr>
+                    <th className="px-6 py-3">Student ID</th>
+                    <th className="px-6 py-3">Student Name</th>
+                    <th className="px-6 py-3">Courses</th>
+                    <th className="px-6 py-3">Timing / Lab</th>
+                    <th className="px-6 py-3">Due Date</th>
+                    <th className="px-6 py-3">Total Amount</th>
+                    <th className="px-6 py-3">Paid Amount</th>
+                    <th className="px-6 py-3">Pending Amount</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                  {feesData.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((fee, index) => (
+                    <tr key={`${fee.studentId}-${index}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <td className="px-6 py-4 font-mono text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                        {fee.studentId}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                        {fee.studentName}
+                        <div className="text-xs text-slate-500 dark:text-slate-400">s/o {fee.fatherName}</div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                        <div className="flex flex-col gap-1">
+                          {fee.courses.length > 2 ? (
+                            <>
+                              {fee.courses.slice(0, 2).map((course) => (
+                                <div key={course.id} className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">
+                                  {course.name}
+                                </div>
+                              ))}
+                              <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                                +{fee.courses.length - 2} more
+                              </div>
+                            </>
+                          ) : (
+                            fee.courses.map((course) => (
+                              <div key={course.id} className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">
                                 {course.name}
                               </div>
-                            ))}
-                            <div className="text-xs font-semibold text-blue-600">
-                              +{fee.courses.length - 2} more
-                            </div>
-                          </>
-                        ) : (
-                          fee.courses.map((course) => (
-                            <div key={course.id} className="text-xs bg-blue-50 px-2 py-1 rounded">
-                              {course.name}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      <div className="flex flex-col gap-1">
-                        {fee.timingSlots.length > 1 ? (
-                          <>
-                            {fee.timingSlots.slice(0, 2).map((slot) => (
-                              <div key={slot} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
+                            ))
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                        <div className="flex flex-col gap-1">
+                          {fee.timingSlots.length > 1 ? (
+                            <>
+                              {fee.timingSlots.slice(0, 2).map((slot) => (
+                                <div key={slot} className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-300">
+                                  {slot}
+                                </div>
+                              ))}
+                              <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                +{fee.timingSlots.length - 2} more
+                              </div>
+                            </>
+                          ) : (
+                            fee.timingSlots.map((slot) => (
+                              <div key={slot} className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-300">
                                 {slot}
                               </div>
-                            ))}
-                            <div className="text-xs font-semibold text-slate-600">
-                              +{fee.timingSlots.length - 2} more
-                            </div>
-                          </>
-                        ) : (
-                          fee.timingSlots.map((slot) => (
-                            <div key={slot} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
-                              {slot}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-red-600">
-                      {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      }) : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 font-mono">
-                      PKR {fee.totalAmount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-green-600">
-                      PKR {fee.paidAmount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-red-600">
-                      PKR {fee.pendingAmount.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(fee.status)}`}>
-                        {fee.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <a
-                        href={`/admin/fees?studentId=${fee.studentDbId}`}
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium text-xs inline-block"
-                      >
-                        Collect Fee
-                      </a>
-                    </td>
-                  </tr>
-                ))}
+                            ))
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-rose-600 dark:text-rose-400">
+                        {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        }) : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-slate-900 dark:text-white">
+                        PKR {fee.totalAmount.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                        PKR {fee.paidAmount.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-rose-600 dark:text-rose-400 font-semibold">
+                        PKR {fee.pendingAmount.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(fee.status)}`}>
+                          {fee.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <a
+                          href={`/admin/fees?studentId=${fee.studentDbId}`}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl transition font-medium text-xs inline-block"
+                        >
+                          Collect Fee
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
 
-                {feesData.length === 0 && (
-                  <tr>
-                    <td colSpan={10} className="p-8 text-center text-gray-500">
-                      No fees data found for the selected filters.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  {feesData.length === 0 && (
+                    <tr>
+                      <td colSpan={10} className="p-8 text-center text-slate-500 dark:text-slate-400">
+                        No fees data found for the selected filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {feesData.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 dark:border-slate-800 px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                <div>
+                  Showing <span className="font-semibold text-slate-900 dark:text-white">{(currentPage - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-semibold text-slate-900 dark:text-white">{Math.min(currentPage * pageSize, feesData.length)}</span> of{' '}
+                  <span className="font-semibold text-slate-900 dark:text-white">{feesData.length}</span> students
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 disabled:opacity-40 text-xs font-medium transition hover:bg-slate-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs font-medium px-2 text-slate-900 dark:text-white">
+                    Page {currentPage} of {Math.ceil(feesData.length / pageSize)}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(feesData.length / pageSize), p + 1))}
+                    disabled={currentPage >= Math.ceil(feesData.length / pageSize)}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 disabled:opacity-40 text-xs font-medium transition hover:bg-slate-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

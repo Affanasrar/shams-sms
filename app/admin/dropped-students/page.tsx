@@ -135,58 +135,58 @@ export default async function DroppedStudentsPage(props: Props) {
       />
 
       {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 mb-6">
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <p className="text-sm font-medium text-gray-600 mb-2">Total Dropped Students</p>
-          <p className="text-3xl font-bold text-gray-900">{stats._count}</p>
-          <p className="text-xs text-gray-500 mt-2">Across all courses</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Total Dropped</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-white">{stats._count}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Across all courses</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <p className="text-sm font-medium text-gray-600 mb-2">📅 Duration Drops</p>
-          <p className="text-3xl font-bold text-yellow-600">{durationDropCount}</p>
-          <p className="text-xs text-gray-500 mt-2">Course ended naturally</p>
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">📅 Duration Drops</p>
+          <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{durationDropCount}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Course ended naturally</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <p className="text-sm font-medium text-gray-600 mb-2">🚫 Admin Drops</p>
-          <p className="text-3xl font-bold text-red-600">{adminDropCount}</p>
-          <p className="text-xs text-gray-500 mt-2">Manually dropped</p>
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">🚫 Admin Drops</p>
+          <p className="text-3xl font-bold text-rose-600 dark:text-rose-400">{adminDropCount}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Manually dropped</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <p className="text-sm font-medium text-gray-600 mb-2">Courses Affected</p>
-          <p className="text-3xl font-bold text-gray-900">{droppedByCourse.length}</p>
-          <p className="text-xs text-gray-500 mt-2">With dropped students</p>
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Courses Affected</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-white">{droppedByCourse.length}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">With dropped students</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <p className="text-sm font-medium text-gray-600 mb-2">Filtered Results</p>
-          <p className="text-3xl font-bold text-gray-900">{rows.length}</p>
-          <p className="text-xs text-gray-500 mt-2">
+        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Filtered Results</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-white">{rows.length}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
             {courseId ? 'In selected course' : 'All courses'}
           </p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="px-6 mb-6">
+      <div className="mb-6">
         <DroppedStudentFilters courses={courses} />
       </div>
 
       {/* Table */}
-      <div className="px-6">
+      <div>
         {rows.length > 0 ? (
           <>
-            <p className="text-sm text-gray-600 mb-4">
-              Showing <span className="font-semibold">{rows.length}</span> dropped student
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              Showing <span className="font-semibold text-slate-900 dark:text-white">{rows.length}</span> dropped student
               {rows.length !== 1 ? 's' : ''}
             </p>
             <DroppedStudentTable data={rows} />
           </>
         ) : (
-          <div className="bg-white p-12 rounded-lg border text-center">
-            <div className="text-gray-400 mb-2">
+          <div className="card-surface p-12 text-center dark:bg-slate-900/80 dark:border-slate-800">
+            <div className="text-slate-400 mb-2">
               <svg
                 className="w-12 h-12 mx-auto mb-4"
                 fill="none"
@@ -201,8 +201,8 @@ export default async function DroppedStudentsPage(props: Props) {
                 />
               </svg>
             </div>
-            <p className="text-gray-600 font-medium">No dropped students found</p>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-slate-800 dark:text-slate-200 font-medium">No dropped students found</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               {searchQuery || courseId ? 'Try adjusting your filters' : 'All students are active or completed'}
             </p>
           </div>

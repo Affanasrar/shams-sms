@@ -41,21 +41,22 @@ export function DroppedStudentFilters({ courses }: Props) {
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg border shadow-sm space-y-4">
-      <div className="flex items-center gap-2 text-gray-500 font-medium">
-        <Filter size={18} /> Filters:
+    <div className="card-surface p-4 space-y-4 dark:bg-slate-900/80 dark:border-slate-800">
+      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-medium text-sm">
+        <Filter size={18} className="text-indigo-600 dark:text-indigo-400" />
+        <span>Filters & Search:</span>
       </div>
 
-      <div className="flex flex-wrap gap-4 items-center">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
         {/* Search by Name or ID */}
-        <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+        <div className="relative flex-1 min-w-[240px] w-full">
+          <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Search by student name or ID..."
+            placeholder="Search student name or ID..."
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
@@ -63,7 +64,7 @@ export function DroppedStudentFilters({ courses }: Props) {
         <select
           value={currentCourse}
           onChange={(e) => handleFilterChange('courseId', e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black min-w-[200px]"
+          className="w-full sm:w-auto min-w-[180px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
         >
           <option value="">All Courses</option>
           {courses.map((c) => (
@@ -77,7 +78,7 @@ export function DroppedStudentFilters({ courses }: Props) {
         <select
           value={currentSort}
           onChange={(e) => handleFilterChange('sort', e.target.value)}
-          className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black min-w-[200px]"
+          className="w-full sm:w-auto min-w-[180px] rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
         >
           <option value="recent">Most Recent Drops</option>
           <option value="oldest">Oldest Drops</option>
@@ -91,7 +92,7 @@ export function DroppedStudentFilters({ courses }: Props) {
               setSearchInput('')
               router.push('/admin/dropped-students')
             }}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition font-medium text-sm"
+            className="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 rounded-xl transition font-medium text-sm"
           >
             Reset Filters
           </button>

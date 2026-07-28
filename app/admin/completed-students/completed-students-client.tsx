@@ -38,10 +38,32 @@ type Props = {
 
 export default function CompletedStudentsClient({ pendingEnrollments, completedEnrollments }: Props) {
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCourse, setSelectedCourse] = useState('')
   const [extendModal, setExtendModal] = useState<{ enrollmentId: string; studentName: string; courseName: string } | null>(null)
   const [additionalMonths, setAdditionalMonths] = useState(1)
   const [loading, setLoading] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Extract unique courses for filter
+  const allCourses = Array.from(new Set([
+    ...pendingEnrollments.map(e => e.courseOnSlot.course.name),
+    ...completedEnrollments.map(e => e.courseOnSlot.course.name)
+  ])).sort()
+
+  const filterEnrollments = (list: Enrollment[]) => {
+    return list.filter(e => {
+      const matchesSearch = !searchQuery.trim() || 
+        e.student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.student.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.student.fatherName.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesCourse = !selectedCourse || e.courseOnSlot.course.name === selectedCourse
+      return matchesSearch && matchesCourse
+    })
+  }
+
+  const filteredPending = filterEnrollments(pendingEnrollments)
+  const filteredCompleted = filterEnrollments(completedEnrollments)
 
   const handleComplete = async (enrollmentId: string) => {
     if (!confirm('Are you sure you want to mark this student as completed? This will vacate their seat.')) return
@@ -82,19 +104,19 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <GraduationCap className="text-indigo-600" size={28} />
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <GraduationCap className="text-indigo-600 dark:text-indigo-400" size={28} />
             Course Completions
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Manage students who have completed their course duration
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
+          <span className="px-3 py-1 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 rounded-full text-sm font-medium border border-amber-200 dark:border-amber-800/50">
             {pendingEnrollments.length} Pending
           </span>
-          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+          <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded-full text-sm font-medium border border-emerald-200 dark:border-emerald-800/50">
             {completedEnrollments.length} Completed
           </span>
         </div>
@@ -102,72 +124,97 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
 
       {/* Status message */}
       {message && (
-        <div className={`p-4 rounded-lg border ${message.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+        <div className={`p-4 rounded-xl border ${message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'}`}>
           {message.text}
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-        <button
-          onClick={() => setActiveTab('pending')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'pending' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-        >
-          <div className="flex items-center gap-2">
-            <Clock size={16} />
-            Pending Action ({pendingEnrollments.length})
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('completed')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'completed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-        >
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} />
-            Completed ({completedEnrollments.length})
-          </div>
-        </button>
+      {/* Controls: Search & Filters */}
+      <div className="card-surface p-4 flex flex-col sm:flex-row gap-3 items-center justify-between dark:bg-slate-900/80 dark:border-slate-800">
+        <div className="flex flex-1 gap-3 w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="Search student name or ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          />
+          <select
+            value={selectedCourse}
+            onChange={(e) => setSelectedCourse(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          >
+            <option value="">All Courses</option>
+            {allCourses.map(course => (
+              <option key={course} value={course}>{course}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl w-full sm:w-auto">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'pending' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Clock size={16} />
+              Pending ({filteredPending.length})
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('completed')}
+            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'completed' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle2 size={16} />
+              Completed ({filteredCompleted.length})
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Pending Tab */}
       {activeTab === 'pending' && (
         <div>
-          {pendingEnrollments.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">
+          {filteredPending.length === 0 ? (
+            <div className="card-surface p-12 text-center text-slate-500 dark:text-slate-400 dark:bg-slate-900/80 dark:border-slate-800">
               <GraduationCap size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium">No pending completions</p>
-              <p className="text-sm">Students whose course duration has ended will appear here</p>
+              <p className="text-lg font-medium text-slate-800 dark:text-slate-200">No pending completions found</p>
+              <p className="text-sm">
+                {searchQuery || selectedCourse ? 'Try adjusting your search filters' : 'Students whose course duration has ended will appear here'}
+              </p>
             </div>
           ) : (
             <div className="grid gap-4">
-              {pendingEnrollments.map((enrollment) => (
-                <div key={enrollment.id} className="bg-white rounded-xl border border-amber-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+              {filteredPending.map((enrollment) => (
+                <div key={enrollment.id} className="card-surface p-5 border-amber-300/60 dark:border-amber-700/50 dark:bg-slate-900/80 transition-shadow">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-bold text-sm">
+                        <div className="w-10 h-10 bg-amber-100 dark:bg-amber-950/80 rounded-full flex items-center justify-center text-amber-700 dark:text-amber-300 font-bold text-sm">
                           {enrollment.student.name.charAt(0)}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900">{enrollment.student.name}</h3>
-                          <p className="text-sm text-gray-500">{enrollment.student.studentId} • S/o {enrollment.student.fatherName}</p>
+                          <h3 className="font-semibold text-slate-900 dark:text-white">{enrollment.student.name}</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{enrollment.student.studentId} • S/o {enrollment.student.fatherName}</p>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-300">
                         <span className="flex items-center gap-1">
-                          <GraduationCap size={14} /> {enrollment.courseOnSlot.course.name}
+                          <GraduationCap size={14} className="text-indigo-600 dark:text-indigo-400" /> {enrollment.courseOnSlot.course.name}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Calendar size={14} /> {formatDate(enrollment.joiningDate)} → {formatDate(enrollment.endDate)}
+                          <Calendar size={14} className="text-sky-600 dark:text-sky-400" /> {formatDate(enrollment.joiningDate)} → {formatDate(enrollment.endDate)}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Users size={14} /> {enrollment.courseOnSlot.slot.room.name} • {enrollment.courseOnSlot.slot.days}
+                          <Users size={14} className="text-emerald-600 dark:text-emerald-400" /> {enrollment.courseOnSlot.slot.room.name} • {enrollment.courseOnSlot.slot.days}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Clock size={14} /> {formatTime(enrollment.courseOnSlot.slot.startTime)} - {formatTime(enrollment.courseOnSlot.slot.endTime)}
+                          <Clock size={14} className="text-amber-600 dark:text-amber-400" /> {formatTime(enrollment.courseOnSlot.slot.startTime)} - {formatTime(enrollment.courseOnSlot.slot.endTime)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-amber-700 text-sm">
+                      <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 text-sm font-medium">
                         <AlertCircle size={14} />
                         <span>Student still occupies a seat until action is taken</span>
                       </div>
@@ -181,7 +228,7 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
                           courseName: enrollment.courseOnSlot.course.name,
                         })}
                         disabled={loading === enrollment.id}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50 text-sm font-medium flex items-center gap-2 transition"
                       >
                         <RotateCcw size={14} />
                         Extend Course
@@ -189,7 +236,7 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
                       <button
                         onClick={() => handleComplete(enrollment.id)}
                         disabled={loading === enrollment.id}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium flex items-center gap-2"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl disabled:opacity-50 text-sm font-medium flex items-center gap-2 transition"
                       >
                         <CheckCircle2 size={14} />
                         {loading === enrollment.id ? 'Processing...' : 'Mark Completed'}
@@ -206,45 +253,47 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
       {/* Completed Tab */}
       {activeTab === 'completed' && (
         <div>
-          {completedEnrollments.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">
+          {filteredCompleted.length === 0 ? (
+            <div className="card-surface p-12 text-center text-slate-500 dark:text-slate-400 dark:bg-slate-900/80 dark:border-slate-800">
               <CheckCircle2 size={48} className="mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium">No completed enrollments yet</p>
+              <p className="text-lg font-medium text-slate-800 dark:text-slate-200">No completed enrollments found</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Student</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Course</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Duration</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Completed On</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {completedEnrollments.map((enrollment) => (
-                    <tr key={enrollment.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{enrollment.student.name}</div>
-                        <div className="text-xs text-gray-500">{enrollment.student.studentId}</div>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell text-gray-700">
-                        {enrollment.courseOnSlot.course.name}
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell text-gray-500">
-                        {formatDate(enrollment.joiningDate)} → {formatDate(enrollment.endDate)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                          <CheckCircle2 size={12} />
-                          {formatDate(enrollment.completedAt)}
-                        </span>
-                      </td>
+            <div className="card-surface overflow-hidden dark:bg-slate-900/80 dark:border-slate-800">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                      <th className="px-5 py-3 font.medium">Student</th>
+                      <th className="px-5 py-3 font-medium hidden sm:table-cell">Course</th>
+                      <th className="px-5 py-3 font-medium hidden md:table-cell">Duration</th>
+                      <th className="px-5 py-3 font-medium">Completed On</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {filteredCompleted.map((enrollment) => (
+                      <tr key={enrollment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                        <td className="px-5 py-3.5">
+                          <div className="font-medium text-slate-900 dark:text-white">{enrollment.student.name}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">{enrollment.student.studentId} • S/o {enrollment.student.fatherName}</div>
+                        </td>
+                        <td className="px-5 py-3.5 hidden sm:table-cell text-slate-700 dark:text-slate-300">
+                          {enrollment.courseOnSlot.course.name}
+                        </td>
+                        <td className="px-5 py-3.5 hidden md:table-cell text-slate-500 dark:text-slate-400">
+                          {formatDate(enrollment.joiningDate)} → {formatDate(enrollment.endDate)}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded-full text-xs font-medium border border-emerald-200 dark:border-emerald-800/50">
+                            <CheckCircle2 size={12} />
+                            {formatDate(enrollment.completedAt)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -252,34 +301,34 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
 
       {/* Extend Modal */}
       {extendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Extend Course</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Extend <strong>{extendModal.studentName}</strong>&apos;s enrollment in <strong>{extendModal.courseName}</strong>. This will reactivate their enrollment and generate a new fee.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs">
+          <div className="card-surface p-6 w-full max-w-md mx-4 dark:bg-slate-900 dark:border-slate-800">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Extend Course</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+              Extend <strong>{extendModal.studentName}</strong>&apos;s enrollment in <strong>{extendModal.courseName}</strong>. This will reactivate their enrollment and generate a new fee cycle.
             </p>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Additional Months</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Additional Months</label>
               <input
                 type="number"
                 min={1}
                 max={12}
                 value={additionalMonths}
                 onChange={(e) => setAdditionalMonths(parseInt(e.target.value) || 1)}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
               />
             </div>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => { setExtendModal(null); setAdditionalMonths(1) }}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+                className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               >
                 Cancel
               </button>
               <button
                 onClick={handleExtend}
                 disabled={loading === extendModal.enrollmentId}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50 text-sm font-medium"
               >
                 {loading === extendModal.enrollmentId ? 'Extending...' : `Extend by ${additionalMonths} month(s)`}
               </button>

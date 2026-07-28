@@ -115,32 +115,32 @@ export function DroppedStudentRowActions({
 
       {/* Re-enroll Modal */}
       {isReEnrollModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="card-surface p-6 max-w-md w-full dark:bg-slate-900 dark:border-slate-800">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-2xl font-bold">Re-enroll Student</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Re-enroll Student</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                   Bring back {studentName}
                 </p>
               </div>
               <button
                 onClick={() => setIsReEnrollModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition text-slate-500"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Dropped Information */}
-            <div className={`rounded-lg p-4 mb-6 border ${dropReason === 'duration' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
+            <div className={`rounded-xl p-4 mb-6 border ${dropReason === 'duration' ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50'}`}>
               <div className="flex gap-3">
-                <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${dropReason === 'duration' ? 'text-yellow-600' : 'text-red-600'}`} />
+                <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${dropReason === 'duration' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`} />
                 <div className="text-sm">
-                  <p className={`font-medium ${dropReason === 'duration' ? 'text-yellow-900' : 'text-red-900'}`}>
+                  <p className={`font-medium ${dropReason === 'duration' ? 'text-amber-900 dark:text-amber-200' : 'text-rose-900 dark:text-rose-200'}`}>
                     {dropReason === 'duration' ? '📅 Dropped Due to Course Duration' : '🚫 Manually Dropped by Admin'}
                   </p>
-                  <p className={`mt-1 ${dropReason === 'duration' ? 'text-yellow-700' : 'text-red-700'}`}>
+                  <p className={`mt-1 text-xs ${dropReason === 'duration' ? 'text-amber-700 dark:text-amber-300' : 'text-rose-700 dark:text-rose-300'}`}>
                     {dropReason === 'duration' 
                       ? 'This student completed their course duration. Re-enrolling will give them a fresh start with new fees.'
                       : 'This student was manually dropped by an administrator. Re-enrolling will restore them to active status.'}
@@ -150,29 +150,27 @@ export function DroppedStudentRowActions({
             </div>
 
             {/* Enrollment Details */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-xs text-gray-600 mb-2">ENROLLMENT DETAILS</p>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <span className="text-gray-600">Student:</span>{' '}
-                  <span className="font-medium">{studentName}</span>
+            <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 mb-6 border border-slate-200 dark:border-slate-800">
+              <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Enrollment Details</p>
+              <div className="space-y-1.5 text-sm">
+                <p className="text-slate-600 dark:text-slate-300">
+                  Student: <span className="font-semibold text-slate-900 dark:text-white">{studentName}</span>
                 </p>
-                <p>
-                  <span className="text-gray-600">Course:</span>{' '}
-                  <span className="font-medium">{courseName}</span>
+                <p className="text-slate-600 dark:text-slate-300">
+                  Course: <span className="font-semibold text-slate-900 dark:text-white">{courseName}</span>
                 </p>
               </div>
             </div>
 
             {/* Status Messages */}
             {state.error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+              <div className="bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 px-4 py-3 rounded-xl mb-4 text-sm">
                 {state.error}
               </div>
             )}
 
             {state.success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
+              <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 px-4 py-3 rounded-xl mb-4 text-sm">
                 {state.message}
               </div>
             )}
@@ -182,14 +180,14 @@ export function DroppedStudentRowActions({
               <button
                 onClick={() => handleReEnroll()}
                 disabled={isLoading}
-                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition font-medium text-sm"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-xl disabled:opacity-50 transition font-medium text-sm"
               >
                 {isLoading ? 'Re-enrolling...' : 'Yes, Re-enroll'}
               </button>
               <button
                 type="button"
                 onClick={() => setIsReEnrollModalOpen(false)}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                className="flex-1 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition font-medium text-sm"
               >
                 Cancel
               </button>
@@ -200,33 +198,33 @@ export function DroppedStudentRowActions({
 
       {/* Extend Duration Modal */}
       {isExtendModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="card-surface p-6 max-w-md w-full dark:bg-slate-900 dark:border-slate-800">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-2xl font-bold">Extend Duration</h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  Consider extending {studentName}'s enrollment period
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Extend Duration</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Extend {studentName}&apos;s enrollment period
                 </p>
               </div>
               <button
                 onClick={() => setIsExtendModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition text-slate-500"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-blue-900">
-                Extend the enrollment period without re-enrolling. This just updates the end date for reference.
+            <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/50 rounded-xl p-4 mb-6">
+              <p className="text-xs text-sky-900 dark:text-sky-300">
+                Extend the enrollment period without re-enrolling. This updates the end date for record keeping.
               </p>
             </div>
 
             {/* Days Input */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Days to Extend
               </label>
               <input
@@ -235,23 +233,23 @@ export function DroppedStudentRowActions({
                 max="365"
                 value={extendDays}
                 onChange={(e) => setExtendDays(parseInt(e.target.value) || 0)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 placeholder="Enter number of days"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Default is 30 days (1 month)
               </p>
             </div>
 
             {/* Status Messages */}
             {state.error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+              <div className="bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 px-4 py-3 rounded-xl mb-4 text-sm">
                 {state.error}
               </div>
             )}
 
             {state.success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
+              <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 px-4 py-3 rounded-xl mb-4 text-sm">
                 {state.message}
               </div>
             )}
@@ -261,7 +259,7 @@ export function DroppedStudentRowActions({
               <button
                 onClick={handleExtend}
                 disabled={isLoading || !extendDays}
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition font-medium text-sm"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-xl disabled:opacity-50 transition font-medium text-sm"
               >
                 {isLoading ? 'Extending...' : 'Extend Duration'}
               </button>
@@ -272,7 +270,7 @@ export function DroppedStudentRowActions({
                   setExtendDays(30)
                   setState(initialState)
                 }}
-                className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                className="flex-1 px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition font-medium text-sm"
               >
                 Cancel
               </button>

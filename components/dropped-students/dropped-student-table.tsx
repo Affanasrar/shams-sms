@@ -33,105 +33,67 @@ interface DroppedStudentTableProps {
 export function DroppedStudentTable({ data }: DroppedStudentTableProps) {
   const columns: ColumnDef<DroppedStudentRow, any>[] = [
     {
-      accessorKey: 'studentId',
-      header: 'Student ID',
-      cell: (info) => (
-        <span className="font-mono text-xs text-blue-600 font-medium">
-          {info.getValue()}
-        </span>
-      ),
-    },
-    {
       accessorKey: 'studentName',
-      header: 'Student',
-      cell: (info) => (
-        <div>
-          <div className="font-medium text-gray-900">{info.getValue()}</div>
-          <div className="text-xs text-gray-500">
-            Father: {info.row.original.fatherName}
+      header: 'Student Info',
+      cell: (info) => {
+        const row = info.row.original
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-900 dark:text-white text-sm">{row.studentName}</span>
+              <span className="font-mono text-xs px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-medium border border-indigo-200 dark:border-indigo-800/40">
+                {row.studentId}
+              </span>
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              S/o {row.fatherName} {row.phone ? `• ${row.phone}` : ''}
+            </div>
           </div>
-          {info.row.original.phone && (
-            <div className="text-xs text-gray-500">{info.row.original.phone}</div>
-          )}
-        </div>
-      ),
+        )
+      },
     },
     {
       accessorKey: 'courseName',
-      header: 'Course',
-      cell: (info) => (
-        <span className="bg-purple-100 text-purple-800 px-2.5 py-1 rounded text-xs font-bold border border-purple-200">
-          {info.getValue()}
-        </span>
-      ),
+      header: 'Course & Slot',
+      cell: (info) => {
+        const row = info.row.original
+        return (
+          <div className="space-y-1">
+            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50">
+              {row.courseName}
+            </span>
+            <div className="text-xs text-slate-600 dark:text-slate-400">
+              {row.slotDays} • {new Date(row.slotStartTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} ({row.slotRoom})
+            </div>
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'droppedDate',
-      header: 'Dropped Date',
+      header: 'Drop Reason & Date',
       cell: (info) => {
-        const date = new Date(info.getValue() as Date)
+        const row = info.row.original
+        const date = new Date(row.droppedDate)
         return (
-          <div className="text-sm">
-            <div className="font-medium text-gray-900">
-              {format(date, 'MMM dd, yyyy')}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              {row.dropReason === 'duration' ? (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                  📅 Duration Ended
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
+                  🚫 Admin Dropped
+                </span>
+              )}
             </div>
-            <div className="text-xs text-gray-500">
-              {formatDistance(date, new Date(), { addSuffix: true })}
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {format(date, 'MMM dd, yyyy')} ({formatDistance(date, new Date(), { addSuffix: true })})
             </div>
           </div>
         )
       },
-    },
-    {
-      accessorKey: 'daysDropped',
-      header: 'Days Ago',
-      cell: (info) => (
-        <span className="font-medium text-orange-600">
-          {info.getValue()} days
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'dropReason',
-      header: 'Drop Reason',
-      cell: (info) => {
-        const reason = info.getValue()
-        return (
-          <div>
-            {reason === 'duration' ? (
-              <span className="bg-yellow-100 text-yellow-800 px-2.5 py-1 rounded text-xs font-semibold border border-yellow-200">
-                📅 Course Duration
-              </span>
-            ) : (
-              <span className="bg-red-100 text-red-800 px-2.5 py-1 rounded text-xs font-semibold border border-red-200">
-                🚫 Admin Dropped
-              </span>
-            )}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'slotDays',
-      header: 'Last Slot / Room',
-      cell: (info) => (
-        <div className="text-gray-600">
-          <div className="font-medium text-gray-900">{info.getValue()}</div>
-          <div className="flex items-center gap-1 text-xs">
-            {new Date(info.row.original.slotStartTime).toLocaleTimeString(
-              'en-US',
-              {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-                timeZone: 'Asia/Karachi',
-              }
-            )}
-            <span>•</span>
-            <span className="text-gray-500">{info.row.original.slotRoom}</span>
-          </div>
-        </div>
-      ),
     },
     {
       accessorKey: 'id',
@@ -149,5 +111,64 @@ export function DroppedStudentTable({ data }: DroppedStudentTableProps) {
     },
   ]
 
-  return <DataTable columns={columns} data={data} />
+  return (
+    <div className="space-y-4">
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-3">
+        {data.map((row) => {
+          const date = new Date(row.droppedDate)
+          return (
+            <div key={row.id} className="card-surface p-4 space-y-3 dark:bg-slate-900/80 dark:border-slate-800">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-bold text-slate-900 dark:text-white text-base">{row.studentName}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    <span className="font-mono text-indigo-600 dark:text-indigo-400 font-medium">{row.studentId}</span> • S/o {row.fatherName}
+                  </div>
+                </div>
+                {row.dropReason === 'duration' ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40 shrink-0">
+                    📅 Course Ended
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40 shrink-0">
+                    🚫 Admin Dropped
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Course & Slot</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{row.courseName}</span>
+                  <span className="block text-slate-500">{row.slotDays} ({row.slotRoom})</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Dropped Date</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{format(date, 'MMM dd, yyyy')}</span>
+                  <span className="block text-slate-500">{formatDistance(date, new Date(), { addSuffix: true })}</span>
+                </div>
+              </div>
+
+              <div className="pt-1 flex justify-end">
+                <DroppedStudentRowActions
+                  enrollmentId={row.enrollmentId}
+                  studentId={row.studentId}
+                  studentName={row.studentName}
+                  courseName={row.courseName}
+                  droppedDate={row.droppedDate}
+                  dropReason={row.dropReason}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block card-surface overflow-hidden dark:bg-slate-900/80 dark:border-slate-800">
+        <DataTable columns={columns} data={data} />
+      </div>
+    </div>
+  )
 }

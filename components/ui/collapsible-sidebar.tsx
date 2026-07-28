@@ -22,6 +22,8 @@ import {
 } from "lucide-react"
 import { Button } from "./button"
 import { cn } from "@/lib/utils"
+import { ThemeToggle } from "./theme-toggle"
+
 
 interface NavItem {
   icon: React.ReactNode
@@ -153,15 +155,20 @@ export function CollapsibleSidebar() {
       </nav>
 
       <div className="shrink-0 border-t border-white/10 p-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-          <div className="shrink-0">
-            <UserButton afterSignOutUrl="/" />
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="shrink-0">
+              <UserButton afterSignOutUrl="/" />
+            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-white">Admin</p>
+                <p className="truncate text-xs text-slate-400">Account access</p>
+              </div>
+            )}
           </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-white">Admin</p>
-              <p className="truncate text-xs text-slate-400">Account access</p>
-            </div>
+            <ThemeToggle className="shrink-0" />
           )}
         </div>
       </div>
