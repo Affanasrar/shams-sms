@@ -2,6 +2,8 @@
 import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import { CollectButton } from './collect-button'
+import { FeeRow } from './fee-row'
+
 import { ArrowLeft, LayoutDashboard, Percent, Search } from 'lucide-react'
 import { Prisma } from '@prisma/client'
 
@@ -40,6 +42,10 @@ export default async function FeesPage(props: Props) {
       student: true,
       enrollment: {
         include: { courseOnSlot: { include: { course: true, slot: { include: { room: true } } } } }
+      },
+      transactions: {
+        include: { collectedBy: { select: { firstName: true, lastName: true } } },
+        orderBy: { date: 'desc' }
       }
     },
     orderBy: { dueDate: 'asc' }
@@ -197,50 +203,49 @@ export default async function FeesPage(props: Props) {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-600">
+            <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-6 py-3">Due Date</th>
-                <th className="px-6 py-3">Student</th>
-                <th className="px-6 py-3">Course / Timing</th>
-                <th className="px-6 py-3">Balance</th>
-                <th className="px-6 py-3 text-right">Action</th>
+                <th className="px-6 py-3.5">Due Date</th>
+                <th className="px-6 py-3.5">Student</th>
+                <th className="px-6 py-3.5">Course / Timing</th>
+                <th className="px-6 py-3.5">Balance</th>
+                <th className="px-6 py-3.5 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {dueFees.map((fee) => {
                 const courseName = fee.enrollment?.courseOnSlot.course.name ?? 'General Fee'
                 const timingLabel = formatTimingLabel(fee)
                 const remainingAmount = Number(fee.finalAmount) - Number(fee.paidAmount)
+                const transactions = fee.transactions.map(t => ({
+                  id: t.id,
+                  date: t.date.toISOString(),
+                  amount: Number(t.amount),
+                  collectorName: [t.collectedBy.firstName, t.collectedBy.lastName].filter(Boolean).join(' ') || 'Admin'
+                }))
 
                 return (
-                  <tr key={fee.id} className="hover:bg-slate-50/70">
-                    <td className="px-6 py-4 font-medium text-rose-600">
-                      {new Date(fee.dueDate).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{fee.student.name}</div>
-                      <div className="text-xs text-slate-500">{fee.student.studentId} • s/o {fee.student.fatherName}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="font-medium text-slate-900">{courseName}</div>
-                        <div className="text-xs text-slate-500">{timingLabel}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-mono">
-                      <div className="font-semibold text-slate-900">PKR {Number(fee.finalAmount).toLocaleString()}</div>
-                      <div className="text-xs text-rose-600">Due: PKR {remainingAmount.toLocaleString()}</div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <CollectButton feeId={fee.id} adminId={adminId} remainingAmount={remainingAmount} />
-                    </td>
-                  </tr>
+                  <FeeRow
+                    key={fee.id}
+                    feeId={fee.id}
+                    adminId={adminId}
+                    dueDate={fee.dueDate.toISOString()}
+                    studentName={fee.student.name}
+                    studentCode={fee.student.studentId}
+                    fatherName={fee.student.fatherName}
+                    courseName={courseName}
+                    timingLabel={timingLabel}
+                    finalAmount={Number(fee.finalAmount)}
+                    paidAmount={Number(fee.paidAmount)}
+                    remainingAmount={remainingAmount}
+                    transactions={transactions}
+                  />
                 )
               })}
 
               {dueFees.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-slate-500">
+                  <td colSpan={5} className="p-10 text-center text-slate-500 dark:text-slate-400">
                     ✅ No pending fees. Good job!
                   </td>
                 </tr>

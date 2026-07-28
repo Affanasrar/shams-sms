@@ -225,58 +225,74 @@ export default function ExpensesClient({ initialExpenses, initialSummary }: Prop
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Income vs Expenses Bar Chart */}
-        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Income vs Expenses (6 Months)</h3>
-            <span className="text-xs text-slate-400">Click bar to select month</span>
+        <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Income vs Expenses</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Last 6 months — click a bar to jump to that month</p>
+              </div>
+              <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">6M Trend</span>
+            </div>
           </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart
-              data={summary.monthlyTrend}
-              onClick={(state: any) => {
-                if (state && state.activePayload && state.activePayload.length > 0) {
-                  const monthStr = state.activePayload[0].payload.month // e.g. "Jul 2026"
-                  const parts = monthStr.split(' ')
-                  if (parts.length === 2) {
-                    const mIdx = MONTH_NAMES.findIndex(m => m.startsWith(parts[0]))
-                    if (mIdx !== -1) setSelectedMonth(mIdx)
-                    setSelectedYear(parseInt(parts[1]))
+          <div className="p-5">
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart
+                data={summary.monthlyTrend}
+                onClick={(state: any) => {
+                  if (state && state.activePayload && state.activePayload.length > 0) {
+                    const monthStr = state.activePayload[0].payload.month
+                    const parts = monthStr.split(' ')
+                    if (parts.length === 2) {
+                      const mIdx = MONTH_NAMES.findIndex(m => m.startsWith(parts[0]))
+                      if (mIdx !== -1) setSelectedMonth(mIdx)
+                      setSelectedYear(parseInt(parts[1]))
+                    }
                   }
-                }
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.15} />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} />
-              <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} />
-              <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
-              <Legend />
-              <Bar dataKey="income" fill="#10b981" name="Income" radius={[6, 6, 0, 0]} cursor="pointer" />
-              <Bar dataKey="expenses" fill="#f43f5e" name="Expenses" radius={[6, 6, 0, 0]} cursor="pointer" />
-            </BarChart>
-          </ResponsiveContainer>
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.12} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="income" fill="#10b981" name="Income" radius={[6, 6, 0, 0]} cursor="pointer" />
+                <Bar dataKey="expenses" fill="#f43f5e" name="Expenses" radius={[6, 6, 0, 0]} cursor="pointer" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Category Breakdown Pie Chart */}
-        <div className="card-surface p-5 dark:bg-slate-900/80 dark:border-slate-800">
-          <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
-            Expense Breakdown ({MONTH_NAMES[selectedMonth]})
-          </h3>
-          {pieData.length === 0 ? (
-            <div className="flex items-center justify-center h-[280px] text-slate-400 text-sm">
-              No expenses recorded for {MONTH_NAMES[selectedMonth]} {selectedYear}
+        <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Expense Breakdown</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{MONTH_NAMES[selectedMonth]} {selectedYear} — by category</p>
+              </div>
+              <span className="rounded-full bg-indigo-100 dark:bg-indigo-950/60 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">Pie View</span>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <RechartsPieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}>
-                  {pieData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
-                </Pie>
-                <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
-              </RechartsPieChart>
-            </ResponsiveContainer>
-          )}
+          </div>
+          <div className="p-5">
+            {pieData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[280px] gap-2 text-slate-400">
+                <PieChart size={36} className="opacity-30" />
+                <p className="text-sm">No expenses for {MONTH_NAMES[selectedMonth]} {selectedYear}</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <RechartsPieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`} labelLine={{ stroke: '#94a3b8' }}>
+                    {pieData.map((entry, i) => (<Cell key={i} fill={entry.color} />))}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => formatCurrency(Number(value || 0))} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }} />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
       </div>
 

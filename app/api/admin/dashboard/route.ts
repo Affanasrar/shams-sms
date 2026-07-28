@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
             ? `${details.studentName} enrolled in ${details.courseName || 'course'}`
             : `New enrollment created`
         } else {
-          message = `${log.action.replace(/_/g, ' ')} on ${log.entity}`
+          message = `${log.action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase())} — ${log.entity}`
         }
 
         const date = new Date(log.createdAt)

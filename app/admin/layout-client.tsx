@@ -52,19 +52,22 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   return (
     <>
       {/* Mobile Topbar */}
-      <header className="md:hidden fixed top-0 left-0 right-0 bg-slate-950 text-white z-30">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-slate-950 text-white z-30 border-b border-white/10">
+        <div className="flex items-center justify-between px-3 py-2.5">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => setDrawerOpen(true)}
-              className="p-2 rounded-lg hover:bg-white/10 -ml-2"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 active:scale-95"
               aria-label="Open menu"
             >
-              <Menu size={20} />
+              <Menu size={19} />
             </button>
+            {/* Show active page name */}
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">S</div>
-              <span className="font-semibold text-sm">SHAMS Admin</span>
+              <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center text-white font-bold text-[11px] shrink-0">S</div>
+              <span className="font-semibold text-sm text-white leading-none">
+                {ALL_NAV.flatMap(g => g.items).find(i => isActive(i.href))?.label ?? 'SHAMS Admin'}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">

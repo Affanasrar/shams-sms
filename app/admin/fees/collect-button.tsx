@@ -57,7 +57,7 @@ export function CollectButton({ feeId, adminId, remainingAmount }: { feeId: stri
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
-          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/5">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10">
             <div className="bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -78,23 +78,23 @@ export function CollectButton({ feeId, adminId, remainingAmount }: { feeId: stri
             </div>
 
             <div className="space-y-5 px-6 py-6">
-              <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3">
+              <div className="grid gap-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Remaining</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">{formatCurrency(remainingAmount)}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Remaining</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{formatCurrency(remainingAmount)}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Status</p>
-                  <p className="mt-1 text-lg font-semibold text-emerald-700">Ready to collect</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Status</p>
+                  <p className="mt-1 text-lg font-semibold text-emerald-700 dark:text-emerald-400">Ready to collect</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Mode</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-900">Partial or full</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Mode</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Partial or full</p>
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-900">Payment amount</label>
+                <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">Payment amount</label>
                 <input
                   type="number"
                   step="0.01"
@@ -103,20 +103,20 @@ export function CollectButton({ feeId, adminId, remainingAmount }: { feeId: stri
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   placeholder="Enter amount"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   autoFocus
                 />
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Quick amounts</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Quick amounts</p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {quickAmounts.map((amount) => (
                     <button
                       key={amount}
                       type="button"
                       onClick={() => setPaymentAmount(amount.toString())}
-                      className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                      className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                     >
                       {formatCurrency(amount)}
                     </button>
@@ -135,13 +135,13 @@ export function CollectButton({ feeId, adminId, remainingAmount }: { feeId: stri
                 <button 
                   type="button"
                   onClick={closeModal}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   Cancel
                 </button>
               </div>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 This will update the fee status immediately and record the transaction.
               </p>
             </div>
