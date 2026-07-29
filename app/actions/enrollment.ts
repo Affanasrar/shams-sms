@@ -4,7 +4,8 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getCurrentFeeForCourse } from '@/lib/course-fees'
-import { sendTextbeeSms } from '@/lib/textbee'
+import { generateFeeVoucherPdfBuffer } from '@/lib/pdf-helpers'
+import { sendSmartMessage, sendSmartDocument } from '@/lib/messaging'
 import { logAudit } from '@/lib/audit'
 
 function getErrorMessage(error: unknown): string {
@@ -103,20 +104,29 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
     select: {
       id: true,
       name: true,
+      fatherName: true,
       phone: true,
       studentId: true
     }
   })
 
-  // Fetch enrollment with course and slot details for SMS
+  // Fetch enrollment with course, slot, and initial fee details for PDF Fee Voucher + Welcome Packet
   const enrollmentWithDetails = await prisma.enrollment.findUnique({
     where: { id: newEnrollment.id },
     include: {
       courseOnSlot: {
         include: {
           course: true,
-          slot: true
+          slot: {
+            include: {
+              room: true
+            }
+          }
         }
+      },
+      fees: {
+        orderBy: { dueDate: 'desc' },
+        take: 1
       }
     }
   })
@@ -124,39 +134,92 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
   if (student?.phone && enrollmentWithDetails) {
     const course = enrollmentWithDetails.courseOnSlot.course
     const slot = enrollmentWithDetails.courseOnSlot.slot
+    const roomName = slot.room?.name || 'Classroom'
+    const firstFee = enrollmentWithDetails.fees[0]
     
-    // Format time as HH:MM (e.g., "09:00 - 11:30") in Pakistan timezone
+    // Format time in Pakistan timezone
     const startTime = new Date(slot.startTime).toLocaleTimeString('en-PK', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
+      hour12: true,
       timeZone: 'Asia/Karachi'
     })
     const endTime = new Date(slot.endTime).toLocaleTimeString('en-PK', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
+      hour12: true,
+      timeZone: 'Asia/Karachi'
+    })
+    const joiningDateStr = new Date(enrollmentWithDetails.joiningDate).toLocaleDateString('en-PK', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
       timeZone: 'Asia/Karachi'
     })
 
-    const message = `Dear ${student.name}, welcome to Shams Commercial Institute. Your enrollment in ${course.name} at ${startTime} - ${endTime} is confirmed. We look forward to supporting your academic success.`
-    const smsResponse = await sendTextbeeSms(student.phone, message)
+    const welcomePacketCaption = `🎉 *WELCOME TO SHAMS COMMERCIAL INSTITUTE!*\n\nDear *${student.name}* (${student.studentId}),\nCongratulations on your admission! Your admission fee voucher is attached.\n\n📚 *Course:* ${course.name}\n⏰ *Class Timing:* ${startTime} - ${endTime} (${slot.days})\n📍 *Classroom:* ${roomName}\n📅 *Joining Date:* ${joiningDateStr}\n\n----------------------------------------\n📜 *INSTITUTE RULES & REGULATIONS:*\n1. 🎓 *Attendance:* Minimum 75% attendance is required for course completion & certificate.\n2. ⏰ *Punctuality:* Classes start on time. Late entry beyond 10 mins is strictly prohibited.\n3. 📱 *Mobile Phones:* Must be kept on silent mode during lectures and lab sessions.\n4. 💳 *Fee Due Date:* Monthly fees must be cleared on or before your specified due date.\n5. 💻 *Lab Protocol:* Computer equipment must be handled with care.\n\nWe wish you a successful learning journey!\n- Management, Shams Commercial Institute`
 
-    const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
-    const finalStatus = smsResponse.success
-      ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
-      : 'FAILED'
+    let msgResponse
+
+    if (firstFee) {
+      try {
+        const cycleMonth = new Date(firstFee.cycleDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Karachi' })
+        const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Karachi' })
+        const dueDateStr = new Date(firstFee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Karachi' })
+
+        const pdfBuffer = await generateFeeVoucherPdfBuffer({
+          voucherNo: `VCH-${firstFee.id.slice(0, 8).toUpperCase()}`,
+          issueDate: todayStr,
+          dueDate: dueDateStr,
+          cycleMonth: cycleMonth,
+          student: {
+            studentId: student.studentId,
+            name: student.name,
+            fatherName: student.fatherName || 'N/A',
+            phone: student.phone,
+          },
+          course: {
+            name: course.name,
+            timing: `${slot.days} (${startTime} - ${endTime})`,
+            room: roomName,
+          },
+          financials: {
+            baseAmount: Number(firstFee.amount),
+            discountAmount: Number(firstFee.discountAmount || 0),
+            rolloverAmount: Number(firstFee.rolloverAmount || 0),
+            finalAmount: Number(firstFee.finalAmount),
+            paidAmount: Number(firstFee.paidAmount),
+            remainingAmount: Number(firstFee.finalAmount) - Number(firstFee.paidAmount),
+          },
+          institution: {
+            name: 'Shams Commercial Institute',
+            address: 'Main Campus, Commercial Area',
+            phone: '+92 300 1234567',
+          },
+        })
+
+        const fileName = `Admission_Fee_Voucher_${student.studentId}.pdf`
+
+        // Send PDF Voucher + Welcome Packet Caption via WhatsApp / SMS fallback
+        msgResponse = await sendSmartDocument(student.phone, pdfBuffer, fileName, welcomePacketCaption)
+      } catch (pdfErr) {
+        console.error('Admission PDF voucher generation error:', pdfErr)
+        msgResponse = await sendSmartMessage(student.phone, welcomePacketCaption, 'SMART')
+      }
+    } else {
+      msgResponse = await sendSmartMessage(student.phone, welcomePacketCaption, 'SMART')
+    }
 
     await prisma.smsMessage.create({
       data: {
         studentId: student.id,
         phoneNumber: student.phone,
-        message,
+        message: `[Admission PDF Voucher & Welcome Packet] ${welcomePacketCaption}`,
         direction: 'OUTBOUND',
-        status: finalStatus,
-        textbeeId: smsResponse.textbeeId || null,
-        errorMsg: smsResponse.error || null,
-        sentAt: smsResponse.success ? new Date() : null
+        status: msgResponse.success ? 'SENT' : 'FAILED',
+        textbeeId: msgResponse.id || null,
+        errorMsg: msgResponse.error || null,
+        sentAt: msgResponse.success ? new Date() : null
       }
     })
   }

@@ -2,12 +2,13 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import prisma from '@/lib/prisma'
-import { sendTextbeeSms } from '@/lib/textbee'
+import { sendSmartMessage, PreferredChannel } from '@/lib/messaging'
 import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 const BulkSmsSchema = z.object({
   studentIds: z.array(z.string().uuid()).min(1, 'At least one student must be selected'),
-  customMessage: z.string().optional().default('')
+  customMessage: z.string().optional().default(''),
+  channel: z.enum(['SMART', 'WHATSAPP', 'SMS']).optional().default('SMART')
 })
 
 export async function POST(request: Request) {
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
 
     const studentIds = Array.from(new Set(parsed.data.studentIds))
     const customMessage = parsed.data.customMessage.trim()
+    const preferredChannel = parsed.data.channel as PreferredChannel
 
     if (studentIds.length === 0) {
       return NextResponse.json(
@@ -116,11 +118,8 @@ export async function POST(request: Request) {
           continue
         }
 
-        const smsResponse = await sendTextbeeSms(student.phone, message)
-        const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
-        const finalStatus = smsResponse.success
-          ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
-          : 'FAILED'
+        const msgResponse = await sendSmartMessage(student.phone, message, preferredChannel)
+        const finalStatus = msgResponse.success ? 'SENT' : 'FAILED'
 
         await prisma.smsMessage.create({
           data: {
@@ -129,16 +128,24 @@ export async function POST(request: Request) {
             message,
             direction: 'OUTBOUND',
             status: finalStatus,
-            textbeeId: smsResponse.textbeeId || null,
-            errorMsg: smsResponse.error || null,
-            sentAt: smsResponse.success ? new Date() : null
+            textbeeId: msgResponse.id || null,
+            errorMsg: msgResponse.error || null,
+            sentAt: msgResponse.success ? new Date() : null
           }
         })
 
+        const channelLabel = msgResponse.channelUsed === 'WHATSAPP'
+          ? 'WhatsApp'
+          : msgResponse.channelUsed === 'SMS_FALLBACK'
+          ? 'SMS (Fallback)'
+          : 'SMS'
+
         results.push({
           studentId: student.id,
-          success: smsResponse.success,
-          message: smsResponse.success ? 'SMS sent successfully' : `Failed to send SMS: ${smsResponse.error || 'Unknown error'}`
+          success: msgResponse.success,
+          message: msgResponse.success
+            ? `Message sent via ${channelLabel}`
+            : `Failed: ${msgResponse.error || 'Unknown error'}`
         })
 
       } catch (error) {

@@ -3,7 +3,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { sendTextbeeSms } from '@/lib/textbee'
+import { sendSmartMessage } from '@/lib/messaging'
 import { logAudit } from '@/lib/audit'
 
 export async function collectFee(feeId: string, adminId: string, paymentAmount?: number) {
@@ -73,7 +73,7 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
       }
     })
 
-    return { fee: result, amountPaid: amountToPay }
+    return { fee: result, amountPaid: amountToPay, newRemainingAmount }
   }).catch((error: Error) => {
     return { error: error.message }
   })
@@ -83,7 +83,7 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
     return { success: false, error: updatedFee.error }
   }
 
-  // Send SMS for any payment event
+  // Send Instant WhatsApp Payment Receipt
   const feeData = updatedFee.fee
   if (feeData && feeData.student?.phone) {
     const student = feeData.student
@@ -95,24 +95,20 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
     })
 
     if (course) {
-      const message = `Dear ${student.name}, we have received your payment of PKR ${updatedFee.amountPaid} for ${course.name} on ${paymentDate}. Thank you for choosing Shams Commercial Institute.`
-      const smsResponse = await sendTextbeeSms(student.phone, message)
+      const receiptMessage = `🧾 *PAYMENT RECEIPT — SHAMS COMMERCIAL INSTITUTE*\n\nDear *${student.name}* (${student.studentId}),\nWe have successfully received your fee payment. Thank you!\n\n▪ *Amount Paid:* PKR ${updatedFee.amountPaid.toLocaleString()}\n▪ *Course:* ${course.name}\n▪ *Remaining Balance:* PKR ${updatedFee.newRemainingAmount.toLocaleString()}\n▪ *Payment Date:* ${paymentDate}\n\nThank you for choosing Shams Commercial Institute!`
 
-      const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
-      const finalStatus = smsResponse.success
-        ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
-        : 'FAILED'
+      const msgResponse = await sendSmartMessage(student.phone, receiptMessage, 'SMART')
 
       await prisma.smsMessage.create({
         data: {
           studentId: student.id,
           phoneNumber: student.phone,
-          message,
+          message: receiptMessage,
           direction: 'OUTBOUND',
-          status: finalStatus,
-          textbeeId: smsResponse.textbeeId || null,
-          errorMsg: smsResponse.error || null,
-          sentAt: smsResponse.success ? new Date() : null
+          status: msgResponse.success ? 'SENT' : 'FAILED',
+          textbeeId: msgResponse.id || null,
+          errorMsg: msgResponse.error || null,
+          sentAt: msgResponse.success ? new Date() : null
         }
       })
     }

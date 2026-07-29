@@ -201,7 +201,7 @@ export function FeesDashboard({ courses }: Props) {
             </label>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {!useCustomDateRange ? (
               <>
                 <div>
@@ -359,101 +359,74 @@ export function FeesDashboard({ courses }: Props) {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+            <div className="w-full">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider">
                   <tr>
-                    <th className="px-6 py-3">Student ID</th>
-                    <th className="px-6 py-3">Student Name</th>
-                    <th className="px-6 py-3">Courses</th>
-                    <th className="px-6 py-3">Timing / Lab</th>
-                    <th className="px-6 py-3">Due Date</th>
-                    <th className="px-6 py-3">Total Amount</th>
-                    <th className="px-6 py-3">Paid Amount</th>
-                    <th className="px-6 py-3">Pending Amount</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3 text-center">Action</th>
+                    <th className="px-3.5 py-3">Student Info</th>
+                    <th className="px-3.5 py-3">Courses & Timings</th>
+                    <th className="px-3.5 py-3 whitespace-nowrap">Due Date</th>
+                    <th className="px-3.5 py-3">Financials</th>
+                    <th className="px-3.5 py-3 whitespace-nowrap">Status</th>
+                    <th className="px-3.5 py-3 text-right whitespace-nowrap">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {feesData.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((fee, index) => (
                     <tr key={`${fee.studentId}-${index}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                      <td className="px-6 py-4 font-mono text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                        {fee.studentId}
+                      {/* Student Info */}
+                      <td className="px-3.5 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/40">
+                            {fee.studentId}
+                          </span>
+                          <span className="font-semibold text-slate-900 dark:text-white">{fee.studentName}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">s/o {fee.fatherName}</div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                        {fee.studentName}
-                        <div className="text-xs text-slate-500 dark:text-slate-400">s/o {fee.fatherName}</div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                        <div className="flex flex-col gap-1">
-                          {fee.courses.length > 2 ? (
-                            <>
-                              {fee.courses.slice(0, 2).map((course) => (
-                                <div key={course.id} className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">
-                                  {course.name}
-                                </div>
-                              ))}
-                              <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                                +{fee.courses.length - 2} more
-                              </div>
-                            </>
-                          ) : (
-                            fee.courses.map((course) => (
-                              <div key={course.id} className="text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded">
-                                {course.name}
-                              </div>
-                            ))
-                          )}
+
+                      {/* Courses & Timings */}
+                      <td className="px-3.5 py-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {fee.courses.map((course) => (
+                            <span key={course.id} className="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md font-medium border border-slate-200 dark:border-slate-700">
+                              {course.name}
+                            </span>
+                          ))}
+                          {fee.timingSlots.map((slot) => (
+                            <span key={slot} className="text-[11px] text-slate-500 dark:text-slate-400">
+                              • {slot}
+                            </span>
+                          ))}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                        <div className="flex flex-col gap-1">
-                          {fee.timingSlots.length > 1 ? (
-                            <>
-                              {fee.timingSlots.slice(0, 2).map((slot) => (
-                                <div key={slot} className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-300">
-                                  {slot}
-                                </div>
-                              ))}
-                              <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                                +{fee.timingSlots.length - 2} more
-                              </div>
-                            </>
-                          ) : (
-                            fee.timingSlots.map((slot) => (
-                              <div key={slot} className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-300">
-                                {slot}
-                              </div>
-                            ))
-                          )}
+
+                      {/* Due Date */}
+                      <td className="px-3.5 py-3 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                      </td>
+
+                      {/* Financial Summary */}
+                      <td className="px-3.5 py-3">
+                        <div className="font-mono text-xs flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="font-semibold text-slate-900 dark:text-white">PKR {fee.totalAmount.toLocaleString()}</span>
+                          {fee.paidAmount > 0 && <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Paid: {fee.paidAmount.toLocaleString()}</span>}
+                          {fee.pendingAmount > 0 && <span className="text-rose-600 dark:text-rose-400 font-semibold">Due: {fee.pendingAmount.toLocaleString()}</span>}
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-semibold text-rose-600 dark:text-rose-400">
-                        {fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        }) : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-slate-900 dark:text-white">
-                        PKR {fee.totalAmount.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                        PKR {fee.paidAmount.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-rose-600 dark:text-rose-400 font-semibold">
-                        PKR {fee.pendingAmount.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(fee.status)}`}>
+
+                      {/* Status */}
+                      <td className="px-3.5 py-3 whitespace-nowrap">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${getStatusBadge(fee.status)}`}>
                           {fee.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center">
+
+                      {/* Action */}
+                      <td className="px-3.5 py-3 text-right whitespace-nowrap">
                         <a
                           href={`/admin/fees?studentId=${fee.studentDbId}`}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl transition font-medium text-xs inline-block"
+                          className="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl transition font-semibold text-xs shadow-sm"
                         >
                           Collect Fee
                         </a>
@@ -463,7 +436,7 @@ export function FeesDashboard({ courses }: Props) {
 
                   {feesData.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="p-8 text-center text-slate-500 dark:text-slate-400">
+                      <td colSpan={6} className="p-8 text-center text-slate-500 dark:text-slate-400">
                         No fees data found for the selected filters.
                       </td>
                     </tr>

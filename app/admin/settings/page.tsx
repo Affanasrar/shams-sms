@@ -4,6 +4,7 @@ import { SettingsForms } from './settings-forms'
 import { ReportFormatConfig } from './report-format-config'
 import Link from 'next/link'
 import { PageLayout, PageHeader } from '@/components/ui'
+import { WhatsAppConfig } from './whatsapp-config'
 export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
@@ -38,12 +39,15 @@ export default async function SettingsPage() {
     <PageLayout>
       <PageHeader
         title="Master Data Configuration"
-        description="Define structure, courses, and assign teachers"
+        description="Define structure, courses, assign teachers, and manage WhatsApp/SMS gateways"
         backHref="/admin"
         backLabel="Back to Dashboard"
       />
 
       <div className="space-y-8">
+        {/* WhatsApp & SMS Gateway Manager */}
+        <WhatsAppConfig />
+
         {/* Pass 'teachers' to the form */}
         <SettingsForms rooms={rooms} courses={courses} slots={slots} teachers={teachers} />
 

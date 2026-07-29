@@ -1,7 +1,8 @@
-// app/api/cron/fees-reminder/route.ts
+// app/api/cron/fees-reminder/route.tsx
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { sendTextbeeSms } from '@/lib/textbee'
+import { generateFeeVoucherPdfBuffer } from '@/lib/pdf-helpers'
+import { sendSmartMessage, sendSmartDocument } from '@/lib/messaging'
 
 function getWeekString(date: Date): string {
   const year = date.getFullYear()
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('⏳ Daily Fee Reminder Cron Started: checking unpaid fees and sending SMS reminders...')
+    console.log('⏳ Daily Fee Reminder Cron Started: checking unpaid fees and sending smart vouchers/reminders...')
 
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -36,7 +37,17 @@ export async function GET(request: NextRequest) {
         }
       },
       include: {
-        student: true
+        student: true,
+        enrollment: {
+          include: {
+            courseOnSlot: {
+              include: {
+                course: true,
+                slot: { include: { room: true } }
+              }
+            }
+          }
+        }
       },
       orderBy: {
         dueDate: 'asc'
@@ -45,33 +56,24 @@ export async function GET(request: NextRequest) {
 
     console.log(`📊 Found ${overdueFees.length} unpaid/overdue fee records as of ${todayString}`)
 
-    const feesByStudent = new Map<string, { student: { id: string; name: string; studentId: string; phone: string }; fees: Array<{ id: string; finalAmount: string; paidAmount: string; dueDate: Date }> }>()
+    const feesByStudent = new Map<string, { student: { id: string; name: string; fatherName: string; studentId: string; phone: string }; fees: Array<typeof overdueFees[number]> }>()
 
     for (const fee of overdueFees) {
       const studentId = fee.student.id
       const existing = feesByStudent.get(studentId)
 
       if (existing) {
-        existing.fees.push({
-          id: fee.id,
-          finalAmount: fee.finalAmount.toString(),
-          paidAmount: fee.paidAmount.toString(),
-          dueDate: fee.dueDate
-        })
+        existing.fees.push(fee)
       } else {
         feesByStudent.set(studentId, {
           student: {
             id: fee.student.id,
             name: fee.student.name,
+            fatherName: fee.student.fatherName,
             studentId: fee.student.studentId,
             phone: fee.student.phone
           },
-          fees: [{
-            id: fee.id,
-            finalAmount: fee.finalAmount.toString(),
-            paidAmount: fee.paidAmount.toString(),
-            dueDate: fee.dueDate
-          }]
+          fees: [fee]
         })
       }
     }
@@ -84,6 +86,7 @@ export async function GET(request: NextRequest) {
     for (const entry of feesByStudent.values()) {
       const { student, fees } = entry
       const feeIds = fees.map(f => f.id)
+      const primaryFee = fees[0]
       const totalOutstanding = fees.reduce((sum, fee) => {
         return sum + (Number(fee.finalAmount) - Number(fee.paidAmount))
       }, 0)
@@ -91,6 +94,8 @@ export async function GET(request: NextRequest) {
       const earliestDueDate = fees.reduce((earliest, fee) => {
         return fee.dueDate < earliest ? fee.dueDate : earliest
       }, fees[0].dueDate)
+
+      const isFirstDayDue = earliestDueDate.toDateString() === today.toDateString()
       const dueDateString = earliestDueDate.toISOString().split('T')[0]
 
       const message = `Dear ${student.name},
@@ -112,7 +117,7 @@ Shams Commercial Institute`
         skipped = true
         status = 'SKIPPED'
         errorMessage = 'No phone number available'
-        console.log(`⚠️ Skipping SMS for ${student.name} (${student.studentId}): no phone number.`)
+        console.log(`⚠️ Skipping fee reminder for ${student.name} (${student.studentId}): no phone number.`)
 
         await prisma.smsMessage.create({
           data: {
@@ -127,34 +132,85 @@ Shams Commercial Institute`
           }
         })
       } else {
-        const smsResponse = await sendTextbeeSms(student.phone, message)
-        const validStatuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED'] as const
-        const finalStatus = smsResponse.success
-          ? (smsResponse.status && validStatuses.includes(smsResponse.status) ? smsResponse.status : 'SENT')
-          : 'FAILED'
+        let msgResponse
+
+        // If today is the very first day due, generate and send the PDF Voucher!
+        if (isFirstDayDue && primaryFee) {
+          try {
+            const cycleMonth = new Date(primaryFee.cycleDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Karachi' })
+            const courseName = primaryFee.enrollment?.courseOnSlot?.course?.name || 'Course Fee'
+            const slot = primaryFee.enrollment?.courseOnSlot?.slot
+            const formatTime = (d: Date) => new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })
+            const timingStr = slot ? `${slot.days} (${formatTime(slot.startTime)} - ${formatTime(slot.endTime)})` : 'Scheduled Timing'
+            const roomName = slot?.room?.name || 'Classroom'
+
+            const pdfBuffer = await generateFeeVoucherPdfBuffer({
+              voucherNo: `VCH-${primaryFee.id.slice(0, 8).toUpperCase()}`,
+              issueDate: todayString,
+              dueDate: dueDateString,
+              cycleMonth: cycleMonth,
+              student: {
+                studentId: student.studentId,
+                name: student.name,
+                fatherName: student.fatherName,
+                phone: student.phone,
+              },
+              course: {
+                name: courseName,
+                timing: timingStr,
+                room: roomName,
+              },
+              financials: {
+                baseAmount: Number(primaryFee.amount),
+                discountAmount: Number(primaryFee.discountAmount || 0),
+                rolloverAmount: Number(primaryFee.rolloverAmount || 0),
+                finalAmount: Number(primaryFee.finalAmount),
+                paidAmount: Number(primaryFee.paidAmount),
+                remainingAmount: totalOutstanding,
+              },
+              institution: {
+                name: 'Shams Commercial Institute',
+                address: 'Main Campus, Commercial Area',
+                phone: '+92 300 1234567',
+              },
+            })
+            const fileName = `Fee_Voucher_${student.studentId}_${cycleMonth.replace(/\s+/g, '_')}.pdf`
+            const caption = `Dear ${student.name}, attached is your official Fee Voucher for ${cycleMonth}. Net Balance Due: PKR ${totalOutstanding.toLocaleString()}. Due Date: ${dueDateString}. Please pay on time. - Shams Commercial Institute`
+
+            msgResponse = await sendSmartDocument(student.phone, pdfBuffer, fileName, caption)
+          } catch (pdfErr) {
+            console.error(`PDF generation error for ${student.name}:`, pdfErr)
+            msgResponse = await sendSmartMessage(student.phone, message, 'SMART')
+          }
+        } else {
+          // Regular text reminder for ongoing overdue days
+          msgResponse = await sendSmartMessage(student.phone, message, 'SMART')
+        }
+
+        const finalStatus = msgResponse.success ? 'SENT' : 'FAILED'
 
         status = finalStatus
-        success = smsResponse.success
+        success = msgResponse.success
 
-        if (smsResponse.success) {
+        if (msgResponse.success) {
           remindersSent++
-          console.log(`✅ SMS reminder sent to ${student.name} (${student.phone}) for outstanding PKR ${totalOutstanding}`)
+          console.log(`✅ Smart fee reminder sent via ${msgResponse.channelUsed} to ${student.name} (${student.phone})`)
         } else {
           remindersFailed++
-          errorMessage = smsResponse.error || 'Textbee SMS send failed'
-          console.error(`❌ Failed to send SMS reminder to ${student.name} (${student.phone}): ${errorMessage}`)
+          errorMessage = msgResponse.error || 'Smart message dispatch failed'
+          console.error(`❌ Failed to send smart fee reminder to ${student.name} (${student.phone}): ${errorMessage}`)
         }
 
         await prisma.smsMessage.create({
           data: {
             studentId: student.id,
             phoneNumber: student.phone,
-            message,
+            message: isFirstDayDue ? `[PDF Fee Voucher] ${message}` : message,
             direction: 'OUTBOUND',
             status: finalStatus,
-            textbeeId: smsResponse.textbeeId || null,
-            errorMsg: smsResponse.error || null,
-            sentAt: smsResponse.success ? new Date() : null
+            textbeeId: msgResponse.id || null,
+            errorMsg: errorMessage,
+            sentAt: msgResponse.success ? new Date() : null
           }
         })
       }

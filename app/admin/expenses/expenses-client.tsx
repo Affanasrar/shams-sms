@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { createExpense, deleteExpense } from '@/app/actions/expenses'
+import { FinancialCharts } from '@/components/dashboard/financial-charts'
 import {
   DollarSign, TrendingUp, TrendingDown, PieChart, Plus, Trash2,
   Receipt, ArrowUpRight, ArrowDownRight, X, Calendar, Filter, ChevronDown, ChevronRight
@@ -167,6 +168,9 @@ export default function ExpensesClient({ initialExpenses, initialSummary }: Prop
           {message.text}
         </div>
       )}
+
+      {/* Interactive Financial & Expenses Analytics */}
+      <FinancialCharts />
 
       {/* Month & Year Selection Bar */}
       <div className="card-surface p-4 flex flex-col md:flex-row items-center justify-between gap-4 dark:bg-slate-900/80 dark:border-slate-800">

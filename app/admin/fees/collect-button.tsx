@@ -30,6 +30,10 @@ export function CollectButton({ feeId, adminId, remainingAmount }: { feeId: stri
       return
     }
 
+    if (!window.confirm(`Are you sure you want to collect PKR ${amount.toLocaleString()} for this fee?`)) {
+      return
+    }
+
     setLoading(true)
     const result = await collectFee(feeId, adminId, amount)
     if (!result.success) {

@@ -59,6 +59,7 @@ export function SmsSender({ students, courseSlots, onSent }: Props) {
   const [selectedCourseSlot, setSelectedCourseSlot] = useState('')
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [channel, setChannel] = useState<'SMART' | 'WHATSAPP' | 'SMS'>('SMART')
 
   const uniqueCourses = useMemo(
     () =>
@@ -158,7 +159,7 @@ export function SmsSender({ students, courseSlots, onSent }: Props) {
       const res = await fetch('/api/admin/sms/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentIds: selectedStudents, customMessage: customMessage.trim() }),
+        body: JSON.stringify({ studentIds: selectedStudents, customMessage: customMessage.trim(), channel }),
       })
       const data = await res.json().catch(() => ({ error: 'Unknown error' }))
       if (res.ok) {
@@ -289,7 +290,7 @@ export function SmsSender({ students, courseSlots, onSent }: Props) {
               )}
             </div>
 
-            <div className="p-5 grid gap-4 sm:grid-cols-2">
+            <div className="p-5 grid gap-4 sm:grid-cols-3">
               {/* Course select */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Course</label>
@@ -327,6 +328,23 @@ export function SmsSender({ students, courseSlots, onSent }: Props) {
                     ))}
                   </select>
                   <ChevronDown size={15} className="pointer-events-none absolute right-3.5 top-3.5 text-slate-400" />
+                </div>
+              </div>
+
+              {/* Channel select */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Delivery Channel</label>
+                <div className="relative">
+                  <select
+                    value={channel}
+                    onChange={e => setChannel(e.target.value as any)}
+                    className="w-full appearance-none rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/40 px-4 py-3 pr-10 text-sm font-semibold text-indigo-900 dark:text-indigo-200 outline-none transition focus:border-indigo-500"
+                  >
+                    <option value="SMART">⚡ WA First → SMS Fallback</option>
+                    <option value="WHATSAPP">💬 WhatsApp Only</option>
+                    <option value="SMS">📱 Textbee SMS Only</option>
+                  </select>
+                  <ChevronDown size={15} className="pointer-events-none absolute right-3.5 top-3.5 text-indigo-500" />
                 </div>
               </div>
             </div>

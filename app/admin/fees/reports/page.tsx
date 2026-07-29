@@ -8,11 +8,11 @@ import { FeesReportTable, FeeRow } from '@/components/fees/fees-report-table'
 import { subDays } from 'date-fns'
 
 interface ReportsPageProps {
-  searchParams: { start?: string; end?: string }
+  searchParams: Promise<{ start?: string; end?: string }>
 }
 
-export default async function FeesReportsPage({ searchParams }: ReportsPageProps) {
-  // determine date range, default last 30 days
+export default async function FeesReportsPage(props: ReportsPageProps) {
+  const searchParams = await props.searchParams
   const now = new Date()
   const startDate = searchParams.start ? new Date(searchParams.start as string) : subDays(now, 30)
   const endDate = searchParams.end ? new Date(searchParams.end as string) : now
@@ -47,141 +47,142 @@ export default async function FeesReportsPage({ searchParams }: ReportsPageProps
   }))
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header Section */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
               href="/admin/fees/dashboard"
-              className="group flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="group flex items-center justify-center w-12 h-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200"
             >
-              <ArrowLeft size={20} className="text-gray-600 group-hover:text-gray-900 transition-colors" />
+              <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
                 Fees Reports
               </h1>
-              <p className="text-gray-600 mt-1">Generate comprehensive PDF reports for fees management</p>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">Generate comprehensive PDF reports for fees management</p>
             </div>
           </div>
           <DateRangePicker />
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-2xl font-bold text-gray-900">{students.length}</p>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Students</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{students.length}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <Users size={24} className="text-blue-600" />
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/60 rounded-2xl border border-blue-100 dark:border-blue-900/40">
+                <Users size={24} className="text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Courses</p>
-                <p className="text-2xl font-bold text-gray-900">{courses.length}</p>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Courses</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{courses.length}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-xl">
-                <BookOpen size={24} className="text-green-600" />
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
+                <BookOpen size={24} className="text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Report Types</p>
-                <p className="text-2xl font-bold text-gray-900">4</p>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Report Types</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">4</p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-xl">
-                <FileText size={24} className="text-purple-600" />
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/60 rounded-2xl border border-purple-100 dark:border-purple-900/40">
+                <FileText size={24} className="text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Generated Today</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Billed Records</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{fees.length}</p>
               </div>
-              <div className="p-3 bg-orange-100 rounded-xl">
-                <TrendingUp size={24} className="text-orange-600" />
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/60 rounded-2xl border border-amber-100 dark:border-amber-900/40">
+                <TrendingUp size={24} className="text-amber-600 dark:text-amber-400" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Data table section */}
-        <div className="mb-8">
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Fee Records in Selected Range</h2>
           <FeesReportTable data={feeData} />
         </div>
 
         {/* Report Types Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <div className="group bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="group bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl shadow-lg transition-all hover:scale-[1.02]">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Calendar size={28} className="text-white" />
+              <div className="p-3 bg-white/15 backdrop-blur-md rounded-2xl">
+                <Calendar size={24} className="text-white" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-lg">Monthly Report</h3>
-                <p className="text-blue-100 text-sm">Fees for a specific month</p>
+                <p className="text-blue-100 text-xs">Fees for a specific month</p>
               </div>
             </div>
-            <p className="text-blue-50 text-sm leading-relaxed">
+            <p className="text-blue-100/80 text-xs leading-relaxed">
               Generate detailed report showing all fees collected and pending for any month
             </p>
           </div>
 
-          <div className="group bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer">
+          <div className="group bg-gradient-to-br from-emerald-600 to-teal-700 p-6 rounded-3xl shadow-lg transition-all hover:scale-[1.02]">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Users size={28} className="text-white" />
+              <div className="p-3 bg-white/15 backdrop-blur-md rounded-2xl">
+                <Users size={24} className="text-white" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-lg">Student Report</h3>
-                <p className="text-green-100 text-sm">Individual student fees</p>
+                <p className="text-emerald-100 text-xs">Individual student fees</p>
               </div>
             </div>
-            <p className="text-green-50 text-sm leading-relaxed">
+            <p className="text-emerald-100/80 text-xs leading-relaxed">
               Complete fee history and payment details for a specific student
             </p>
           </div>
 
-          <div className="group bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer">
+          <div className="group bg-gradient-to-br from-purple-600 to-violet-700 p-6 rounded-3xl shadow-lg transition-all hover:scale-[1.02]">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <BookOpen size={28} className="text-white" />
+              <div className="p-3 bg-white/15 backdrop-blur-md rounded-2xl">
+                <BookOpen size={24} className="text-white" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-lg">Course Report</h3>
-                <p className="text-purple-100 text-small">Fees by course</p>
+                <p className="text-purple-100 text-xs">Fees by course</p>
               </div>
             </div>
-            <p className="text-purple-50 text-sm leading-relaxed">
+            <p className="text-purple-100/80 text-xs leading-relaxed">
               Fee collection summary and details for all students in a course
             </p>
           </div>
 
-          <div className="group bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer">
+          <div className="group bg-gradient-to-br from-amber-600 to-orange-700 p-6 rounded-3xl shadow-lg transition-all hover:scale-[1.02]">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                <Building size={28} className="text-white" />
+              <div className="p-3 bg-white/15 backdrop-blur-md rounded-2xl">
+                <Building size={24} className="text-white" />
               </div>
               <div>
                 <h3 className="font-bold text-white text-lg">Overall Report</h3>
-                <p className="text-orange-100 text-sm">Complete institution</p>
+                <p className="text-amber-100 text-xs">Complete institution</p>
               </div>
             </div>
-            <p className="text-orange-50 text-sm leading-relaxed">
+            <p className="text-amber-100/80 text-xs leading-relaxed">
               Comprehensive report covering all fees, courses, and students
             </p>
           </div>

@@ -165,7 +165,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
 
       {/* Main Content */}
       <main
-        className="flex-1 min-h-screen transition-all duration-300 ease-in-out pt-14 md:pt-0 pb-20 md:pb-0 bg-slate-100/80 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+        className="flex-1 min-h-screen max-w-full overflow-x-hidden transition-all duration-300 ease-in-out pt-14 md:pt-0 pb-20 md:pb-0 bg-slate-100/80 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
         style={{
           marginLeft: 'var(--sidebar-width, 256px)',
         }}
@@ -176,7 +176,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
             main { margin-left: 0 !important; }
           }
         `}</style>
-        <div className="p-4 md:p-8 w-full">
+        <div className="p-4 md:p-8 w-full max-w-full overflow-x-hidden">
           {children}
         </div>
       </main>

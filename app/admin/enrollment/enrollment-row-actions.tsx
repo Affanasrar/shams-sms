@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Clock, Trash2, X, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { dropStudent, changeEnrollmentTiming, restoreEnrollment } from '@/app/actions/enrollment'
 
@@ -49,6 +50,11 @@ export function EnrollmentRowActions({
   const [state, setState] = useState<ActionState>(initialState)
   const [isLoading, setIsLoading] = useState(false)
   const [showRefundModal, setShowRefundModal] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const isDropped = status === 'DROPPED'
 
@@ -87,7 +93,6 @@ export function EnrollmentRowActions({
     }
   }
 
-  // Filter available slots to exclude current slot
   const otherAvailableSlots = availableSlotsForCourse.filter(
     slot => slot.id !== currentCourseOnSlotId
   )
@@ -131,102 +136,116 @@ export function EnrollmentRowActions({
             </button>
           </form>
         ) : (
-          <>
-            <button
-              onClick={() => {
-                if (confirm("Are you sure you want to drop this student? This action cannot be undone.")) {
-                  setShowRefundModal(true)
-                }
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 text-xs font-medium text-rose-600 transition-all hover:border-rose-600 hover:bg-rose-600 hover:text-white dark:text-rose-400 dark:hover:bg-rose-600 dark:hover:text-white"
-              title="Drop Student from Class"
-            >
-              <Trash2 size={14} /> Drop
-            </button>
-
-            {/* Drop / Refund Modal */}
-            {showRefundModal && (
-              <form
-                action={async (formData) => {
-                  await dropStudent(formData)
-                  setShowRefundModal(false)
-                }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-              >
-                <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-black/10 dark:ring-white/10">
-                  {/* Header */}
-                  <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950 px-6 py-5 text-white">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-500/20">
-                        <AlertCircle className="h-5 w-5 text-rose-300" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-white/60">Enrollment Action</p>
-                        <h3 className="mt-0.5 text-lg font-semibold">Drop Student</h3>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Body */}
-                  <div className="px-6 py-5 space-y-4">
-                    <p className="text-sm text-slate-700 dark:text-slate-300">
-                      <span className="font-semibold text-slate-900 dark:text-white">{studentName}</span> has unpaid or partial fees for this month. What should happen to those fees?
-                    </p>
-
-                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 space-y-2.5">
-                      <div className="flex items-start gap-2.5">
-                        <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                        <p className="text-xs text-slate-600 dark:text-slate-400">
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">Refund:</span> Delete current month fees so the student can re-enroll fresh.
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2.5">
-                        <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
-                        <p className="text-xs text-slate-600 dark:text-slate-400">
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">No Refund:</span> Keep fees on record — the balance remains owed after dropping.
-                        </p>
-                      </div>
-                    </div>
-
-                    <input type="hidden" name="enrollmentId" value={enrollmentId} />
-
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="submit"
-                        name="refund"
-                        value="true"
-                        className="flex-1 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                      >
-                        Refund Fees
-                      </button>
-                      <button
-                        type="submit"
-                        name="refund"
-                        value="false"
-                        className="flex-1 rounded-2xl bg-slate-700 dark:bg-slate-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:hover:bg-slate-500"
-                      >
-                        Keep Fees
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowRefundModal(false)}
-                        className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            )}
-          </>
+          <button
+            onClick={() => setShowRefundModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-1.5 text-xs font-medium text-rose-600 transition-all hover:border-rose-600 hover:bg-rose-600 hover:text-white dark:text-rose-400 dark:hover:bg-rose-600 dark:hover:text-white"
+            title="Drop Student from Class"
+          >
+            <Trash2 size={14} /> Drop
+          </button>
         )}
       </div>
 
-      {/* Change Timing Modal */}
-      {isTimingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-black/10 dark:ring-white/10">
+      {/* Drop / Refund Modal rendered via createPortal directly in document.body */}
+      {mounted && showRefundModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-slate-900/10 dark:ring-white/10">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950 px-6 py-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-500/20">
+                  <AlertCircle className="h-5 w-5 text-rose-300" />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-white/60">Enrollment Action</p>
+                  <h3 className="mt-0.5 text-lg font-semibold">Drop Student</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-slate-700 dark:text-slate-300">
+                Are you sure you want to drop <span className="font-semibold text-slate-900 dark:text-white">{studentName}</span> from <span className="font-semibold text-slate-900 dark:text-white">{courseName}</span>?
+              </p>
+
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4 space-y-2.5">
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Refund Fees:</span> Delete unpaid current month fees so the student leaves with zero debt.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Keep Fees:</span> Keep unpaid fees on record — student balance remains owed.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={async () => {
+                    setIsLoading(true)
+                    try {
+                      const formData = new FormData()
+                      formData.append('enrollmentId', enrollmentId)
+                      formData.append('refund', 'true')
+                      await dropStudent(formData)
+                      setShowRefundModal(false)
+                    } catch (err) {
+                      console.error(err)
+                    } finally {
+                      setIsLoading(false)
+                    }
+                  }}
+                  className="flex-1 rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {isLoading ? 'Processing…' : 'Refund Fees & Drop'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={async () => {
+                    setIsLoading(true)
+                    try {
+                      const formData = new FormData()
+                      formData.append('enrollmentId', enrollmentId)
+                      formData.append('refund', 'false')
+                      await dropStudent(formData)
+                      setShowRefundModal(false)
+                    } catch (err) {
+                      console.error(err)
+                    } finally {
+                      setIsLoading(false)
+                    }
+                  }}
+                  className="flex-1 rounded-2xl bg-amber-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {isLoading ? 'Processing…' : 'Keep Fees & Drop'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => setShowRefundModal(false)}
+                  className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Change Timing Modal rendered via createPortal directly in document.body */}
+      {mounted && isTimingModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-slate-900/10 dark:ring-white/10">
             {/* Header */}
             <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-4">
@@ -352,7 +371,8 @@ export function EnrollmentRowActions({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
