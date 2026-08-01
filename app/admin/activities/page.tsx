@@ -17,25 +17,38 @@ export default async function ActivitiesPage() {
       case 'ENROLLMENT_CREATED':
         return `${details.studentName || 'Student'} enrolled in ${details.courseName || 'Course'}`
       case 'ENROLLMENT_DROPPED':
-        return `Student enrollment dropped (Refund: ${details.refund ? 'Yes' : 'No'})`
+        return `${details.studentName || 'Student'} dropped from ${details.courseName || 'Course'} (Refund: ${details.refund ? 'Yes' : 'No'})`
       case 'ENROLLMENT_COMPLETED':
-        return `${details.studentName || 'Student'} marked as COMPLETED for ${details.courseName || 'Course'}`
+        return `${details.studentName || 'Student'} completed ${details.courseName || 'Course'}`
+      case 'ENROLLMENT_PENDING_COMPLETION':
+        return `${details.studentName || 'Student'}'s ${details.courseName || 'Course'} marked as Pending Completion (course duration ended)`
       case 'ENROLLMENT_EXTENDED':
         return `${details.studentName || 'Student'}'s course (${details.courseName || 'Course'}) extended by ${details.additionalMonths || 1} month(s)`
+      case 'ENROLLMENT_RESTORED':
+        return `${details.studentName || 'Student'} restored to ${details.courseName || 'Course'}`
+      case 'ENROLLMENT_TIMING_CHANGED':
+        return `${details.studentName || 'Student'} timing changed for ${details.courseName || 'Course'}`
       case 'EXPENSE_CREATED':
         return `Expense added: "${details.title || 'Expense'}" — PKR ${Number(details.amount || 0).toLocaleString('en-PK')} (${details.category || 'OTHER'})`
       case 'EXPENSE_DELETED':
         return `Expense deleted: "${details.title || 'Expense'}" — PKR ${Number(details.amount || 0).toLocaleString('en-PK')}`
-      default:
-        return `${log.action} performed on ${log.entity} (${log.entityId})`
+      default: {
+        // Best-effort readable fallback using any details available
+        const name = details.studentName || details.userName || null
+        const course = details.courseName || null
+        const label = log.action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase())
+        if (name && course) return `${name} — ${label} (${course})`
+        if (name) return `${name} — ${label}`
+        return `${label} on ${log.entity} (${log.entityId.slice(0, 8)}...)`
+      }
     }
   }
 
-  const mapLogType = (action: string) => {
+  const mapLogType = (action: string): 'enrollment' | 'fee' | 'drop' | 'expense' | 'system' => {
+    if (action === 'ENROLLMENT_DROPPED') return 'drop'
     if (action.startsWith('ENROLLMENT')) return 'enrollment'
     if (action.startsWith('FEE')) return 'fee'
     if (action.startsWith('EXPENSE')) return 'expense'
-    if (action === 'ENROLLMENT_DROPPED') return 'drop'
     return 'system'
   }
 

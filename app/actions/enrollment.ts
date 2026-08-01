@@ -407,7 +407,11 @@ export async function dropStudent(formData: FormData) {
     // Get enrollment details to find the student
     const enrollment = await prisma.enrollment.findUnique({
       where: { id: enrollmentId },
-      select: { studentId: true }
+      select: {
+        studentId: true,
+        student: { select: { name: true } },
+        courseOnSlot: { select: { course: { select: { name: true } } } }
+      }
     })
 
     if (!enrollment) {
@@ -439,10 +443,13 @@ export async function dropStudent(formData: FormData) {
       entity: 'Enrollment',
       entityId: enrollmentId,
       details: {
+        studentName: enrollment.student?.name,
+        courseName: enrollment.courseOnSlot?.course?.name,
         studentId: enrollment.studentId,
         refund,
       },
     })
+
 
     // Refresh the relevant pages
     revalidatePath('/admin/enrollment')
