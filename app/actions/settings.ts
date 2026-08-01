@@ -4,6 +4,7 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { FeeType } from '@prisma/client'
+import { auth } from '@clerk/nextjs/server'
 
 // 1. Create Room
 export async function createRoom(prevState: any, formData: FormData) {
@@ -90,19 +91,56 @@ export async function editCourse(prevState: any, formData: FormData) {
   const duration = parseInt(formData.get('duration') as string)
 
   try {
-    await prisma.course.update({
+    // Fetch current course to detect whether the fee has actually changed
+    const course = await prisma.course.findUnique({
       where: { id },
-      data: {
-        name,
-        baseFee: fee,
-        durationMonths: duration
-      }
+      select: { baseFee: true }
     })
+
+    if (!course) {
+      return { success: false, error: 'Course not found' }
+    }
+
+    const feeChanged = Number(course.baseFee) !== fee
+
+    if (feeChanged) {
+      // ✅ Fee has changed — write a CourseFeeHistory record inside a transaction.
+      // This is CRITICAL: getFeeForStudent() uses this history to determine what
+      // fee existing students should pay. Without this record, all existing
+      // enrolled students would be charged the new fee on their next monthly cycle.
+      const { userId: clerkId } = await auth()
+      const admin = clerkId
+        ? await prisma.user.findUnique({ where: { clerkId }, select: { id: true } })
+        : null
+
+      await prisma.$transaction(async (tx) => {
+        await tx.course.update({
+          where: { id },
+          data: { name, baseFee: fee, durationMonths: duration }
+        })
+
+        await tx.courseFeeHistory.create({
+          data: {
+            courseId: id,
+            oldFee: course.baseFee,
+            newFee: fee,
+            changedById: admin?.id ?? 'system'
+          }
+        })
+      })
+    } else {
+      // Fee unchanged — just update name/duration, no history needed
+      await prisma.course.update({
+        where: { id },
+        data: { name, durationMonths: duration }
+      })
+    }
+
     revalidatePath('/admin/settings')
     revalidatePath('/admin/schedule')
-    return { success: true, message: "✅ Course Updated" }
+    return { success: true, message: '✅ Course Updated' }
   } catch (e) {
-    return { success: false, error: "Failed to update course" }
+    return { success: false, error: 'Failed to update course' }
   }
 }
 

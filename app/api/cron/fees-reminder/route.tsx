@@ -32,6 +32,12 @@ export async function GET(request: NextRequest) {
       where: {
         status: { in: ['UNPAID', 'PARTIAL'] },
         dueDate: { lte: today },
+        // ✅ Only send reminders for fees tied to ACTIVE enrollments.
+        // Dropped/completed students retain unpaid fee records in the DB,
+        // so we must explicitly exclude them here.
+        enrollment: {
+          status: 'ACTIVE'
+        },
         student: {
           smsReminderEnabled: true
         }
