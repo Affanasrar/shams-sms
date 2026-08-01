@@ -323,11 +323,21 @@ export async function changeSlotRoom(formData: FormData) {
   }
 
   try {
-    // Check if the new slot already has the same course assigned
+    // ✅ Fetch the current assignment FIRST (separate query, no nesting)
+    const currentAssignment = await prisma.courseOnSlot.findUnique({
+      where: { id: assignmentId },
+      select: { courseId: true }
+    })
+
+    if (!currentAssignment) {
+      throw new Error("Assignment not found")
+    }
+
+    // Then check if the new slot already has the same course assigned
     const existingAssignment = await prisma.courseOnSlot.findFirst({
       where: {
         slotId: slotId,
-        courseId: (await prisma.courseOnSlot.findUnique({ where: { id: assignmentId } }))?.courseId
+        courseId: currentAssignment.courseId
       }
     })
 

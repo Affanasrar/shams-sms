@@ -15,9 +15,10 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
     if (!fee) throw new Error("Fee not found")
     if (fee.status === 'PAID') throw new Error("Already Paid")
 
-    // If no payment amount provided, use the full remaining balance
+    // If no payment amount provided, use the full remaining balance.
+    // NOTE: Use explicit null/undefined check — do NOT use `||` since paymentAmount=0 is falsy
     const remainingBalance = Number(fee.finalAmount) - Number(fee.paidAmount)
-    const amountToPay = paymentAmount || remainingBalance
+    const amountToPay = (paymentAmount != null && paymentAmount > 0) ? paymentAmount : remainingBalance
 
     // Validate payment amount
     if (amountToPay <= 0) throw new Error("Invalid payment amount")

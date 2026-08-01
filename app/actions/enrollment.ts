@@ -3,7 +3,7 @@
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { getCurrentFeeForCourse } from '@/lib/course-fees'
+import { getCurrentFeeForCourse, getFeeForStudent } from '@/lib/course-fees'
 import { generateFeeVoucherPdfBuffer } from '@/lib/pdf-helpers'
 import { sendSmartMessage, sendSmartDocument } from '@/lib/messaging'
 import { logAudit } from '@/lib/audit'
@@ -471,7 +471,7 @@ export async function dropStudent(formData: FormData) {
 export async function restoreEnrollment(formData: FormData) {
   const enrollmentId = formData.get('enrollmentId') as string
 
-  if (!enrollmentId) return
+  if (!enrollmentId) return { success: false, error: 'Missing enrollment ID' }
 
   try {
     // Get enrollment details including course info
@@ -494,7 +494,7 @@ export async function restoreEnrollment(formData: FormData) {
 
     const existingFee = await prisma.fee.findFirst({
       where: {
-        studentId: enrollment.studentId,
+        enrollmentId: enrollmentId,   // ✅ Check THIS enrollment specifically, not the student's other enrollments
         cycleDate: {
           gte: currentMonthStart,
           lte: currentMonthEnd
@@ -513,13 +513,16 @@ export async function restoreEnrollment(formData: FormData) {
 
     // Only create a new fee if fees were refunded (i.e., don't exist)
     if (!existingFee) {
+      // ✅ Use the student's historical fee rate (respects CourseFeeHistory)
+      // NOT baseFee which would charge the new rate after an editCourse
+      const studentFee = await getFeeForStudent(enrollmentId)
       await prisma.fee.create({
         data: {
           studentId: enrollment.studentId,
           enrollmentId: enrollmentId,
-          amount: enrollment.courseOnSlot.course.baseFee,
+          amount: studentFee,
           discountAmount: 0,
-          finalAmount: enrollment.courseOnSlot.course.baseFee,
+          finalAmount: studentFee,
           rolloverAmount: 0,
           dueDate: now,
           cycleDate: currentMonthStart,
@@ -580,9 +583,81 @@ export async function extendCourse(prevState: unknown, formData: FormData) {
       }
     })
 
-    // Refresh the student profile page
+    // Check and create fee records for the extended period
+    // Determine the monthly cycles covered up to the newEndDate
+    const feeRate = await getFeeForStudent(enrollmentId)
+    const joiningDate = new Date(enrollment.joiningDate)
+    const dueDay = joiningDate.getDate()
+
+    let cursorDate = new Date(currentEndDate.getFullYear(), currentEndDate.getMonth(), 1)
+    const lastCycleDate = new Date(newEndDate.getFullYear(), newEndDate.getMonth(), 1)
+
+    let createdFeesCount = 0
+
+    while (cursorDate <= lastCycleDate) {
+      const cycleDate = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1)
+
+      const existingFee = await prisma.fee.findFirst({
+        where: {
+          enrollmentId,
+          cycleDate,
+        }
+      })
+
+      if (!existingFee) {
+        const lastDayOfMonth = new Date(cycleDate.getFullYear(), cycleDate.getMonth() + 1, 0).getDate()
+        const dueDate = new Date(
+          cycleDate.getFullYear(),
+          cycleDate.getMonth(),
+          Math.min(dueDay, lastDayOfMonth)
+        )
+
+        await prisma.fee.create({
+          data: {
+            studentId: enrollment.studentId,
+            enrollmentId,
+            amount: feeRate,
+            discountAmount: 0,
+            finalAmount: feeRate,
+            rolloverAmount: 0,
+            dueDate,
+            cycleDate,
+            status: 'UNPAID'
+          }
+        })
+        createdFeesCount++
+      }
+
+      // Move to next month
+      cursorDate.setMonth(cursorDate.getMonth() + 1)
+    }
+
+    // Audit log
+    const student = await prisma.student.findUnique({
+      where: { id: enrollment.studentId },
+      select: { name: true }
+    })
+
+    await logAudit({
+      action: 'ENROLLMENT_EXTENDED',
+      entity: 'Enrollment',
+      entityId: enrollmentId,
+      details: {
+        studentName: student?.name,
+        courseName: enrollment.courseOnSlot.course.name,
+        additionalDays,
+        newEndDate: newEndDate.toISOString(),
+        createdFeesCount
+      }
+    })
+
+    // Refresh the student profile page & related views
     revalidatePath(`/admin/students/${enrollment.studentId}`)
-    return { success: true, message: `Course extended by ${additionalDays} days` }
+    revalidatePath('/admin/fees')
+    revalidatePath('/admin/enrollment')
+
+    const feeMsg = createdFeesCount > 0 ? ` and ${createdFeesCount} fee record(s) created` : ''
+    return { success: true, message: `Course extended by ${additionalDays} days${feeMsg}.` }
   } catch (error) {
     console.error("Extend Course Error:", error)
     return { success: false, error: "Failed to extend course" }
