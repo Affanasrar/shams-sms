@@ -111,14 +111,7 @@ export function CollapsibleSidebar() {
         </Button>
       </div>
 
-      <div className="px-3 py-3">
-        {!collapsed && (
-          <div className="mb-2 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300">
-            <Sparkles size={16} className="text-sky-300" />
-            <span>Premium operating view</span>
-          </div>
-        )}
-      </div>
+
 
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-2 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {NAV_GROUPS.map((group) => (

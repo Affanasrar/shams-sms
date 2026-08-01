@@ -300,4 +300,65 @@ html {
   border-color: oklch(0.25 0.02 250);
 }
 
+/* ===== Dark Mode Shadow Overrides =====
+   Light-toned box-shadows look wrong on dark backgrounds.
+   Remap them to dark-slate equivalents. */
+.dark .shadow-sm {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+}
 
+.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+}
+
+.dark .hover\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+}
+
+.dark .shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Fix bg-white/90 and bg-white/70 in dark mode */
+.dark .bg-white\/90 {
+  background-color: oklch(0.17 0.02 250 / 0.95);
+}
+
+.dark .bg-white\/70 {
+  background-color: oklch(0.17 0.02 250 / 0.85);
+}
+
+/* Fix bg-yellow-50 (used in attendance "not marked" cards) */
+.dark .bg-yellow-50 {
+  background-color: oklch(0.22 0.03 85 / 0.4);
+}
+
+.dark .border-yellow-200 {
+  border-color: oklch(0.5 0.12 85 / 0.4);
+}
+
+.dark .hover\:border-yellow-400:hover {
+  border-color: oklch(0.7 0.15 85 / 0.6);
+}
+
+/* Fix bg-green-50 (attendance marked cards) */
+.dark .bg-green-50 {
+  background-color: oklch(0.2 0.04 145 / 0.4);
+}
+
+.dark .border-green-200 {
+  border-color: oklch(0.5 0.15 145 / 0.4);
+}
+
+.dark .hover\:border-green-400:hover {
+  border-color: oklch(0.65 0.18 145 / 0.6);
+}
+
+/* Fix bg-emerald-50 */
+.dark .bg-emerald-50 {
+  background-color: oklch(0.2 0.04 160 / 0.4);
+}
+
+.dark .border-emerald-200 {
+  border-color: oklch(0.5 0.15 160 / 0.4);
+}

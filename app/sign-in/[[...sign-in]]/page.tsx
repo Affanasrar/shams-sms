@@ -20,7 +20,7 @@ export default function Page() {
               </ul>
             </div>
           </div>
-          <div className="flex flex-1 items-center justify-center bg-white p-4 sm:p-8">
+          <div className="flex flex-1 items-center justify-center bg-white dark:bg-slate-900 p-4 sm:p-8">
             <SignIn routing="hash" signUpUrl="/sign-up" />
           </div>
         </div>

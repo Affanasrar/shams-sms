@@ -54,7 +54,7 @@ export function SlotCard({ data, teachers, slotOccupancy }: Props & { slotOccupa
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]
 
   return (
-    <div className={`rounded-[24px] border p-4 shadow-[0_16px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_-24px_rgba(59,130,246,0.3)] ${isFull ? 'border-rose-200 bg-rose-50/80' : 'border-slate-200 bg-white/90'}`}>
+    <div className={`rounded-[24px] border p-4 shadow-[0_16px_40px_-24px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_50px_-24px_rgba(59,130,246,0.3)] ${isFull ? 'border-rose-200 dark:border-rose-900/50 bg-rose-50/80 dark:bg-rose-950/20' : 'border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90'}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center gap-2">
@@ -88,10 +88,10 @@ export function SlotCard({ data, teachers, slotOccupancy }: Props & { slotOccupa
         </div>
       </div>
 
-      <div className="mb-4 rounded-2xl bg-slate-50/90 p-3 text-sm text-slate-600">
+      <div className="mb-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/60 p-3 text-sm text-slate-600 dark:text-slate-400">
         <div className="mb-2 flex items-center gap-2">
           <MapPin size={14} className="text-indigo-600" />
-          <span className="font-medium text-slate-700">{data.slot.room.name}</span>
+          <span className="font-medium text-slate-700 dark:text-slate-300">{data.slot.room.name}</span>
         </div>
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-sky-600" />
@@ -131,15 +131,15 @@ export function SlotCard({ data, teachers, slotOccupancy }: Props & { slotOccupa
       {/* Teacher Edit Modal */}
       {isEditingTeacher && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Change Teacher for {data.course.name}</h3>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Change Teacher for {data.course.name}</h3>
             <form action={changeTeacherForm} className="space-y-4">
               <input type="hidden" name="assignmentId" value={data.id} />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select New Teacher</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Select New Teacher</label>
                 <select
                   name="teacherId"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">-- Choose Teacher --</option>
@@ -160,7 +160,7 @@ export function SlotCard({ data, teachers, slotOccupancy }: Props & { slotOccupa
                 <button
                   type="button"
                   onClick={() => setIsEditingTeacher(false)}
-                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                  className="flex-1 bg-gray-500 dark:bg-slate-700 text-white py-2 px-4 rounded-md hover:bg-gray-600 dark:hover:bg-slate-600"
                 >
                   Cancel
                 </button>

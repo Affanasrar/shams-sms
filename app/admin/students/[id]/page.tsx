@@ -143,40 +143,40 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Total fees</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{formatCurrency(totalFees)}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total fees</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(totalFees)}</p>
             </div>
-            <Wallet className="h-6 w-6 text-slate-500" />
+            <Wallet className="h-6 w-6 text-slate-500 dark:text-slate-400" />
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Total paid</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Total paid</p>
               <p className="mt-2 text-2xl font-semibold text-emerald-600">{formatCurrency(totalPaid)}</p>
             </div>
             <BadgeCheck className="h-6 w-6 text-emerald-600" />
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Outstanding</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Outstanding</p>
               <p className="mt-2 text-2xl font-semibold text-rose-600">{formatCurrency(totalDue)}</p>
             </div>
             <CreditCard className="h-6 w-6 text-rose-600" />
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm dark:shadow-slate-950/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Communications</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{smsLogs.length}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Communications</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{smsLogs.length}</p>
             </div>
-            <MessageSquare className="h-6 w-6 text-slate-500" />
+            <MessageSquare className="h-6 w-6 text-slate-500 dark:text-slate-400" />
           </div>
         </div>
       </div>
@@ -198,23 +198,23 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
         {/* Financial Tab - Ledger View */}
         <TabsContent value="financial" className="space-y-6">
-          <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
-            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900">Fee Ledger</h2>
-              <p className="text-sm text-slate-500">The financial history for this student.</p>
+          <Card className="overflow-hidden border-slate-200 dark:border-slate-800 p-0 shadow-sm dark:shadow-slate-950/50">
+            <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 px-6 py-4">
+              <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Fee Ledger</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">The financial history for this student.</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 border-b border-slate-200 p-6 md:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Total Due</p>
-                <p className="text-2xl font-semibold text-slate-900">{formatCurrency(totalFees)}</p>
+            <div className="grid grid-cols-1 gap-4 border-b border-slate-200 dark:border-slate-800 p-6 md:grid-cols-3">
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Total Due</p>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(totalFees)}</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Total Paid</p>
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Total Paid</p>
                 <p className="text-2xl font-semibold text-emerald-600">{formatCurrency(totalPaid)}</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">Outstanding</p>
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-4">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Outstanding</p>
                 <p className="text-2xl font-semibold text-rose-600">{formatCurrency(totalDue)}</p>
               </div>
             </div>
@@ -239,7 +239,7 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                     const courseCode = enrollment ? enrollment.courseOnSlot.course.code || "---" : "---"
 
                     return (
-                      <tr key={fee.id} className="border-b border-slate-100 transition hover:bg-slate-50/70">
+                      <tr key={fee.id} className="border-b border-slate-100 dark:border-slate-800 transition hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
                         <td className="py-3 px-4">
                           <div>
                             <p className="font-medium text-slate-900">{courseName}</p>

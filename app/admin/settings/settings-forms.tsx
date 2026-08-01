@@ -250,13 +250,13 @@ export function SettingsForms({ rooms, courses, slots, teachers }: Props) {
 
 function FormCard({ title, description, icon, children }: { title: string, description: string, icon: React.ReactNode, children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
-      <div className="p-5 border-b border-gray-50 bg-gray-50/50 flex items-start justify-between">
+    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+      <div className="p-5 border-b border-gray-50 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 flex items-start justify-between">
         <div>
-          <h4 className="font-bold text-gray-800">{title}</h4>
-          <p className="text-xs text-gray-500 mt-1">{description}</p>
+          <h4 className="font-bold text-gray-800 dark:text-slate-100">{title}</h4>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{description}</p>
         </div>
-        <div className="bg-white p-2 rounded-lg border shadow-sm">{icon}</div>
+        <div className="bg-white dark:bg-slate-800 p-2 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm">{icon}</div>
       </div>
       <div className="p-5">
         {children}
@@ -268,13 +268,13 @@ function FormCard({ title, description, icon, children }: { title: string, descr
 function InputGroup({ label, name, type = "text", placeholder }: { label: string, name: string, type?: string, placeholder?: string }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
+      <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
       <input 
         name={name} 
         type={type} 
         placeholder={placeholder} 
         required 
-        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
+        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 focus:border-black dark:focus:border-slate-500 transition-all"
       />
     </div>
   )
@@ -283,8 +283,8 @@ function InputGroup({ label, name, type = "text", placeholder }: { label: string
 function SelectGroup({ label, children }: { label: string, children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">{label}</label>
-      <div className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus-within:ring-2 focus-within:ring-black/5 focus-within:border-black transition-all">
+      <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
+      <div className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus-within:ring-2 focus-within:ring-black/5 dark:focus-within:ring-white/10 focus-within:border-black dark:focus-within:border-slate-500 transition-all">
         {children}
       </div>
     </div>
@@ -296,10 +296,10 @@ function CourseFeeUpdater({ course }: { course: any }) {
   const [feeState, feeAction, feePending] = useActionState<ActionState, FormData>(updateCourseFee, initialState)
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
+    <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900">
       <div className="flex justify-between items-center mb-3">
-        <h5 className="font-semibold text-gray-800">{course.name}</h5>
-        <span className="text-sm text-gray-600">Current: PKR {course.baseFee.toLocaleString()}</span>
+        <h5 className="font-semibold text-gray-800 dark:text-slate-100">{course.name}</h5>
+        <span className="text-sm text-gray-600 dark:text-slate-400">Current: PKR {course.baseFee.toLocaleString()}</span>
       </div>
       
       <form action={feeAction} className="flex gap-2">
@@ -310,7 +310,7 @@ function CourseFeeUpdater({ course }: { course: any }) {
           placeholder="New fee"
           min="0"
           step="0.01"
-          className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
         <button
           disabled={feePending}
@@ -321,10 +321,10 @@ function CourseFeeUpdater({ course }: { course: any }) {
       </form>
       
       {feeState?.message && (
-        <div className="mt-2 text-sm text-green-600">{feeState.message}</div>
+        <div className="mt-2 text-sm text-green-600 dark:text-green-400">{feeState.message}</div>
       )}
       {feeState?.error && (
-        <div className="mt-2 text-sm text-red-600">{feeState.error}</div>
+        <div className="mt-2 text-sm text-red-600 dark:text-red-400">{feeState.error}</div>
       )}
     </div>
   )
@@ -353,24 +353,24 @@ function CourseFeeHistory({ course }: { course: any }) {
   }, [course.id])
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
-      <h5 className="font-semibold text-gray-800 mb-3">{course.name}</h5>
+    <div className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900">
+      <h5 className="font-semibold text-gray-800 dark:text-slate-100 mb-3">{course.name}</h5>
       
       {loading ? (
-        <div className="text-sm text-gray-500">Loading history...</div>
+        <div className="text-sm text-gray-500 dark:text-slate-400">Loading history...</div>
       ) : history.length === 0 ? (
-        <div className="text-sm text-gray-500">No fee changes yet</div>
+        <div className="text-sm text-gray-500 dark:text-slate-400">No fee changes yet</div>
       ) : (
         <div className="space-y-2 max-h-40 overflow-y-auto">
           {history.map((change: any) => (
-            <div key={change.id} className="text-xs bg-gray-50 p-2 rounded">
+            <div key={change.id} className="text-xs bg-gray-50 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700 p-2 rounded">
               <div className="flex justify-between">
-                <span>PKR {Number(change.oldFee).toLocaleString()} → PKR {Number(change.newFee).toLocaleString()}</span>
-                <span className="text-gray-500">
+                <span className="text-slate-700 dark:text-slate-300">PKR {Number(change.oldFee).toLocaleString()} → PKR {Number(change.newFee).toLocaleString()}</span>
+                <span className="text-gray-500 dark:text-slate-400">
                   {new Date(change.changedAt).toLocaleDateString()}
                 </span>
               </div>
-              <div className="text-gray-600 mt-1">
+              <div className="text-gray-600 dark:text-slate-400 mt-1">
                 by {change.changedBy.firstName} {change.changedBy.lastName}
               </div>
             </div>
@@ -414,7 +414,9 @@ function StatusAlert({ state }: { state: ActionState }) {
   const isSuccess = !!state.message
   return (
     <div className={`mt-3 p-3 rounded-lg text-xs flex items-start gap-2 ${
-      isSuccess ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'
+      isSuccess
+        ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border border-green-100 dark:border-green-900/50'
+        : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-900/50'
     }`}>
       {isSuccess ? <CheckCircle2 size={14} className="mt-0.5"/> : <AlertCircle size={14} className="mt-0.5"/>}
       <p>{isSuccess ? state.message : state.error}</p>
