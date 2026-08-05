@@ -3,9 +3,18 @@
 import { useMemo, useState } from 'react'
 import { useActionState } from 'react'
 import { updateEnrollment } from '@/app/actions/enrollment'
-import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
-import { Clock3 } from 'lucide-react'
+import {
+  Check,
+  AlertCircle,
+  Clock,
+  MapPin,
+  BookOpen,
+  ArrowRight,
+  Loader2,
+  Calendar,
+  CheckCircle2,
+} from 'lucide-react'
 
 interface AssignmentOption {
   id: string
@@ -42,271 +51,316 @@ type ActionState =
 const initialState: ActionState = { success: false, error: '' }
 
 export function EditEnrollmentForm({ enrollment, assignments }: Props) {
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState(enrollment.currentCourseOnSlotId)
   const [joiningDate, setJoiningDate] = useState(enrollment.joiningDate)
-  const [courseSearch, setCourseSearch] = useState('')
   const [selectedCourseId, setSelectedCourseId] = useState(
-    assignments.find((item) => item.id === enrollment.currentCourseOnSlotId)?.courseId || ''
+    assignments.find((a) => a.id === enrollment.currentCourseOnSlotId)?.courseId || ''
   )
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState(enrollment.currentCourseOnSlotId)
+
   const [state, formAction, isPending] = useActionState(updateEnrollment, initialState)
 
-  const selectedAssignment = useMemo(
-    () => assignments.find((item) => item.id === selectedAssignmentId),
-    [selectedAssignmentId, assignments]
-  )
-
-  const courses = useMemo(() => {
+  // Unique courses from assignments
+  const uniqueCourses = useMemo(() => {
     const map = new Map<string, { courseId: string; courseName: string }>()
-    for (const assignment of assignments) {
-      if (!map.has(assignment.courseId)) {
-        map.set(assignment.courseId, {
-          courseId: assignment.courseId,
-          courseName: assignment.courseName,
-        })
-      }
+    for (const a of assignments) {
+      if (!map.has(a.courseId)) map.set(a.courseId, { courseId: a.courseId, courseName: a.courseName })
     }
     return Array.from(map.values())
   }, [assignments])
 
-  const filteredCourses = useMemo(
-    () => courses.filter((course) =>
-      course.courseName.toLowerCase().includes(courseSearch.toLowerCase())
-    ),
-    [courses, courseSearch]
-  )
-
-  const slotsForSelectedCourse = useMemo(
-    () => assignments.filter((assignment) => assignment.courseId === selectedCourseId),
+  // Slots for selected course
+  const slotsForCourse = useMemo(
+    () => assignments.filter((a) => a.courseId === selectedCourseId),
     [assignments, selectedCourseId]
   )
 
-  const computedDueDay = new Date(joiningDate).getDate()
-  const previewNewDueDate = selectedAssignment ? `${computedDueDay} of each month` : ''
+  const selectedSlot = assignments.find((a) => a.id === selectedAssignmentId)
+  const selectedCourse = uniqueCourses.find((c) => c.courseId === selectedCourseId)
+
+  const dueDay = joiningDate ? new Date(joiningDate).getDate() : null
+
+  const isStep2Active = !!joiningDate
+  const isStep3Active = isStep2Active && !!selectedCourseId
+  const isFormValid = !!joiningDate && !!selectedCourseId && !!selectedAssignmentId
+
+  const stepBadge = (n: number, done: boolean, active: boolean) =>
+    done
+      ? 'bg-emerald-100 text-emerald-700'
+      : active
+      ? 'bg-indigo-100 text-indigo-700'
+      : 'bg-slate-100 text-slate-400'
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-5">
       <input type="hidden" name="enrollmentId" value={enrollment.id} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-        <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Student</label>
-                <p className="mt-2 text-lg font-semibold text-slate-900">{enrollment.studentName}</p>
-                <p className="mt-1 text-sm text-slate-500">Enrollment ID: {enrollment.id}</p>
-              </div>
-
-              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Enrollment Date</label>
-                <input
-                  type="date"
-                  name="joiningDate"
-                  value={joiningDate}
-                  onChange={(event) => setJoiningDate(event.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200"
-                  required
-                />
-                <p className="mt-2 text-xs text-slate-500">Changing this updates fee due dates for unpaid records.</p>
-              </div>
-            </div>
+      {/* ── Error / Success banners ── */}
+      {!state.success && state.error && (
+        <div className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <AlertCircle className="mt-0.5 size-5 shrink-0 text-red-600" />
+          <div>
+            <p className="font-semibold text-red-900">Update Failed</p>
+            <p className="mt-0.5 text-sm text-red-700">{state.error}</p>
           </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">Current assignment</h3>
-                <p className="text-sm text-slate-500">What the student is enrolled in right now.</p>
-              </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Editable</span>
-            </div>
-
-            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Course</p>
-                <p className="mt-1 font-semibold text-slate-900">{enrollment.currentCourseName}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Slot</p>
-                <p className="mt-1 font-semibold text-slate-900">{enrollment.currentSlotLabel}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Room</p>
-                <p className="mt-1 font-semibold text-slate-900">{enrollment.currentSlotRoom}</p>
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <label className="mb-2 block text-sm font-medium text-slate-900">Search course</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={courseSearch}
-                  onChange={(event) => setCourseSearch(event.target.value)}
-                  placeholder="Type course name to search"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200"
-                />
-                {courseSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setCourseSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-300"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {filteredCourses.length > 0 ? (
-                  filteredCourses.map((course) => {
-                    const isActiveCourse = selectedCourseId === course.courseId
-                    return (
-                      <button
-                        key={course.courseId}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCourseId(course.courseId)
-                          const firstSlot = assignments.find((assignment) => assignment.courseId === course.courseId)
-                          if (firstSlot) setSelectedAssignmentId(firstSlot.id)
-                        }}
-                        className={`rounded-3xl border p-4 text-left transition ${
-                          isActiveCourse
-                            ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-900/10'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <p className="font-semibold">{course.courseName}</p>
-                        <p className={`mt-1 text-xs ${isActiveCourse ? 'text-white/70' : 'text-slate-500'}`}>
-                          Click to view its available slots
-                        </p>
-                      </button>
-                    )
-                  })
-                ) : (
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500 md:col-span-2">
-                    Search for a course to see available slots.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {selectedCourseId && (
-              <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4 md:p-5">
-                <div className="mb-4">
-                  <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Choose slot</h4>
-                  <p className="mt-1 text-sm text-slate-500">Pick the specific room and timing for the selected course.</p>
-                </div>
-                <div className="grid gap-3">
-                  {slotsForSelectedCourse.map((option) => {
-                    const isSelected = selectedAssignmentId === option.id
-                    return (
-                      <label
-                        key={option.id}
-                        className={`flex cursor-pointer items-start gap-3 rounded-3xl border p-4 transition ${
-                          isSelected ? 'border-slate-900 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="courseOnSlotId"
-                          value={option.id}
-                          checked={isSelected}
-                          onChange={() => setSelectedAssignmentId(option.id)}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 text-sm">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-slate-900">{option.courseName}</p>
-                              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{option.slotLabel}</p>
-                            </div>
-                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                              {option.roomCapacity} seats
-                            </span>
-                          </div>
-                          <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
-                            <div className="rounded-2xl bg-slate-50 px-3 py-2">
-                              {format(new Date(option.slotStartTime), 'hh:mm a')} - {format(new Date(option.slotEndTime), 'hh:mm a')}
-                            </div>
-                            <div className="rounded-2xl bg-slate-50 px-3 py-2">Room: {option.roomName}</div>
-                          </div>
-                        </div>
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+        </div>
+      )}
+      {state.success && (
+        <div className="flex gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
+          <div>
+            <p className="font-semibold text-emerald-900">Enrollment Updated</p>
+            <p className="mt-0.5 text-sm text-emerald-700">{state.message}</p>
           </div>
+        </div>
+      )}
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Server feedback</h4>
-            <div className="mt-4 space-y-3">
-              {!state.success && state.error && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                  {state.error}
-                </div>
-              )}
-
-              {state.success && (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                  {state.message || 'Enrollment updated successfully.'}
-                </div>
-              )}
-
-              {!selectedAssignment && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                  Choose a course and slot to preview the new assignment.
-                </div>
-              )}
-            </div>
+      {/* ══ Step 1: Student Info & Enrollment Date ══ */}
+      <div className="rounded-[24px] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)] dark:border-slate-700 dark:bg-slate-800/90 dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.5)]">
+        <div className="mb-5 flex items-start gap-3">
+          <div className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${stepBadge(1, !!joiningDate, true)}`}>
+            {joiningDate ? <Check className="size-4" /> : '1'}
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Student & Enrollment Date</h3>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Review the student and set the correct enrollment date</p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/55">Preview</p>
-            {selectedAssignment ? (
-              <div className="mt-4 space-y-3">
-                <p className="text-lg font-semibold">{selectedAssignment.courseName}</p>
-                <div className="space-y-2 text-sm text-white/75">
-                  <p>{selectedAssignment.slotLabel}</p>
-                  <p>{format(new Date(selectedAssignment.slotStartTime), 'hh:mm a')} - {format(new Date(selectedAssignment.slotEndTime), 'hh:mm a')}</p>
-                  <p>Room: {selectedAssignment.roomName}</p>
-                  <p>Due date will align to the {previewNewDueDate}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-white/70">Select a course and slot to see the new assignment preview.</p>
-            )}
+        {/* Student display */}
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-700/50">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+            {enrollment.studentName.charAt(0).toUpperCase()}
           </div>
+          <div>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{enrollment.studentName}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">ID: {enrollment.id.slice(0, 16)}…</p>
+          </div>
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            Active
+          </span>
+        </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-slate-100 p-2 text-slate-600">
-                <Clock3 size={18} />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Due date rule</p>
-                <p className="font-semibold text-slate-900">Based on the joining day</p>
-              </div>
-            </div>
-            <p className="mt-3 text-sm text-slate-500">
-              The selected joining day is used to calculate unpaid fee due dates after the update.
+        {/* Date input */}
+        <div>
+          <label htmlFor="joiningDate" className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+            <Calendar className="size-4" />
+            Enrollment Date
+          </label>
+          <input
+            id="joiningDate"
+            type="date"
+            name="joiningDate"
+            value={joiningDate}
+            onChange={(e) => setJoiningDate(e.target.value)}
+            required
+            className="w-full rounded-2xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/20"
+          />
+          {dueDay && (
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Monthly fee will be due on the <strong className="text-slate-700 dark:text-slate-200">{dueDay}{ordinal(dueDay)}</strong> of each month
             </p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-3">
-              <Button type="submit" disabled={isPending} className="rounded-2xl">
-                {isPending ? 'Saving...' : 'Save Enrollment'}
-              </Button>
-              <p className="text-sm text-slate-500">Updated due dates are applied to unpaid and partial fees only.</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
+
+      {/* ══ Step 2: Select Course ══ */}
+      <div className={`rounded-[24px] border border-slate-200/80 p-6 transition-all dark:border-slate-700 ${isStep2Active ? 'bg-white/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)] dark:bg-slate-800/90 dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.5)]' : 'bg-slate-50/80 opacity-60 dark:bg-slate-800/30'}`}>
+        <div className="mb-5 flex items-start gap-3">
+          <div className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${stepBadge(2, !!selectedCourseId, isStep2Active)}`}>
+            {selectedCourseId ? <Check className="size-4" /> : '2'}
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Select Course</h3>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Choose the course to enroll the student in</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {uniqueCourses.map((course) => {
+            const isActive = selectedCourseId === course.courseId
+            return (
+              <button
+                key={course.courseId}
+                type="button"
+                disabled={!isStep2Active}
+                onClick={() => {
+                  setSelectedCourseId(course.courseId)
+                  const firstSlot = assignments.find((a) => a.courseId === course.courseId)
+                  if (firstSlot) setSelectedAssignmentId(firstSlot.id)
+                }}
+                className={[
+                  'flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left transition-all',
+                  isActive
+                    ? 'border-indigo-500 bg-indigo-50/70 dark:border-indigo-500 dark:bg-indigo-500/10'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:border-slate-500 dark:hover:bg-slate-700',
+                ].join(' ')}
+              >
+                <div className={[
+                  'flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold',
+                  isActive ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-600 dark:text-slate-300',
+                ].join(' ')}>
+                  {course.courseName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1">
+                  <p className={`font-semibold ${isActive ? 'text-indigo-900 dark:text-indigo-200' : 'text-slate-900 dark:text-slate-100'}`}>
+                    {course.courseName}
+                  </p>
+                  {enrollment.currentCourseName === course.courseName && (
+                    <p className="text-xs text-slate-400 dark:text-slate-500">Currently enrolled</p>
+                  )}
+                </div>
+                {isActive && <Check className="size-5 shrink-0 text-indigo-500" />}
+              </button>
+            )
+          })}
+        </div>
+
+        {selectedCourseId && (
+          <div className="mt-3 flex items-center gap-2 rounded-xl bg-indigo-50 px-3 py-2 dark:bg-indigo-500/10">
+            <BookOpen className="size-4 text-indigo-600 dark:text-indigo-400" />
+            <span className="text-sm text-indigo-700 dark:text-indigo-300">
+              {selectedCourse?.courseName} selected
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ══ Step 3: Choose Time Slot ══ */}
+      <div className={`rounded-[24px] border border-slate-200/80 p-6 transition-all dark:border-slate-700 ${isStep3Active ? 'bg-white/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)] dark:bg-slate-800/90 dark:shadow-[0_18px_50px_-24px_rgba(0,0,0,0.5)]' : 'bg-slate-50/80 opacity-60 dark:bg-slate-800/30'}`}>
+        <div className="mb-5 flex items-start gap-3">
+          <div className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${stepBadge(3, !!selectedAssignmentId, isStep3Active)}`}>
+            {selectedAssignmentId ? <Check className="size-4" /> : '3'}
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Choose Time Slot</h3>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Pick an available class schedule</p>
+          </div>
+        </div>
+
+        {!isStep3Active ? (
+          <p className="py-4 text-sm text-slate-400 dark:text-slate-500">Select a course above to see available slots</p>
+        ) : slotsForCourse.length === 0 ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+            <p className="text-sm text-amber-800 dark:text-amber-300">No slots available for this course</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {slotsForCourse.map((slot) => {
+              const isSelected = selectedAssignmentId === slot.id
+              const isCurrent = enrollment.currentCourseOnSlotId === slot.id
+
+              return (
+                <label
+                  key={slot.id}
+                  className={[
+                    'flex cursor-pointer gap-4 rounded-[20px] border-2 p-4 transition-all',
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-50/70 dark:border-indigo-500 dark:bg-indigo-500/10'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:border-slate-500 dark:hover:bg-slate-700',
+                  ].join(' ')}
+                >
+                  <input
+                    type="radio"
+                    name="courseOnSlotId"
+                    value={slot.id}
+                    checked={isSelected}
+                    onChange={() => setSelectedAssignmentId(slot.id)}
+                    className="mt-1 cursor-pointer accent-indigo-600"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <Clock className={`size-4 shrink-0 ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                      <span className={`font-semibold ${isSelected ? 'text-indigo-900 dark:text-indigo-200' : 'text-slate-900 dark:text-slate-100'}`}>
+                        {slot.slotLabel}
+                      </span>
+                      <span className={`text-sm ${isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>
+                        {format(new Date(slot.slotStartTime), 'hh:mm a')} – {format(new Date(slot.slotEndTime), 'hh:mm a')}
+                      </span>
+                      {isCurrent && (
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          Current
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                      <MapPin className="size-3.5" />
+                      {slot.roomName}
+                      <span className="mx-1 text-slate-300 dark:text-slate-600">·</span>
+                      <span>{slot.roomCapacity} seats</span>
+                    </div>
+                  </div>
+                </label>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ══ Step 4: Summary & Confirm ══ */}
+      {isFormValid && selectedSlot && (
+        <div className="rounded-[24px] border border-indigo-200 bg-gradient-to-br from-indigo-50 to-slate-50 p-6 shadow-sm dark:border-indigo-800 dark:from-indigo-900/20 dark:to-slate-800/50">
+          <h3 className="mb-4 flex items-center gap-2 font-semibold text-slate-900 dark:text-slate-100">
+            <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
+            Review & Confirm
+          </h3>
+
+          <div className="space-y-2">
+            <SummaryRow label="Student" value={enrollment.studentName} />
+            <SummaryRow label="Course" value={selectedCourse?.courseName ?? '—'} />
+            <SummaryRow label="Days" value={selectedSlot.slotLabel} />
+            <SummaryRow
+              label="Time"
+              value={`${format(new Date(selectedSlot.slotStartTime), 'hh:mm a')} – ${format(new Date(selectedSlot.slotEndTime), 'hh:mm a')}`}
+            />
+            <SummaryRow label="Room" value={selectedSlot.roomName} />
+            {dueDay && (
+              <SummaryRow label="Fee Due" value={`${dueDay}${ordinal(dueDay)} of each month`} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ Submit Button ══ */}
+      <button
+        type="submit"
+        disabled={!isFormValid || isPending}
+        className={[
+          'flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-4 font-semibold text-white transition-all',
+          isFormValid && !isPending
+            ? 'cursor-pointer bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500'
+            : 'cursor-not-allowed bg-slate-300 dark:bg-slate-700 dark:text-slate-500',
+        ].join(' ')}
+      >
+        {isPending ? (
+          <>
+            <Loader2 className="size-5 animate-spin" />
+            Saving Changes…
+          </>
+        ) : (
+          <>
+            Save Enrollment
+            <ArrowRight className="size-5" />
+          </>
+        )}
+      </button>
     </form>
   )
+}
+
+/* ── Helper components ── */
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3 dark:bg-slate-800">
+      <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{value}</span>
+    </div>
+  )
+}
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return s[(v - 20) % 10] ?? s[v] ?? s[0]
 }

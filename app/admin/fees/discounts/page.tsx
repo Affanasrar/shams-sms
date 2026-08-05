@@ -78,14 +78,14 @@ export default async function DiscountsPage() {
       </div>
 
       {discounts.length > 0 ? (
-        <div className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-          <div className="border-b bg-slate-50 px-6 py-4">
+        <div className="overflow-hidden rounded-3xl border bg-white shadow-sm dark:bg-slate-900 dark:border-slate-800">
+          <div className="border-b bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/50">
             <h2 className="text-lg font-semibold text-slate-900">Applied discounts</h2>
             <p className="text-sm text-slate-500">A compact view of each student&apos;s current discount rule.</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
+              <thead className="bg-slate-50 text-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
                 <tr>
                   <th className="px-6 py-3">Student</th>
                   <th className="px-6 py-3">Course</th>
@@ -98,21 +98,21 @@ export default async function DiscountsPage() {
               </thead>
               <tbody className="divide-y">
                 {discounts.map((discount) => (
-                  <tr key={discount.id} className="hover:bg-slate-50/70">
+                  <tr key={discount.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/70 border-b border-slate-100 last:border-0 dark:border-slate-800/50">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{discount.student.name}</div>
-                      <div className="text-xs text-slate-500">{discount.student.studentId}</div>
+                      <div className="font-medium text-slate-900 dark:text-slate-100">{discount.student.name}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{discount.student.studentId}</div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">
                       {discount.enrollment.courseOnSlot.course.name}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
                         <BadgePercent size={12} />
                         {discount.discountType === 'FIXED' ? 'Fixed Amount' : 'Percentage'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-mono text-slate-900">
+                    <td className="px-6 py-4 font-mono text-slate-900 dark:text-slate-100">
                       {discount.discountType === 'FIXED'
                         ? `PKR ${Number(discount.discountAmount).toLocaleString()}`
                         : `${discount.discountAmount}%`
@@ -127,7 +127,7 @@ export default async function DiscountsPage() {
                         {discount.discountDuration === 'SINGLE_MONTH' ? 'Single Month' : 'Entire Course'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-700">
+                    <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
                       Month {discount.applicableFromMonth}
                       {discount.discountDuration === 'ENTIRE_COURSE' && (
                         <span> - Month {discount.applicableToMonth}</span>

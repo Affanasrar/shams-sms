@@ -185,21 +185,21 @@ export default async function EnrollmentIndex(props: Props) {
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
               <Users size={16} className="text-indigo-600" />
               Active students
             </div>
             <p className="mt-2 text-2xl font-semibold text-slate-900">{activeCount}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
               <BookOpen size={16} className="text-emerald-600" />
               Courses in view
             </div>
             <p className="mt-2 text-2xl font-semibold text-slate-900">{courseCount}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700/50 dark:bg-slate-800/50">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
               <CalendarDays size={16} className="text-amber-600" />
               Active slots
@@ -225,11 +225,11 @@ export default async function EnrollmentIndex(props: Props) {
         </div>
 
         {(courseId || slotId || searchQuery) && (
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
             <span>Filtered by</span>
-            {searchQuery && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">{searchQuery}</span>}
-            {courseId && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">{courses.find((c) => c.id === courseId)?.name}</span>}
-            {slotId && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700">{slots.find((s) => s.id === slotId)?.days}</span>}
+            {searchQuery && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200">{searchQuery}</span>}
+            {courseId && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200">{courses.find((c) => c.id === courseId)?.name}</span>}
+            {slotId && <span className="rounded-full bg-white px-2.5 py-1 font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200">{slots.find((s) => s.id === slotId)?.days}</span>}
             <Link href="/admin/enrollment" className="ml-1 font-semibold text-indigo-600 hover:text-indigo-700">
               Clear all
             </Link>

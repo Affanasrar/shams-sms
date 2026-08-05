@@ -20,13 +20,17 @@ export async function GET(request: NextRequest) {
 
     // Fetch summary data
     const [
-      totalStudents,
+      activeStudentsCount,
       totalFeesThisMonth,
       paidFeesThisMonth,
       pendingFeesThisMonth,
       courses
     ] = await Promise.all([
-      prisma.student.count(),
+      prisma.enrollment.findMany({
+        where: { status: 'ACTIVE' },
+        distinct: ['studentId'],
+        select: { studentId: true }
+      }),
       prisma.fee.aggregate({
         where: {
           cycleDate: {
@@ -64,6 +68,8 @@ export async function GET(request: NextRequest) {
       })
     ])
 
+    const activeStudents = activeStudentsCount.length
+
     const pendingAmount = Number(totalFeesThisMonth._sum.finalAmount || 0) -
                          Number(paidFeesThisMonth._sum.paidAmount || 0)
 
@@ -95,7 +101,8 @@ export async function GET(request: NextRequest) {
       ((Number(paidFeesThisMonth._sum.paidAmount || 0) / Number(totalFeesThisMonth._sum.finalAmount)) * 100) : 0
 
     return NextResponse.json({
-      totalStudents,
+      activeStudents,
+
       totalFeesThisMonth: Number(totalFeesThisMonth._sum.finalAmount || 0),
       paidFeesThisMonth: Number(paidFeesThisMonth._sum.paidAmount || 0),
       pendingAmount,

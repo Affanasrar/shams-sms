@@ -202,14 +202,14 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       )}
 
       {/* Step 1: Student Selection */}
-      <div className="rounded-[24px] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)] transition-shadow hover:shadow-[0_18px_55px_-22px_rgba(15,23,42,0.34)]">
+      <div className="rounded-[24px] border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-6 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)] transition-shadow hover:shadow-[0_18px_55px_-22px_rgba(15,23,42,0.34)]">
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full font-medium text-sm ${selectedStudent ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                 {selectedStudent ? '✓' : '1'}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Select Student</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Select Student</h3>
             </div>
             <p className="text-sm text-gray-500 mt-1">Search and choose a student to enroll</p>
           </div>
@@ -221,7 +221,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
             <input
               type="text"
               placeholder="Search by Student ID, Name, or Father's Name..."
-              className="w-full rounded-2xl border border-slate-300 bg-white/90 py-3 pl-10 pr-4 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 py-3 pl-10 pr-4 text-sm text-slate-700 dark:text-slate-200 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={studentSearch}
               onChange={(e) => {
                 setStudentSearch(e.target.value)
@@ -241,19 +241,19 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
           
           {/* Search Results Dropdown */}
           {showStudentDropdown && studentSearch && (
-            <div className="absolute z-10 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+            <div className="absolute z-10 w-full mt-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto">
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => (
                   <button
                     key={student.id}
                     type="button"
-                    className="w-full px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 text-left transition-colors"
+                    className="w-full px-4 py-3 hover:bg-blue-50 dark:hover:bg-slate-800 cursor-pointer border-b border-gray-100 dark:border-gray-800 last:border-b-0 text-left transition-colors"
                     onClick={() => handleStudentSelect(student)}
                   >
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-gray-900 dark:text-gray-100">
                       {student.studentId} • {student.name}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Father: {student.fatherName}
                     </div>
                   </button>
@@ -292,14 +292,14 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       </div>
 
       {/* Step 2: Course Selection */}
-      <div className={`rounded-[24px] border border-slate-200/80 p-6 transition-all ${selectedStudent ? 'bg-white/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)]' : 'bg-slate-50/80 opacity-70'}`}>
+      <div className={`rounded-[24px] border border-slate-200/80 dark:border-slate-800 p-6 transition-all ${selectedStudent ? 'bg-white/90 dark:bg-slate-900/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)]' : 'bg-slate-50/80 dark:bg-slate-800/50 opacity-70'}`}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full font-medium text-sm ${selectedCourseId ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                 {selectedCourseId ? '✓' : '2'}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Select Course</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Select Course</h3>
             </div>
             <p className="text-sm text-gray-500 mt-1">Choose a course to enroll in</p>
           </div>
@@ -308,7 +308,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
         <select 
           required
           disabled={!selectedStudent}
-          className="w-full rounded-2xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 disabled:text-slate-500"
+          className="w-full rounded-2xl border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 px-4 py-3 text-sm text-slate-700 dark:text-slate-200 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-500 dark:disabled:text-slate-400"
           value={selectedCourseId}
           onChange={(e) => handleCourseChange(e.target.value)}
         >
@@ -332,14 +332,14 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       </div>
 
       {/* Step 3: Time Slot Selection */}
-      <div className={`rounded-[24px] border border-slate-200/80 p-6 transition-all ${selectedCourseId ? 'bg-white/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)]' : 'bg-slate-50/80 opacity-70'}`}>
+      <div className={`rounded-[24px] border border-slate-200/80 dark:border-slate-800 p-6 transition-all ${selectedCourseId ? 'bg-white/90 dark:bg-slate-900/90 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.28)]' : 'bg-slate-50/80 dark:bg-slate-800/50 opacity-70'}`}>
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full font-medium text-sm ${selectedAssignmentId ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                 {selectedAssignmentId ? '✓' : '3'}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Choose Time Slot</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Choose Time Slot</h3>
             </div>
             <p className="text-sm text-gray-500 mt-1">Select an available class slot</p>
           </div>
@@ -366,7 +366,7 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
               const teacherLabel = getTeacherLabel(a)
               
               return (
-                <label key={a.id} className={`flex cursor-pointer rounded-[20px] border-2 p-4 transition-all ${selectedAssignmentId === a.id ? 'border-indigo-500 bg-indigo-50/70' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                <label key={a.id} className={`flex cursor-pointer rounded-[20px] border-2 p-4 transition-all ${selectedAssignmentId === a.id ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-900/30' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'}`}>
                   <input
                     type="radio"
                     name="slot"
@@ -379,9 +379,9 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
                   <div className="ml-3 flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <Clock className="w-4 h-4 text-gray-600" />
-                      <span className="font-semibold text-gray-900">{a.slot.days}</span>
-                      <span className="text-gray-600">•</span>
-                      <span className="text-gray-700">{startTime}</span>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">{a.slot.days}</span>
+                      <span className="text-gray-600 dark:text-gray-400">•</span>
+                      <span className="text-gray-700 dark:text-gray-300">{startTime}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <MapPin className="w-4 h-4" />
@@ -433,38 +433,38 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
 
       {/* Summary Section */}
       {selectedAssignmentData && (
-        <div className="rounded-[24px] border border-indigo-200 bg-gradient-to-br from-indigo-50 to-slate-50 p-6 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="rounded-[24px] border border-indigo-200 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-900 p-6 shadow-sm">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <Check className="w-5 h-5 text-green-600" />
             Enrollment Summary
           </h3>
           
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-              <span className="text-sm font-medium text-gray-600">Student</span>
-              <span className="text-sm font-semibold text-gray-900">{selectedStudentData?.name}</span>
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Student</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedStudentData?.name}</span>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-              <span className="text-sm font-medium text-gray-600">Course</span>
-              <span className="text-sm font-semibold text-gray-900">{uniqueCourses.find((c) => c.id === selectedCourseId)?.name}</span>
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Course</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{uniqueCourses.find((c) => c.id === selectedCourseId)?.name}</span>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-              <span className="text-sm font-medium text-gray-600">Class Time</span>
-              <span className="text-sm font-semibold text-gray-900">
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Class Time</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {selectedAssignmentData.slot.days} • {new Date(selectedAssignmentData.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}
               </span>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-              <span className="text-sm font-medium text-gray-600">Teacher</span>
-              <span className="text-sm font-semibold text-gray-900">{selectedAssignmentData.teacher ? getTeacherLabel(selectedAssignmentData) : 'TBD'}</span>
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Teacher</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedAssignmentData.teacher ? getTeacherLabel(selectedAssignmentData) : 'TBD'}</span>
             </div>
             
-            <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-              <span className="text-sm font-medium text-gray-600">Location</span>
-              <span className="text-sm font-semibold text-gray-900">{selectedAssignmentData.slot.room.name}</span>
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Location</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedAssignmentData.slot.room.name}</span>
             </div>
           </div>
         </div>
@@ -474,10 +474,10 @@ export function EnrollmentForm({ students, assignments }: EnrollmentFormProps) {
       <button 
         type="submit" 
         disabled={!isFormValid || loading}
-        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-semibold text-white transition-all ${
+        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 font-semibold transition-all ${
           isFormValid && !loading
-            ? 'cursor-pointer bg-slate-900 hover:bg-slate-800' 
-            : 'cursor-not-allowed bg-slate-300'
+            ? 'cursor-pointer bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200' 
+            : 'cursor-not-allowed bg-slate-300 text-white dark:bg-slate-800 dark:text-slate-500'
         }`}
       >
         {loading ? (

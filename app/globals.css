@@ -362,3 +362,101 @@ html {
 .dark .border-emerald-200 {
   border-color: oklch(0.5 0.15 160 / 0.4);
 }
+
+/* Fix red variants in dark mode */
+.dark .bg-red-50 {
+  background-color: oklch(0.18 0.04 27 / 0.4);
+}
+
+.dark .border-red-200 {
+  border-color: oklch(0.45 0.15 27 / 0.4);
+}
+
+.dark .text-red-800 {
+  color: oklch(0.82 0.18 27);
+}
+
+/* Fix blue variants in dark mode */
+.dark .bg-blue-50 {
+  background-color: oklch(0.18 0.04 240 / 0.4);
+}
+
+.dark .border-blue-200 {
+  border-color: oklch(0.45 0.1 240 / 0.4);
+}
+
+.dark .text-blue-800,
+.dark .text-blue-700 {
+  color: oklch(0.75 0.14 240);
+}
+
+/* Fix indigo/purple variants in dark mode */
+.dark .bg-indigo-50,
+.dark .bg-purple-50 {
+  background-color: oklch(0.18 0.05 270 / 0.4);
+}
+
+.dark .border-indigo-200,
+.dark .border-purple-200 {
+  border-color: oklch(0.45 0.12 270 / 0.4);
+}
+
+.dark .text-indigo-800,
+.dark .text-indigo-700,
+.dark .text-purple-800,
+.dark .text-purple-700 {
+  color: oklch(0.78 0.15 270);
+}
+
+/* Fix amber/orange variants in dark mode */
+.dark .bg-amber-50,
+.dark .bg-orange-50 {
+  background-color: oklch(0.2 0.04 75 / 0.35);
+}
+
+.dark .border-amber-200,
+.dark .border-orange-200 {
+  border-color: oklch(0.55 0.12 75 / 0.4);
+}
+
+.dark .text-amber-800,
+.dark .text-amber-700,
+.dark .text-orange-800,
+.dark .text-orange-700 {
+  color: oklch(0.82 0.18 75);
+}
+
+/* Fix ring-1 / ring-2 utilities in dark mode */
+.dark .ring-1,
+.dark .ring-2 {
+  --tw-ring-color: oklch(0.28 0.02 250);
+}
+
+.dark .ring-slate-200 {
+  --tw-ring-color: oklch(0.28 0.02 250);
+}
+
+/* Fix bg-slate-200 (used in badges, buttons) */
+.dark .bg-slate-200,
+.dark .bg-gray-200 {
+  background-color: oklch(0.26 0.02 250);
+}
+
+.dark .text-slate-400,
+.dark .text-gray-400 {
+  color: oklch(0.58 0.018 250);
+}
+
+/* Fix hover states for bg-slate-50 */
+.dark .hover\:bg-slate-50:hover {
+  background-color: oklch(0.19 0.02 250);
+}
+
+.dark .hover\:bg-slate-100:hover {
+  background-color: oklch(0.22 0.022 250);
+}
+
+/* Fix focus:bg-white in dark mode */
+.dark .focus\:bg-white:focus {
+  background-color: oklch(0.19 0.018 250);
+}

@@ -388,11 +388,11 @@ export function ScheduleFilters({ courses, teachers, slots }: Props) {
         <div className="space-y-4">
           {filteredCourses.length > 0 ? (
             filteredCourses.map((course) => (
-              <div key={course.id} className="overflow-hidden rounded-[24px] border border-slate-200 bg-white/90 shadow-[0_16px_50px_-24px_rgba(15,23,42,0.3)] transition-shadow hover:shadow-[0_22px_60px_-24px_rgba(59,130,246,0.28)]">
+              <div key={course.id} className="overflow-hidden rounded-[24px] border border-slate-200 bg-white/90 shadow-[0_16px_50px_-24px_rgba(15,23,42,0.3)] transition-shadow hover:shadow-[0_22px_60px_-24px_rgba(59,130,246,0.28)] dark:border-slate-700/80 dark:bg-slate-900/90">
                 {/* Course Header with Toggle */}
                 <button
                   onClick={() => toggleCourse(course.id)}
-                  className="flex w-full items-start justify-between border-b border-slate-100 px-6 py-4 transition-colors hover:bg-slate-50"
+                  className="flex w-full items-start justify-between border-b border-slate-100 px-6 py-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
                 >
                   <div className="flex-1 text-left">
                     <h2 className="text-lg font-bold text-gray-900">{course.name}</h2>
@@ -416,7 +416,7 @@ export function ScheduleFilters({ courses, teachers, slots }: Props) {
 
                 {/* Course Slots - Show when expanded or on search */}
                 {(expandedCourses.has(course.id) || shouldAutoExpand) && (
-                  <div className="p-6 border-t border-gray-100">
+                  <div className="p-6 border-t border-gray-100 dark:border-slate-800">
                     {course.slotAssignments.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {course.slotAssignments
@@ -461,11 +461,11 @@ export function ScheduleFilters({ courses, teachers, slots }: Props) {
         <div className="space-y-4">
           {roomTimingGroupedData.length > 0 ? (
             roomTimingGroupedData.map((room) => (
-              <div key={room.id} className="overflow-hidden rounded-[24px] border border-slate-200 bg-white/90 shadow-[0_16px_50px_-24px_rgba(15,23,42,0.3)] transition-shadow hover:shadow-[0_22px_60px_-24px_rgba(59,130,246,0.28)]">
+              <div key={room.id} className="overflow-hidden rounded-[24px] border border-slate-200 bg-white/90 shadow-[0_16px_50px_-24px_rgba(15,23,42,0.3)] transition-shadow hover:shadow-[0_22px_60px_-24px_rgba(59,130,246,0.28)] dark:border-slate-700/80 dark:bg-slate-900/90">
                 {/* Room Header */}
                 <button
                   onClick={() => toggleRoom(room.id)}
-                  className="flex w-full items-start justify-between border-b border-slate-100 px-6 py-4 transition-colors hover:bg-slate-50"
+                  className="flex w-full items-start justify-between border-b border-slate-100 px-6 py-4 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
                 >
                   <div className="flex-1 text-left">
                     <h2 className="text-lg font-bold text-gray-900">{room.name}</h2>
@@ -489,14 +489,14 @@ export function ScheduleFilters({ courses, teachers, slots }: Props) {
 
                 {/* Timing Groups - Show when room expanded */}
                 {expandedRooms.has(room.id) && (
-                  <div className="border-t border-gray-100">
+                  <div className="border-t border-gray-100 dark:border-slate-800">
                     {room.timings.length > 0 ? (
                       room.timings.map((timing) => (
-                        <div key={timing.key} className="border-b border-gray-100 last:border-b-0">
+                        <div key={timing.key} className="border-b border-gray-100 last:border-b-0 dark:border-slate-800">
                           {/* Timing Header */}
                           <button
                             onClick={() => toggleTiming(timing.key)}
-                            className="w-full px-6 py-3 flex justify-between items-center hover:bg-blue-50 transition-colors"
+                            className="w-full px-6 py-3 flex justify-between items-center hover:bg-blue-50 transition-colors dark:hover:bg-slate-800/80"
                           >
                             <div className="flex-1 text-left">
                               <h3 className="font-semibold text-gray-900">{timing.timeDisplay}</h3>
@@ -521,7 +521,7 @@ export function ScheduleFilters({ courses, teachers, slots }: Props) {
 
                           {/* Courses at this timing */}
                           {expandedTimings.has(timing.key) && (
-                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 dark:bg-slate-800/30 dark:border-slate-800">
                               {timing.assignments.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   {timing.assignments.map((assignment) => (

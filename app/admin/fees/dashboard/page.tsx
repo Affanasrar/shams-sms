@@ -7,7 +7,7 @@ import { ArrowLeft, FileText, Calendar, Users, DollarSign, Percent, ArrowRight }
 import { FeesDashboard } from './fees-dashboard'
 
 type SummaryData = {
-  totalStudents: number
+  activeStudents: number
   totalFeesThisMonth: number
   paidFeesThisMonth: number
   pendingAmount: number
@@ -109,8 +109,8 @@ export default function FeesDashboardPage() {
 
           <div className="grid gap-3 grid-cols-2 w-full lg:w-auto">
             <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/55">Total Students</p>
-              <p className="mt-2 text-3xl font-semibold">{summaryData.totalStudents}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/55">Active Students</p>
+              <p className="mt-2 text-3xl font-semibold">{summaryData.activeStudents}</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.2em] text-white/55">Collection Rate</p>

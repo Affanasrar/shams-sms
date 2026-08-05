@@ -278,6 +278,9 @@ export async function updateEnrollment(prevState: unknown, formData: FormData) {
   }
 
   try {
+    // ─────────────────────────────────────────────────────────────────
+    // PHASE 1 — Atomic writes only (kept short to avoid timeout)
+    // ─────────────────────────────────────────────────────────────────
     const result = await prisma.$transaction(async (tx) => {
       const existingEnrollment = await tx.enrollment.findUnique({
         where: { id: enrollmentId },
@@ -312,6 +315,7 @@ export async function updateEnrollment(prevState: unknown, formData: FormData) {
         throw new Error('Invalid course selection')
       }
 
+      // Capacity check if changing slot
       if (newCourseOnSlot.id !== existingEnrollment.courseOnSlotId) {
         const occupied = await tx.enrollment.count({
           where: {
@@ -319,12 +323,12 @@ export async function updateEnrollment(prevState: unknown, formData: FormData) {
             status: 'ACTIVE'
           }
         })
-
         if (occupied >= newCourseOnSlot.slot.room.capacity) {
           throw new Error('Selected course slot is full. Please choose another one.')
         }
       }
 
+      // Recalculate end date
       const durationMonths = newCourseOnSlot.course.durationMonths || 0
       const newEndDate = new Date(joiningDate)
       newEndDate.setMonth(newEndDate.getMonth() + durationMonths)
@@ -332,46 +336,178 @@ export async function updateEnrollment(prevState: unknown, formData: FormData) {
         newEndDate.setDate(newEndDate.getDate() + existingEnrollment.extendedDays)
       }
 
+      // Update the enrollment
       const updatedEnrollment = await tx.enrollment.update({
         where: { id: enrollmentId },
-        data: {
-          courseOnSlotId,
-          joiningDate,
-          endDate: newEndDate
-        }
+        data: { courseOnSlotId, joiningDate, endDate: newEndDate }
       })
 
-      const dueDay = joiningDate.getDate()
-      const unpaidFees = await tx.fee.findMany({
+      const now = new Date()
+      // Cap at the PREVIOUS completed month — the current month's fee is the
+      // cron job's responsibility, not the edit action's.
+      const lastCompletedCycle = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const joiningCycle = new Date(joiningDate.getFullYear(), joiningDate.getMonth(), 1)
+
+      // Remove pre-joining unpaid fees (zero-paid only — never touch partially paid)
+      await tx.fee.deleteMany({
         where: {
           enrollmentId,
-          status: { in: ['UNPAID', 'PARTIAL'] }
+          status: 'UNPAID',
+          paidAmount: 0,
+          cycleDate: { lt: joiningCycle }
         }
       })
 
-      for (const fee of unpaidFees) {
-        const cycleDate = fee.cycleDate
-        const lastDayOfMonth = new Date(cycleDate.getFullYear(), cycleDate.getMonth() + 1, 0).getDate()
-        const newDueDate = new Date(
-          cycleDate.getFullYear(),
-          cycleDate.getMonth(),
-          Math.min(dueDay, lastDayOfMonth)
+      // Create missing monthly fee records (only for MONTHLY courses)
+      if (newCourseOnSlot.course.feeType === 'MONTHLY') {
+        const maxCycle = new Date(joiningDate.getFullYear(), joiningDate.getMonth() + (newCourseOnSlot.course.durationMonths || 12) - 1, 1)
+        const targetLastCycle = lastCompletedCycle < maxCycle ? lastCompletedCycle : maxCycle
+
+        // Determine fee rate at time of joining
+        const relevantFeeHistory = await tx.courseFeeHistory.findFirst({
+          where: { courseId: newCourseOnSlot.courseId, changedAt: { lte: joiningDate } },
+          orderBy: { changedAt: 'desc' }
+        })
+        let studentFeeRate = Number(newCourseOnSlot.course.baseFee)
+        if (relevantFeeHistory) {
+          studentFeeRate = Number(relevantFeeHistory.newFee)
+        } else {
+          const firstChange = await tx.courseFeeHistory.findFirst({
+            where: { courseId: newCourseOnSlot.courseId },
+            orderBy: { changedAt: 'asc' }
+          })
+          if (firstChange) studentFeeRate = Number(firstChange.oldFee)
+        }
+
+        const discounts = await tx.studentDiscount.findMany({ where: { enrollmentId } })
+
+        // Fetch all existing cycleDates for this enrollment in one query.
+        // Use a timezone-safe "YYYY-MM" key to avoid UTC offset mismatches
+        // (local midnight != UTC midnight in timezones like UTC+5).
+        const existingCycles = await tx.fee.findMany({
+          where: { enrollmentId },
+          select: { cycleDate: true }
+        })
+        const toYearMonth = (d: Date) =>
+          `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+        const existingCycleSet = new Set(
+          existingCycles.map((f) => toYearMonth(f.cycleDate))
         )
 
-        await tx.fee.update({
-          where: { id: fee.id },
-          data: { dueDate: newDueDate }
-        })
+        const dueDay = joiningDate.getDate()
+        const feesToCreate: Parameters<typeof tx.fee.create>[0]['data'][] = []
+
+        let cursorCycle = new Date(joiningCycle)
+        let monthsDiff = 0
+        while (cursorCycle <= targetLastCycle) {
+          const year = cursorCycle.getFullYear()
+          const month = cursorCycle.getMonth()
+          // Store cycleDate as UTC midnight to match how the cron job stores it
+          const cycleDate = new Date(Date.UTC(year, month, 1))
+          const cycleKey = `${year}-${String(month + 1).padStart(2, '0')}`
+
+          if (!existingCycleSet.has(cycleKey)) {
+            const monthNumber = monthsDiff + 1
+            const activeDiscounts = discounts.filter(
+              (d) =>
+                d.applicableFromMonth <= monthNumber &&
+                (d.applicableToMonth === null || d.applicableToMonth >= monthNumber)
+            )
+            let discountAmount = 0
+            if (activeDiscounts.length > 0) {
+              const discount = activeDiscounts[0]
+              if (discount.discountType === 'FIXED') {
+                discountAmount = Number(discount.discountAmount)
+              } else if (discount.discountType === 'PERCENTAGE') {
+                discountAmount = studentFeeRate * (Number(discount.discountAmount) / 100)
+              }
+            }
+            const baseAmount = Math.max(0, studentFeeRate - discountAmount)
+            const lastDayOfMonth = new Date(cycleDate.getFullYear(), cycleDate.getMonth() + 1, 0).getDate()
+            const dueDate = new Date(cycleDate.getFullYear(), cycleDate.getMonth(), Math.min(dueDay, lastDayOfMonth))
+
+            feesToCreate.push({
+              studentId: existingEnrollment.studentId,
+              enrollmentId,
+              amount: studentFeeRate,
+              discountAmount,
+              finalAmount: baseAmount,
+              rolloverAmount: 0,
+              dueDate,
+              cycleDate,
+              status: 'UNPAID'
+            })
+          }
+
+          cursorCycle.setMonth(cursorCycle.getMonth() + 1)
+          monthsDiff++
+        }
+
+        // Batch-create all missing fees
+        if (feesToCreate.length > 0) {
+          await tx.fee.createMany({ data: feesToCreate as never[] })
+        }
       }
 
       return {
         enrollment: updatedEnrollment,
         studentId: existingEnrollment.studentId
       }
+    }, { timeout: 15000 }) // 15s safety net for the remaining queries
+
+    // ─────────────────────────────────────────────────────────────────
+    // PHASE 2 — Post-transaction: due date alignment + rollover recalc
+    // These are best-effort updates; if they fail the enrollment is
+    // still saved. They run outside the transaction to avoid timeouts.
+    // ─────────────────────────────────────────────────────────────────
+    const dueDay = joiningDate.getDate()
+
+    // Update due dates for UNPAID/PARTIAL fees in bulk using DB expression
+    // We can't do per-row math in updateMany, so fetch once and update in parallel
+    const unpaidFees = await prisma.fee.findMany({
+      where: { enrollmentId, status: { in: ['UNPAID', 'PARTIAL'] } },
+      select: { id: true, cycleDate: true }
     })
+
+    if (unpaidFees.length > 0) {
+      await Promise.all(
+        unpaidFees.map((fee) => {
+          const lastDayOfMonth = new Date(fee.cycleDate.getFullYear(), fee.cycleDate.getMonth() + 1, 0).getDate()
+          const newDueDate = new Date(fee.cycleDate.getFullYear(), fee.cycleDate.getMonth(), Math.min(dueDay, lastDayOfMonth))
+          return prisma.fee.update({ where: { id: fee.id }, data: { dueDate: newDueDate } })
+        })
+      )
+    }
+
+    // Rollover recalculation (sequential by design — preserves chronological order)
+    const allFees = await prisma.fee.findMany({
+      where: { enrollmentId },
+      orderBy: { cycleDate: 'asc' },
+      select: { id: true, amount: true, discountAmount: true, paidAmount: true, rolloverAmount: true, finalAmount: true }
+    })
+
+    let cumulativeUnpaid = 0
+    const rolloverUpdates: Promise<unknown>[] = []
+    for (const fee of allFees) {
+      const base = Math.max(0, Number(fee.amount) - Number(fee.discountAmount))
+      const prevBalance = cumulativeUnpaid
+      if (Number(fee.rolloverAmount) !== prevBalance || Number(fee.finalAmount) !== base) {
+        rolloverUpdates.push(
+          prisma.fee.update({
+            where: { id: fee.id },
+            data: { rolloverAmount: prevBalance, finalAmount: base }
+          })
+        )
+      }
+      cumulativeUnpaid = Math.max(0, base - Number(fee.paidAmount))
+    }
+    if (rolloverUpdates.length > 0) {
+      await Promise.all(rolloverUpdates)
+    }
 
     revalidatePath('/admin/enrollment')
     revalidatePath(`/admin/students/${result.studentId}`)
+    revalidatePath('/admin/fees')
 
     return { success: true, message: 'Enrollment updated successfully' }
   } catch (error: unknown) {
@@ -379,6 +515,8 @@ export async function updateEnrollment(prevState: unknown, formData: FormData) {
     return { success: false, error: getErrorMessage(error) || 'Failed to update enrollment' }
   }
 }
+
+
 
 // Helper to fetch data (Keep this if you use it in page.tsx)
 export async function getEnrollmentData() {
