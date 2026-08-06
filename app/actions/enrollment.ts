@@ -726,11 +726,13 @@ export async function extendCourse(prevState: unknown, formData: FormData) {
     const feeRate = await getFeeForStudent(enrollmentId)
     const joiningDate = new Date(enrollment.joiningDate)
     const dueDay = joiningDate.getDate()
+    const joiningCycle = new Date(joiningDate.getFullYear(), joiningDate.getMonth(), 1)
 
     let cursorDate = new Date(currentEndDate.getFullYear(), currentEndDate.getMonth(), 1)
     const lastCycleDate = new Date(newEndDate.getFullYear(), newEndDate.getMonth(), 1)
 
     let createdFeesCount = 0
+    const discounts = await prisma.studentDiscount.findMany({ where: { enrollmentId } })
 
     while (cursorDate <= lastCycleDate) {
       const cycleDate = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1)
@@ -743,6 +745,25 @@ export async function extendCourse(prevState: unknown, formData: FormData) {
       })
 
       if (!existingFee) {
+        let monthsDiff = (cycleDate.getFullYear() - joiningCycle.getFullYear()) * 12 + (cycleDate.getMonth() - joiningCycle.getMonth())
+        const monthNumber = monthsDiff + 1
+
+        const activeDiscounts = discounts.filter(
+          (d) =>
+            d.applicableFromMonth <= monthNumber &&
+            (d.applicableToMonth === null || d.applicableToMonth >= monthNumber)
+        )
+        let discountAmount = 0
+        if (activeDiscounts.length > 0) {
+          const discount = activeDiscounts[0]
+          if (discount.discountType === 'FIXED') {
+            discountAmount = Number(discount.discountAmount)
+          } else if (discount.discountType === 'PERCENTAGE') {
+            discountAmount = feeRate * (Number(discount.discountAmount) / 100)
+          }
+        }
+        const baseAmount = Math.max(0, feeRate - discountAmount)
+
         const lastDayOfMonth = new Date(cycleDate.getFullYear(), cycleDate.getMonth() + 1, 0).getDate()
         const dueDate = new Date(
           cycleDate.getFullYear(),
@@ -755,8 +776,8 @@ export async function extendCourse(prevState: unknown, formData: FormData) {
             studentId: enrollment.studentId,
             enrollmentId,
             amount: feeRate,
-            discountAmount: 0,
-            finalAmount: feeRate,
+            discountAmount,
+            finalAmount: baseAmount,
             rolloverAmount: 0,
             dueDate,
             cycleDate,
