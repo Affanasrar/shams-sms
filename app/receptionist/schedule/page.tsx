@@ -7,33 +7,45 @@ import { BadgeCheck, CalendarDays, Layers3, Users } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 type ScheduleAssignment = {
-  id: string
-  course: { name: string }
-  slot: {
-    id: string
-    startTime: Date
-    endTime: Date
-    days: string
-    room: { name: string; capacity: number }
-  }
-  enrollments: {
-    id: string
-    student: { id: string; name: string; fatherName: string; phone: string }
-  }[]
+ id: string
+ course: { name: string }
+ slot: {
+ id: string
+ startTime: Date
+ endTime: Date
+ days: string
+ room: { name: string; capacity: number }
+ }
+ enrollments: {
+ id: string
+ student: { id: string; name: string; fatherName: string; phone: string }
+ }[]
 }
 
 export default async function ReceptionistSchedulePage() {
-  const assignments = await prisma.courseOnSlot.findMany({
+  const toJSON = (data: any) => JSON.parse(JSON.stringify(data, (_, value) => {
+    if (value && typeof value === 'object' && typeof value.toFixed === 'function') {
+      return Number(value)
+    }
+    return value
+  }))
+
+  const rawAssignmentsData = await prisma.courseOnSlot.findMany({
     include: {
       course: true,
+      teacher: true,
       slot: { include: { room: true } },
       enrollments: {
-        where: { status: 'ACTIVE' },
+        where: { status: { in: ['ACTIVE', 'PENDING_COMPLETION'] } },
         select: {
           id: true,
+          status: true,
+          joiningDate: true,
+          endDate: true,
           student: {
             select: {
               id: true,
+              studentId: true,
               name: true,
               fatherName: true,
               phone: true
@@ -48,11 +60,16 @@ export default async function ReceptionistSchedulePage() {
     ]
   })
 
+  const rawRoomsData = await prisma.room.findMany({ orderBy: { name: 'asc' } })
+
+  const assignments = toJSON(rawAssignmentsData)
+  const rooms = toJSON(rawRoomsData)
+
   const roomGroups = new Map<string, ReceptionistRoomGroup>()
 
-  assignments.forEach((assignment) => {
+  assignments.forEach((assignment: any) => {
     const { slot, course, enrollments } = assignment
-    const studentList = enrollments.map((enrollment) => ({
+    const studentList = enrollments.map((enrollment: any) => ({
       id: enrollment.student.id,
       enrollmentId: enrollment.id,
       name: enrollment.student.name,
@@ -66,8 +83,8 @@ export default async function ReceptionistSchedulePage() {
     const timing = {
       slotId: slot.id,
       days: slot.days,
-      startTime: slot.startTime.toISOString(),
-      endTime: slot.endTime.toISOString(),
+      startTime: typeof slot.startTime === 'string' ? slot.startTime : slot.startTime.toISOString(),
+      endTime: typeof slot.endTime === 'string' ? slot.endTime : slot.endTime.toISOString(),
       assignments: [
         {
           id: assignment.id,
@@ -132,7 +149,7 @@ export default async function ReceptionistSchedulePage() {
       <section className="overflow-hidden rounded-[2rem] border border-slate-900/90 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_34%),linear-gradient(135deg,#020617_0%,#0f172a_50%,#111827_100%)] p-6 text-white shadow-2xl shadow-slate-900/20 md:p-8">
         <div className="space-y-8">
           <div className="max-w-3xl space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-card/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.26em] text-cyan-200">
               <BadgeCheck size={12} />
               Schedule control
             </div>
@@ -154,8 +171,11 @@ export default async function ReceptionistSchedulePage() {
         </div>
       </section>
 
-      <ReceptionistSchedulePanel roomGroups={roomGroupArray} />
+      <ReceptionistSchedulePanel
+        roomGroups={roomGroupArray}
+        rawAssignments={assignments}
+        rooms={rooms}
+      />
     </PageLayout>
   )
 }
-

@@ -4,115 +4,115 @@ import prisma from '@/lib/prisma'
 import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function GET(request: NextRequest) {
-  // ✅ ROLE VERIFICATION: Verify admin access
-  const { isAdmin } = await verifyAdminApiRole()
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: 'Forbidden: Admin access required' },
-      { status: 403 }
-    )
-  }
-  try {
-    // Get current month and year for default view
-    const now = new Date()
-    const currentMonth = now.getMonth() + 1 // JavaScript months are 0-based
-    const currentYear = now.getFullYear()
+ // ✅ ROLE VERIFICATION: Verify admin access
+ const { isAdmin } = await verifyAdminApiRole()
+ if (!isAdmin) {
+ return NextResponse.json(
+ { error: 'Forbidden: Admin access required' },
+ { status: 403 }
+ )
+ }
+ try {
+ // Get current month and year for default view
+ const now = new Date()
+ const currentMonth = now.getMonth() + 1 // JavaScript months are 0-based
+ const currentYear = now.getFullYear()
 
-    // Fetch summary data
-    const [
-      activeStudentsCount,
-      totalFeesThisMonth,
-      paidFeesThisMonth,
-      pendingFeesThisMonth,
-      courses
-    ] = await Promise.all([
-      prisma.enrollment.findMany({
-        where: { status: 'ACTIVE' },
-        distinct: ['studentId'],
-        select: { studentId: true }
-      }),
-      prisma.fee.aggregate({
-        where: {
-          cycleDate: {
-            gte: new Date(currentYear, currentMonth - 1, 1),
-            lt: new Date(currentYear, currentMonth, 1)
-          }
-        },
-        _sum: { finalAmount: true }
-      }),
-      prisma.fee.aggregate({
-        where: {
-          cycleDate: {
-            gte: new Date(currentYear, currentMonth - 1, 1),
-            lt: new Date(currentYear, currentMonth, 1)
-          },
-          status: { in: ['PAID', 'PARTIAL'] }
-        },
-        _sum: { paidAmount: true }
-      }),
-      prisma.fee.aggregate({
-        where: {
-          cycleDate: {
-            gte: new Date(currentYear, currentMonth - 1, 1),
-            lt: new Date(currentYear, currentMonth, 1)
-          },
-          status: { in: ['UNPAID', 'PARTIAL'] }
-        },
-        _sum: {
-          finalAmount: true,
-          paidAmount: true
-        }
-      }),
-      prisma.course.findMany({
-        select: { id: true, name: true }
-      })
-    ])
+ // Fetch summary data
+ const [
+ activeStudentsCount,
+ totalFeesThisMonth,
+ paidFeesThisMonth,
+ pendingFeesThisMonth,
+ courses
+ ] = await Promise.all([
+ prisma.enrollment.findMany({
+ where: { status: 'ACTIVE' },
+ distinct: ['studentId'],
+ select: { studentId: true }
+ }),
+ prisma.fee.aggregate({
+ where: {
+ cycleDate: {
+ gte: new Date(currentYear, currentMonth - 1, 1),
+ lt: new Date(currentYear, currentMonth, 1)
+ }
+ },
+ _sum: { finalAmount: true }
+ }),
+ prisma.fee.aggregate({
+ where: {
+ cycleDate: {
+ gte: new Date(currentYear, currentMonth - 1, 1),
+ lt: new Date(currentYear, currentMonth, 1)
+ },
+ status: { in: ['PAID', 'PARTIAL'] }
+ },
+ _sum: { paidAmount: true }
+ }),
+ prisma.fee.aggregate({
+ where: {
+ cycleDate: {
+ gte: new Date(currentYear, currentMonth - 1, 1),
+ lt: new Date(currentYear, currentMonth, 1)
+ },
+ status: { in: ['UNPAID', 'PARTIAL'] }
+ },
+ _sum: {
+ finalAmount: true,
+ paidAmount: true
+ }
+ }),
+ prisma.course.findMany({
+ select: { id: true, name: true }
+ })
+ ])
 
-    const activeStudents = activeStudentsCount.length
+ const activeStudents = activeStudentsCount.length
 
-    const pendingAmount = Number(totalFeesThisMonth._sum.finalAmount || 0) -
-                         Number(paidFeesThisMonth._sum.paidAmount || 0)
+ const pendingAmount = Number(totalFeesThisMonth._sum.finalAmount || 0) -
+ Number(paidFeesThisMonth._sum.paidAmount || 0)
 
-    // Get overdue fees count (30+ days)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+ // Get overdue fees count (30+ days)
+ const thirtyDaysAgo = new Date()
+ thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const overdueFeesCount = await prisma.fee.count({
-      where: {
-        status: { in: ['UNPAID', 'PARTIAL'] },
-        dueDate: { lt: thirtyDaysAgo }
-      }
-    })
+ const overdueFeesCount = await prisma.fee.count({
+ where: {
+ status: { in: ['UNPAID', 'PARTIAL'] },
+ dueDate: { lt: thirtyDaysAgo }
+ }
+ })
 
-    // Get students with pending fees
-    const studentsWithPendingFees = await prisma.fee.findMany({
-      where: {
-        cycleDate: {
-          gte: new Date(currentYear, currentMonth - 1, 1),
-          lt: new Date(currentYear, currentMonth, 1)
-        },
-        status: { in: ['UNPAID', 'PARTIAL'] }
-      },
-      distinct: ['studentId'],
-      select: { studentId: true }
-    })
+ // Get students with pending fees
+ const studentsWithPendingFees = await prisma.fee.findMany({
+ where: {
+ cycleDate: {
+ gte: new Date(currentYear, currentMonth - 1, 1),
+ lt: new Date(currentYear, currentMonth, 1)
+ },
+ status: { in: ['UNPAID', 'PARTIAL'] }
+ },
+ distinct: ['studentId'],
+ select: { studentId: true }
+ })
 
-    const collectionRate = totalFeesThisMonth._sum.finalAmount ?
-      ((Number(paidFeesThisMonth._sum.paidAmount || 0) / Number(totalFeesThisMonth._sum.finalAmount)) * 100) : 0
+ const collectionRate = totalFeesThisMonth._sum.finalAmount ?
+ ((Number(paidFeesThisMonth._sum.paidAmount || 0) / Number(totalFeesThisMonth._sum.finalAmount)) * 100) : 0
 
-    return NextResponse.json({
-      activeStudents,
+ return NextResponse.json({
+ activeStudents,
 
-      totalFeesThisMonth: Number(totalFeesThisMonth._sum.finalAmount || 0),
-      paidFeesThisMonth: Number(paidFeesThisMonth._sum.paidAmount || 0),
-      pendingAmount,
-      overdueFeesCount,
-      studentsWithPendingFeesCount: studentsWithPendingFees.length,
-      collectionRate,
-      courses
-    })
-  } catch (error) {
-    console.error('Error fetching fees summary:', error)
-    return NextResponse.json({ error: 'Failed to fetch fees summary' }, { status: 500 })
-  }
+ totalFeesThisMonth: Number(totalFeesThisMonth._sum.finalAmount || 0),
+ paidFeesThisMonth: Number(paidFeesThisMonth._sum.paidAmount || 0),
+ pendingAmount,
+ overdueFeesCount,
+ studentsWithPendingFeesCount: studentsWithPendingFees.length,
+ collectionRate,
+ courses
+ })
+ } catch (error) {
+ console.error('Error fetching fees summary:', error)
+ return NextResponse.json({ error: 'Failed to fetch fees summary' }, { status: 500 })
+ }
 }

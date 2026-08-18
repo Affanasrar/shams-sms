@@ -7,56 +7,56 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 export default async function MarkClassAttendance({ params }: { params: { id: string } }) {
-  const { id } = await params
-  const { userId } = await auth()
-  
-  if (!userId) redirect("/sign-in")
+ const { id } = await params
+ const { userId } = await auth()
+ 
+ if (!userId) redirect("/sign-in")
 
-  // 1. Get Teacher Info
-  const teacher = await prisma.user.findFirst({ where: { clerkId: userId } })
-  if (!teacher) redirect("/")
+ // 1. Get Teacher Info
+ const teacher = await prisma.user.findFirst({ where: { clerkId: userId } })
+ if (!teacher) redirect("/")
 
-  // 2. Get Class & Students
-  const classData = await prisma.courseOnSlot.findUnique({
-    where: { id },
-    include: {
-      course: true,
-      slot: { include: { room: true } },
-      enrollments: {
-        where: { status: 'ACTIVE' },
-        include: { student: true },
-        orderBy: { student: { name: 'asc' } }
-      }
-    }
-  })
+ // 2. Get Class & Students
+ const classData = await prisma.courseOnSlot.findUnique({
+ where: { id },
+ include: {
+ course: true,
+ slot: { include: { room: true } },
+ enrollments: {
+ where: { status: 'ACTIVE' },
+ include: { student: true },
+ orderBy: { student: { name: 'asc' } }
+ }
+ }
+ })
 
-  if (!classData) return <div>Class not found</div>
+ if (!classData) return <div>Class not found</div>
 
-  return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/teacher/attendance" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={20} />
-          Back to Attendance
-        </Link>
-      </div>
-      
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">{classData.course.name}</h1>
-        <p className="text-gray-500">Marking attendance for {new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</p>
-        <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
-          <span>🕐 {new Date(classData.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} - {new Date(classData.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}</span>
-          <span>📅 {classData.slot.days}</span>
-          <span>🏫 {classData.slot.room.name}</span>
-        </div>
-      </div>
+ return (
+ <div className="max-w-3xl mx-auto space-y-6">
+ <div className="flex items-center gap-4 mb-6">
+ <Link href="/teacher/attendance" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+ <ArrowLeft size={20} />
+ Back to Attendance
+ </Link>
+ </div>
+ 
+ <div className="mb-8">
+ <h1 className="text-2xl font-bold">{classData.course.name}</h1>
+ <p className="text-muted-foreground">Marking attendance for {new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Karachi' })}</p>
+ <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-muted-foreground">
+ <span>🕐 {new Date(classData.slot.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })} - {new Date(classData.slot.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })}</span>
+ <span>📅 {classData.slot.days}</span>
+ <span>🏫 {classData.slot.room.name}</span>
+ </div>
+ </div>
 
-      {/* 👇 Render the Client Component with the data */}
-      <AttendanceForm 
-        classId={id} 
-        teacherId={teacher.id} 
-        enrollments={classData.enrollments} 
-      />
-    </div>
-  )
+ {/* 👇 Render the Client Component with the data */}
+ <AttendanceForm 
+ classId={id} 
+ teacherId={teacher.id} 
+ enrollments={classData.enrollments} 
+ />
+ </div>
+ )
 }

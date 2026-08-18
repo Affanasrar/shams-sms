@@ -11,75 +11,75 @@ import { getCurrentFeeForCourse } from '@/lib/course-fees'
  * Optionally creates new fees if they want to continue
  */
 export async function reEnrollStudent(
-  enrollmentId: string,
-  options?: {
-    extendDays?: number
-  }
+ enrollmentId: string,
+ options?: {
+ extendDays?: number
+ }
 ) {
-  console.log(`⚡ Re-enrolling student in enrollment ${enrollmentId}`)
+ console.log(`⚡ Re-enrolling student in enrollment ${enrollmentId}`)
 
-  return await prisma.$transaction(async (tx) => {
-    // Get the enrollment details
-    const enrollment = await tx.enrollment.findUnique({
-      where: { id: enrollmentId },
-      include: {
-        student: true,
-        courseOnSlot: {
-          include: { course: true }
-        }
-      }
-    })
+ return await prisma.$transaction(async (tx) => {
+ // Get the enrollment details
+ const enrollment = await tx.enrollment.findUnique({
+ where: { id: enrollmentId },
+ include: {
+ student: true,
+ courseOnSlot: {
+ include: { course: true }
+ }
+ }
+ })
 
-    if (!enrollment) {
-      throw new Error('Enrollment not found')
-    }
+ if (!enrollment) {
+ throw new Error('Enrollment not found')
+ }
 
-    if (enrollment.status !== 'DROPPED') {
-      throw new Error('Only dropped enrollments can be re-enrolled')
-    }
+ if (enrollment.status !== 'DROPPED') {
+ throw new Error('Only dropped enrollments can be re-enrolled')
+ }
 
-    // Calculate new end date
-    const today = new Date()
-    let newEndDate = new Date(today)
-    
-    if (options?.extendDays) {
-      newEndDate.setDate(newEndDate.getDate() + options.extendDays)
-    } else {
-      // Default: extend by course duration
-      newEndDate.setMonth(newEndDate.getMonth() + enrollment.courseOnSlot.course.durationMonths)
-    }
+ // Calculate new end date
+ const today = new Date()
+ let newEndDate = new Date(today)
+ 
+ if (options?.extendDays) {
+ newEndDate.setDate(newEndDate.getDate() + options.extendDays)
+ } else {
+ // Default: extend by course duration
+ newEndDate.setMonth(newEndDate.getMonth() + enrollment.courseOnSlot.course.durationMonths)
+ }
 
-    // Update enrollment status and dates
-    const updatedEnrollment = await tx.enrollment.update({
-      where: { id: enrollmentId },
-      data: {
-        status: 'ACTIVE',
-        endDate: newEndDate,
-        extendedDays: (enrollment.extendedDays || 0) + (options?.extendDays || 0)
-      }
-    })
+ // Update enrollment status and dates
+ const updatedEnrollment = await tx.enrollment.update({
+ where: { id: enrollmentId },
+ data: {
+ status: 'ACTIVE',
+ endDate: newEndDate,
+ extendedDays: (enrollment.extendedDays || 0) + (options?.extendDays || 0)
+ }
+ })
 
-    // Create a new fee for the new enrollment period
-    const currentFee = await getCurrentFeeForCourse(enrollment.courseOnSlot.courseId)
-    const cycleDate = new Date(today.getFullYear(), today.getMonth(), 1)
+ // Create a new fee for the new enrollment period
+ const currentFee = await getCurrentFeeForCourse(enrollment.courseOnSlot.courseId)
+ const cycleDate = new Date(today.getFullYear(), today.getMonth(), 1)
 
-    await tx.fee.create({
-      data: {
-        studentId: enrollment.studentId,
-        enrollmentId: enrollmentId,
-        amount: currentFee,
-        discountAmount: 0,
-        finalAmount: currentFee,
-        rolloverAmount: 0,
-        dueDate: today,
-        cycleDate: cycleDate,
-        status: 'UNPAID'
-      }
-    })
+ await tx.fee.create({
+ data: {
+ studentId: enrollment.studentId,
+ enrollmentId: enrollmentId,
+ amount: currentFee,
+ discountAmount: 0,
+ finalAmount: currentFee,
+ rolloverAmount: 0,
+ dueDate: today,
+ cycleDate: cycleDate,
+ status: 'UNPAID'
+ }
+ })
 
-    console.log(`✅ Student re-enrolled successfully`)
-    return updatedEnrollment
-  })
+ console.log(`✅ Student re-enrolled successfully`)
+ return updatedEnrollment
+ })
 }
 
 /**
@@ -87,62 +87,62 @@ export async function reEnrollStudent(
  * This allows extending the endDate for consideration
  */
 export async function extendDroppedStudent(
-  enrollmentId: string,
-  extendDays: number
+ enrollmentId: string,
+ extendDays: number
 ) {
-  console.log(`⚡ Extending dropped student enrollment ${enrollmentId} by ${extendDays} days`)
+ console.log(`⚡ Extending dropped student enrollment ${enrollmentId} by ${extendDays} days`)
 
-  return await prisma.$transaction(async (tx) => {
-    const enrollment = await tx.enrollment.findUnique({
-      where: { id: enrollmentId }
-    })
+ return await prisma.$transaction(async (tx) => {
+ const enrollment = await tx.enrollment.findUnique({
+ where: { id: enrollmentId }
+ })
 
-    if (!enrollment) {
-      throw new Error('Enrollment not found')
-    }
+ if (!enrollment) {
+ throw new Error('Enrollment not found')
+ }
 
-    // Update endDate and extendedDays
-    const newEndDate = new Date(enrollment.endDate || new Date())
-    newEndDate.setDate(newEndDate.getDate() + extendDays)
+ // Update endDate and extendedDays
+ const newEndDate = new Date(enrollment.endDate || new Date())
+ newEndDate.setDate(newEndDate.getDate() + extendDays)
 
-    const updatedEnrollment = await tx.enrollment.update({
-      where: { id: enrollmentId },
-      data: {
-        endDate: newEndDate,
-        extendedDays: (enrollment.extendedDays || 0) + extendDays
-      }
-    })
+ const updatedEnrollment = await tx.enrollment.update({
+ where: { id: enrollmentId },
+ data: {
+ endDate: newEndDate,
+ extendedDays: (enrollment.extendedDays || 0) + extendDays
+ }
+ })
 
-    console.log(`✅ Dropped student extension recorded`)
-    return updatedEnrollment
-  })
+ console.log(`✅ Dropped student extension recorded`)
+ return updatedEnrollment
+ })
 }
 
 /**
  * Get summary stats for dropped students
  */
 export async function getDroppedStudentsStats() {
-  const stats = await prisma.enrollment.aggregate({
-    where: { status: 'DROPPED' },
-    _count: true
-  })
+ const stats = await prisma.enrollment.aggregate({
+ where: { status: 'DROPPED' },
+ _count: true
+ })
 
-  const byMonth = await prisma.enrollment.groupBy({
-    by: ['endDate'],
-    where: { status: 'DROPPED' },
-    _count: true,
-    orderBy: {
-      endDate: 'desc'
-    }
-  })
+ const byMonth = await prisma.enrollment.groupBy({
+ by: ['endDate'],
+ where: { status: 'DROPPED' },
+ _count: true,
+ orderBy: {
+ endDate: 'desc'
+ }
+ })
 
-  return {
-    totalDropped: stats._count,
-    byMonth: byMonth.map(m => ({
-      date: m.endDate,
-      count: m._count
-    }))
-  }
+ return {
+ totalDropped: stats._count,
+ byMonth: byMonth.map(m => ({
+ date: m.endDate,
+ count: m._count
+ }))
+ }
 }
 
 revalidatePath('/admin/dropped-students')

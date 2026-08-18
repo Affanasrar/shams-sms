@@ -8,78 +8,78 @@ import { unstable_noStore as noStore } from 'next/cache'
 export const dynamic = 'force-dynamic'
 
 export default async function NewEnrollmentPage() {
-  noStore()
+ noStore()
 
-  const data = await getEnrollmentOptions()
+ const data = await getEnrollmentOptions()
 
-  const safeAssignments = data.assignments.map((assignment) => ({
-    ...assignment,
-    slot: {
-      ...assignment.slot,
-      startTime: assignment.slot.startTime instanceof Date
-        ? assignment.slot.startTime.toISOString()
-        : assignment.slot.startTime,
-      endTime: assignment.slot.endTime instanceof Date
-        ? assignment.slot.endTime.toISOString()
-        : assignment.slot.endTime
-    },
-    course: {
-      ...assignment.course,
-      baseFee: Number(assignment.course.baseFee)
-    },
-    enrollments: (assignment.enrollments || []).map((enrollment) => ({
-      ...enrollment,
-      joiningDate: enrollment.joiningDate instanceof Date
-        ? enrollment.joiningDate.toISOString()
-        : enrollment.joiningDate,
-      endDate: enrollment.endDate instanceof Date
-        ? enrollment.endDate.toISOString()
-        : enrollment.endDate
-    }))
-  })) as CourseOnSlot[]
+ const safeAssignments = data.assignments.map((assignment: any) => ({
+  ...assignment,
+  slot: {
+  ...assignment.slot,
+  startTime: assignment.slot.startTime instanceof Date
+  ? assignment.slot.startTime.toISOString()
+  : assignment.slot.startTime,
+  endTime: assignment.slot.endTime instanceof Date
+  ? assignment.slot.endTime.toISOString()
+  : assignment.slot.endTime
+  },
+  course: {
+  ...assignment.course,
+  baseFee: Number(assignment.course.baseFee)
+  },
+  enrollments: (assignment.enrollments || []).map((enrollment: any) => ({
+  ...enrollment,
+  joiningDate: enrollment.joiningDate instanceof Date
+  ? enrollment.joiningDate.toISOString()
+  : enrollment.joiningDate,
+  endDate: enrollment.endDate instanceof Date
+  ? enrollment.endDate.toISOString()
+  : enrollment.endDate
+  }))
+ })) as unknown as CourseOnSlot[]
 
-  return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_34%)] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8 rounded-[32px] border border-slate-200/80 bg-white/80 p-6 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.32)] backdrop-blur-xl sm:p-8">
-          <Link href="/admin/enrollment" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 transition hover:text-indigo-700">
-            <ArrowLeft size={18} />
-            Back to Enrollments
-          </Link>
+ return (
+ <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_34%)] px-4 py-8 sm:px-6 lg:px-8">
+ <div className="mx-auto max-w-4xl">
+ <div className="mb-8 rounded-[32px] border border-border/80 bg-card/80 p-6 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.32)] backdrop-blur-xl sm:p-8">
+ <Link href="/admin/enrollment" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300 transition hover:text-indigo-700 dark:text-indigo-300">
+ <ArrowLeft size={18} />
+ Back to Enrollments
+ </Link>
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
-                <BookOpen size={16} />
-                New student placement
-              </div>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Create a new enrollment</h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
-                Complete the guided steps below to place a student into the right course and time slot with clarity.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <p className="font-semibold text-slate-900">3 guided steps</p>
-              <p className="mt-1">Student • Course • Time slot</p>
-            </div>
-          </div>
-        </div>
+ <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+ <div>
+ <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-950/40 px-3 py-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">
+ <BookOpen size={16} />
+ New student placement
+ </div>
+ <h1 className="text-3xl font-semibold tracking-tight text-foreground">Create a new enrollment</h1>
+ <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+ Complete the guided steps below to place a student into the right course and time slot with clarity.
+ </p>
+ </div>
+ <div className="rounded-2xl border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
+ <p className="font-semibold text-foreground">3 guided steps</p>
+ <p className="mt-1">Student • Course • Time slot</p>
+ </div>
+ </div>
+ </div>
 
-        <div className="overflow-hidden rounded-[32px] border border-slate-200/80 bg-white/90 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.32)]">
-          <div className="bg-linear-to-r from-slate-900 via-indigo-900 to-slate-900 px-6 py-4 text-white sm:px-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-indigo-200">Step-by-step flow</p>
-            <p className="mt-1 text-base font-medium">Choose the student, course, and slot in a calm, premium experience.</p>
-          </div>
+ <div className="overflow-hidden rounded-[32px] border border-border/80 bg-card/90 shadow-[0_24px_70px_-28px_rgba(15,23,42,0.32)]">
+ <div className="bg-linear-to-r from-slate-900 via-indigo-900 to-slate-900 px-6 py-4 text-white sm:px-8">
+ <p className="text-sm font-semibold uppercase tracking-[0.24em] text-indigo-200">Step-by-step flow</p>
+ <p className="mt-1 text-base font-medium">Choose the student, course, and slot in a calm, premium experience.</p>
+ </div>
 
-          <div className="p-5 sm:p-8">
-            <EnrollmentForm students={data.students} assignments={safeAssignments} />
-          </div>
-        </div>
+ <div className="p-5 sm:p-8">
+ <EnrollmentForm students={data.students} assignments={safeAssignments} />
+ </div>
+ </div>
 
-        <div className="mt-8 rounded-[24px] border border-slate-200/80 bg-white/80 p-4 text-sm text-slate-600 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.24)] backdrop-blur-xl">
-          <span className="font-semibold text-slate-900">Need help?</span> Ensure the student is registered in the system and that the selected slot still has room available.
-        </div>
-      </div>
-    </div>
-  )
+ <div className="mt-8 rounded-[24px] border border-border/80 bg-card/80 p-4 text-sm text-muted-foreground shadow-[0_20px_60px_-28px_rgba(15,23,42,0.24)] backdrop-blur-xl">
+ <span className="font-semibold text-foreground">Need help?</span> Ensure the student is registered in the system and that the selected slot still has room available.
+ </div>
+ </div>
+ </div>
+ )
 }

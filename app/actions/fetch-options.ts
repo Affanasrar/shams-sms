@@ -3,15 +3,13 @@
 import prisma from '@/lib/prisma'
 
 export async function getEnrollmentOptions() {
-  // 1. Get all students (In production, use search instead of fetching all)
-  // Note: name and fatherName are required fields in the schema, so NULL values shouldn't exist
+  // 1. Get all students
   const students = await prisma.student.findMany({
     orderBy: { name: 'asc' },
-    select: { id: true, studentId: true, name: true, fatherName: true } // Include studentId
+    select: { id: true, studentId: true, name: true, fatherName: true }
   })
 
-  // 2. Get all Course Assignments with enrollment count
-  // We group them so the frontend can filter: "If I select English, show me English Slots"
+  // 2. Get all Course Assignments with slot and room details, including shared slot enrollments
   const assignments = await prisma.courseOnSlot.findMany({
     include: {
       course: true,
@@ -22,8 +20,37 @@ export async function getEnrollmentOptions() {
           lastName: true
         }
       },
-      slot: { include: { room: true } },
-      enrollments: { where: { status: 'ACTIVE' } } // Count only active enrollments
+      slot: {
+        include: {
+          room: true,
+          courses: {
+            include: {
+              enrollments: {
+                where: {
+                  status: { in: ['ACTIVE', 'PENDING_COMPLETION'] }
+                },
+                select: {
+                  id: true,
+                  status: true,
+                  joiningDate: true,
+                  endDate: true
+                }
+              }
+            }
+          }
+        }
+      },
+      enrollments: {
+        where: {
+          status: { in: ['ACTIVE', 'PENDING_COMPLETION'] }
+        },
+        select: {
+          id: true,
+          status: true,
+          joiningDate: true,
+          endDate: true
+        }
+      }
     }
   })
 

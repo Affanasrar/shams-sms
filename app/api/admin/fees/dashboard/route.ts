@@ -5,198 +5,198 @@ import prisma from '@/lib/prisma'
 import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 function formatSlotLabel(slot: {
-  days: string
-  startTime: Date
-  endTime: Date
-  room?: { name: string }
+ days: string
+ startTime: Date
+ endTime: Date
+ room?: { name: string }
 }) {
-  const start = slot.startTime.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Karachi'
-  })
-  const end = slot.endTime.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Karachi'
-  })
+ const start = slot.startTime.toLocaleTimeString('en-US', {
+ hour: 'numeric',
+ minute: '2-digit',
+ hour12: true,
+ timeZone: 'Asia/Karachi'
+ })
+ const end = slot.endTime.toLocaleTimeString('en-US', {
+ hour: 'numeric',
+ minute: '2-digit',
+ hour12: true,
+ timeZone: 'Asia/Karachi'
+ })
 
-  return `${start} - ${end}${slot.room?.name ? ` • ${slot.room.name}` : ''}`
+ return `${start} - ${end}${slot.room?.name ? ` • ${slot.room.name}` : ''}`
 }
 
 export async function GET(request: NextRequest) {
-  // ✅ ROLE VERIFICATION: Verify admin access
-  const { isAdmin } = await verifyAdminApiRole()
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: 'Forbidden: Admin access required' },
-      { status: 403 }
-    )
-  }
-  try {
-    const { searchParams } = new URL(request.url)
-    const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString())
-    const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
-    const courseId = searchParams.get('courseId') || ''
-    const search = searchParams.get('search') || ''
-    const status = searchParams.get('status') || ''
-    const startDateParam = searchParams.get('startDate')
-    const endDateParam = searchParams.get('endDate')
+ // ✅ ROLE VERIFICATION: Verify admin access
+ const { isAdmin } = await verifyAdminApiRole()
+ if (!isAdmin) {
+ return NextResponse.json(
+ { error: 'Forbidden: Admin access required' },
+ { status: 403 }
+ )
+ }
+ try {
+ const { searchParams } = new URL(request.url)
+ const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString())
+ const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
+ const courseId = searchParams.get('courseId') || ''
+ const search = searchParams.get('search') || ''
+ const status = searchParams.get('status') || ''
+ const startDateParam = searchParams.get('startDate')
+ const endDateParam = searchParams.get('endDate')
 
-    // Determine date range
-    let startDate, endDate
-    
-    if (startDateParam && endDateParam) {
-      // Use custom date range
-      startDate = new Date(startDateParam)
-      endDate = new Date(endDateParam)
-      endDate.setDate(endDate.getDate() + 1) // Include the end date
-    } else {
-      // Use month/year
-      startDate = new Date(year, month - 1, 1)
-      endDate = new Date(year, month, 1)
-    }
+ // Determine date range
+ let startDate, endDate
+ 
+ if (startDateParam && endDateParam) {
+ // Use custom date range
+ startDate = new Date(startDateParam)
+ endDate = new Date(endDateParam)
+ endDate.setDate(endDate.getDate() + 1) // Include the end date
+ } else {
+ // Use month/year
+ startDate = new Date(year, month - 1, 1)
+ endDate = new Date(year, month, 1)
+ }
 
-    // Build where clause
-    const whereClause: Prisma.FeeWhereInput = {
-      dueDate: {
-        gte: startDate,
-        lt: endDate
-      }
-    }
+ // Build where clause
+ const whereClause: Prisma.FeeWhereInput = {
+ dueDate: {
+ gte: startDate,
+ lt: endDate
+ }
+ }
 
-    // Note: Do NOT filter by status at the database level
-    // Status should be calculated after grouping fees by student
-    // to ensure totals include all fees for that student
+ // Note: Do NOT filter by status at the database level
+ // Status should be calculated after grouping fees by student
+ // to ensure totals include all fees for that student
 
-    if (courseId) {
-      whereClause.enrollment = {
-        courseOnSlot: {
-          courseId: courseId
-        }
-      }
-    }
+ if (courseId) {
+ whereClause.enrollment = {
+ courseOnSlot: {
+ courseId: courseId
+ }
+ }
+ }
 
-    // Fetch fees with related data
-    const fees = await prisma.fee.findMany({
-      where: whereClause,
-      include: {
-        student: {
-          select: {
-            id: true,
-            studentId: true,
-            name: true,
-            fatherName: true
-          }
-        },
-        enrollment: {
-          include: {
-            courseOnSlot: {
-              include: {
-                course: true,
-                slot: {
-                  include: {
-                    room: true
-                  }
-                }
-              }
-            }
-          }
-        },
-        transactions: {
-          orderBy: { date: 'desc' },
-          take: 1,
-          select: { date: true }
-        }
-      },
-      orderBy: [
-        { student: { name: 'asc' } }
-      ]
-    })
+ // Fetch fees with related data
+ const fees = await prisma.fee.findMany({
+ where: whereClause,
+ include: {
+ student: {
+ select: {
+ id: true,
+ studentId: true,
+ name: true,
+ fatherName: true
+ }
+ },
+ enrollment: {
+ include: {
+ courseOnSlot: {
+ include: {
+ course: true,
+ slot: {
+ include: {
+ room: true
+ }
+ }
+ }
+ }
+ }
+ },
+ transactions: {
+ orderBy: { date: 'desc' },
+ take: 1,
+ select: { date: true }
+ }
+ },
+ orderBy: [
+ { student: { name: 'asc' } }
+ ]
+ })
 
-    // Process and group fees by student only (not by course)
-    const studentFeesMap = new Map()
+ // Process and group fees by student only (not by course)
+ const studentFeesMap = new Map()
 
-    fees.forEach(fee => {
-      const studentId = fee.student.studentId
+ fees.forEach(fee => {
+ const studentId = fee.student.studentId
 
-      if (!studentFeesMap.has(studentId)) {
-        studentFeesMap.set(studentId, {
-          studentId: fee.student.studentId,
-          studentDbId: fee.student.id,
-          studentName: fee.student.name,
-          fatherName: fee.student.fatherName,
-          courses: [] as { id: string; name: string }[],
-          timingSlots: [] as string[],
-          dueDate: null as string | null,
-          month: new Date(startDate).toLocaleString('default', { month: 'long' }),
-          year: year,
-          totalAmount: 0,
-          paidAmount: 0,
-          pendingAmount: 0,
-          status: 'UNPAID',
-          lastPayment: null as string | null
-        })
-      }
+ if (!studentFeesMap.has(studentId)) {
+ studentFeesMap.set(studentId, {
+ studentId: fee.student.studentId,
+ studentDbId: fee.student.id,
+ studentName: fee.student.name,
+ fatherName: fee.student.fatherName,
+ courses: [] as { id: string; name: string }[],
+ timingSlots: [] as string[],
+ dueDate: null as string | null,
+ month: new Date(startDate).toLocaleString('default', { month: 'long' }),
+ year: year,
+ totalAmount: 0,
+ paidAmount: 0,
+ pendingAmount: 0,
+ status: 'UNPAID',
+ lastPayment: null as string | null
+ })
+ }
 
-      const studentFee = studentFeesMap.get(studentId)
-      const courseName = fee.enrollment?.courseOnSlot.course.name || 'General Fee'
-      const courseId = fee.enrollment?.courseOnSlot.course.id
-      const slot = fee.enrollment?.courseOnSlot.slot
-      const slotLabel = slot ? formatSlotLabel(slot) : 'Unassigned timing'
-      
-      // Add unique courses
-      if (courseId && !studentFee.courses.some((course: { id: string; name: string }) => course.id === courseId)) {
-        studentFee.courses.push({ id: courseId, name: courseName })
-      }
+ const studentFee = studentFeesMap.get(studentId)
+ const courseName = fee.enrollment?.courseOnSlot.course.name || 'General Fee'
+ const courseId = fee.enrollment?.courseOnSlot.course.id
+ const slot = fee.enrollment?.courseOnSlot.slot
+ const slotLabel = slot ? formatSlotLabel(slot) : 'Unassigned timing'
+ 
+ // Add unique courses
+ if (courseId && !studentFee.courses.some((course: { id: string; name: string }) => course.id === courseId)) {
+ studentFee.courses.push({ id: courseId, name: courseName })
+ }
 
-      if (!studentFee.timingSlots.includes(slotLabel)) {
-        studentFee.timingSlots.push(slotLabel)
-      }
+ if (!studentFee.timingSlots.includes(slotLabel)) {
+ studentFee.timingSlots.push(slotLabel)
+ }
 
-      studentFee.totalAmount += Number(fee.finalAmount)
-      studentFee.paidAmount += Number(fee.paidAmount)
-      studentFee.pendingAmount += Number(fee.finalAmount) - Number(fee.paidAmount)
-      
-      // Set the latest due date
-      if (!studentFee.dueDate || new Date(fee.dueDate) > new Date(studentFee.dueDate)) {
-        studentFee.dueDate = fee.dueDate.toISOString().split('T')[0]
-      }
+ studentFee.totalAmount += Number(fee.finalAmount)
+ studentFee.paidAmount += Number(fee.paidAmount)
+ studentFee.pendingAmount += Number(fee.finalAmount) - Number(fee.paidAmount)
+ 
+ // Set the latest due date
+ if (!studentFee.dueDate || new Date(fee.dueDate) > new Date(studentFee.dueDate)) {
+ studentFee.dueDate = fee.dueDate.toISOString().split('T')[0]
+ }
 
-      // Determine status
-      if (studentFee.pendingAmount === 0) {
-        studentFee.status = 'PAID'
-      } else if (studentFee.paidAmount > 0) {
-        studentFee.status = 'PARTIAL'
-      }
+ // Determine status
+ if (studentFee.pendingAmount === 0) {
+ studentFee.status = 'PAID'
+ } else if (studentFee.paidAmount > 0) {
+ studentFee.status = 'PARTIAL'
+ }
 
-      // Set last payment date
-      if (fee.transactions.length > 0 && (!studentFee.lastPayment || new Date(fee.transactions[0].date) > new Date(studentFee.lastPayment))) {
-        studentFee.lastPayment = fee.transactions[0].date.toISOString().split('T')[0]
-      }
-    })
+ // Set last payment date
+ if (fee.transactions.length > 0 && (!studentFee.lastPayment || new Date(fee.transactions[0].date) > new Date(studentFee.lastPayment))) {
+ studentFee.lastPayment = fee.transactions[0].date.toISOString().split('T')[0]
+ }
+ })
 
-    // Filter by search term if provided
-    let result = Array.from(studentFeesMap.values())
-    if (search) {
-      const searchLower = search.toLowerCase()
-      result = result.filter(fee =>
-        fee.studentName.toLowerCase().includes(searchLower) ||
-        fee.studentId.toLowerCase().includes(searchLower) ||
-        fee.fatherName.toLowerCase().includes(searchLower)
-      )
-    }
+ // Filter by search term if provided
+ let result = Array.from(studentFeesMap.values())
+ if (search) {
+ const searchLower = search.toLowerCase()
+ result = result.filter(fee =>
+ fee.studentName.toLowerCase().includes(searchLower) ||
+ fee.studentId.toLowerCase().includes(searchLower) ||
+ fee.fatherName.toLowerCase().includes(searchLower)
+ )
+ }
 
-    // Apply status filter AFTER grouping and calculating totals
-    if (status) {
-      result = result.filter(fee => fee.status === status)
-    }
+ // Apply status filter AFTER grouping and calculating totals
+ if (status) {
+ result = result.filter(fee => fee.status === status)
+ }
 
-    return NextResponse.json(result)
-  } catch (error) {
-    console.error('Error fetching fees dashboard data:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+ return NextResponse.json(result)
+ } catch (error) {
+ console.error('Error fetching fees dashboard data:', error)
+ return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+ }
 }

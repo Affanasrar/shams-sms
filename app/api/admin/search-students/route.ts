@@ -4,45 +4,45 @@ import prisma from '@/lib/prisma'
 import { verifyAdminApiRole } from '@/lib/auth-utils'
 
 export async function GET(request: NextRequest) {
-  // ✅ ROLE VERIFICATION: Verify admin access
-  const { isAdmin } = await verifyAdminApiRole()
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: 'Forbidden: Admin access required' },
-      { status: 403 }
-    )
-  }
-  try {
-    const { searchParams } = new URL(request.url)
-    const query = searchParams.get('q')
+ // ✅ ROLE VERIFICATION: Verify admin access
+ const { isAdmin } = await verifyAdminApiRole()
+ if (!isAdmin) {
+ return NextResponse.json(
+ { error: 'Forbidden: Admin access required' },
+ { status: 403 }
+ )
+ }
+ try {
+ const { searchParams } = new URL(request.url)
+ const query = searchParams.get('q')
 
-    if (!query || query.trim().length === 0) {
-      return NextResponse.json([])
-    }
+ if (!query || query.trim().length === 0) {
+ return NextResponse.json([])
+ }
 
-    // Search students by ID, name or phone
-    const students = await prisma.student.findMany({
-      where: {
-        OR: [
-          { studentId: { contains: query, mode: 'insensitive' } },
-          { name: { contains: query, mode: 'insensitive' } },
-          { fatherName: { contains: query, mode: 'insensitive' } },
-          { phone: { contains: query, mode: 'insensitive' } }
-        ]
-      },
-      select: {
-        id: true,
-        studentId: true,
-        name: true,
-        fatherName: true,
-        phone: true
-      },
-      take: 10
-    })
+ // Search students by ID, name or phone
+ const students = await prisma.student.findMany({
+ where: {
+ OR: [
+ { studentId: { contains: query, mode: 'insensitive' } },
+ { name: { contains: query, mode: 'insensitive' } },
+ { fatherName: { contains: query, mode: 'insensitive' } },
+ { phone: { contains: query, mode: 'insensitive' } }
+ ]
+ },
+ select: {
+ id: true,
+ studentId: true,
+ name: true,
+ fatherName: true,
+ phone: true
+ },
+ take: 10
+ })
 
-    return NextResponse.json(students)
-  } catch (error) {
-    console.error('Search students error:', error)
-    return NextResponse.json([])
-  }
+ return NextResponse.json(students)
+ } catch (error) {
+ console.error('Search students error:', error)
+ return NextResponse.json([])
+ }
 }

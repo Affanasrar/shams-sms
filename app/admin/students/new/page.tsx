@@ -1,83 +1,52 @@
-// app/admin/students/new/page.tsx
-'use client'
-
-import { createStudent } from '@/app/actions/student'
-import { useActionState } from 'react' // 👈 CHANGED: Import from 'react'
+import { getEnrollmentOptions } from '@/app/actions/fetch-options'
+import { StreamlinedAdmissionForm } from './StreamlinedAdmissionForm'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { unstable_noStore as noStore } from 'next/cache'
 
-// Initial state for the server action
-const initialState = { success: false, error: '' }
+export default async function NewStudentPage() {
+  noStore()
+  const data = await getEnrollmentOptions()
 
-export default function NewStudentPage() {
-  // 👈 CHANGED: useActionState instead of useFormState
-  // It returns [state, action, isPending]
-  const [state, formAction, isPending] = useActionState(createStudent, initialState)
+  const safeAssignments = data.assignments.map((assignment: any) => ({
+    ...assignment,
+    slot: {
+      ...assignment.slot,
+      startTime: assignment.slot.startTime instanceof Date
+        ? assignment.slot.startTime.toISOString()
+        : assignment.slot.startTime,
+      endTime: assignment.slot.endTime instanceof Date
+        ? assignment.slot.endTime.toISOString()
+        : assignment.slot.endTime
+    },
+    course: {
+      ...assignment.course,
+      baseFee: Number(assignment.course.baseFee)
+    }
+  }))
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/admin/students" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-          <ArrowLeft size={20} />
-          Back to Students
-        </Link>
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Header Banner */}
+      <div className="rounded-[32px] border border-border/80 bg-card/80 p-6 shadow-sm backdrop-blur-xl sm:p-8">
+        <div className="flex flex-col gap-2">
+          <Link
+            href="/admin/students"
+            className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 transition hover:text-indigo-700"
+          >
+            <ArrowLeft size={16} />
+            Back to Students Directory
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            🎓 Student Admission & Onboarding
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Complete student admission in a single guided form, with optional course timing assignment and fee collection.
+          </p>
+        </div>
       </div>
-      
-      <h1 className="text-2xl font-bold mb-6">🎓 New Student Admission</h1>
-      
-      <form action={formAction} className="space-y-6 bg-white p-8 rounded-lg border shadow-sm">
-        
-        {/* Name Field */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <input 
-            type="text" name="name" required placeholder="e.g. Muhammad Ali"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-black outline-none"
-          />
-        </div>
 
-        {/* Father Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Father's Name</label>
-          <input 
-            type="text" name="fatherName" required placeholder="e.g. Ahmed Khan"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-black outline-none"
-          />
-        </div>
-
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-          <input 
-            type="tel" name="phone" required placeholder="0300-1234567"
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-black outline-none"
-          />
-        </div>
-
-        {/* Address */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address (Optional)</label>
-          <textarea 
-            name="address" rows={3}
-            className="w-full border p-2 rounded focus:ring-2 focus:ring-black outline-none"
-          />
-        </div>
-
-        {/* Error Message */}
-        {state?.error && (
-          <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
-            ⚠️ {state.error}
-          </div>
-        )}
-
-        <button 
-          type="submit" 
-          disabled={isPending} // 👈 Disable while submitting
-          className="w-full bg-black text-white py-3 rounded font-medium hover:bg-gray-800 transition disabled:opacity-50"
-        >
-          {isPending ? 'Saving...' : 'Confirm Admission'}
-        </button>
-      </form>
+      <StreamlinedAdmissionForm assignments={safeAssignments as any} basePath="/admin" />
     </div>
   )
 }
