@@ -174,7 +174,7 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
       </div>
 
       {/* Modern Student Card List */}
-      <div className="flex-1 p-3 sm:p-4 space-y-3 pb-24 overflow-y-auto">
+      <div className="flex-1 p-3 sm:p-4 space-y-3 pb-40 md:pb-24 overflow-y-auto">
         {enrollments.map((enr) => {
           const currentStatus = statuses[enr.student.id]
           
@@ -267,7 +267,7 @@ export function AttendanceForm({ classId, teacherId, enrollments }: Props) {
       </div>
 
       {/* Floating Submit Footer */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-xl border-t z-20 safe-padding-bottom">
+      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-xl border-t z-20 safe-padding-bottom">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
           
           <div className="flex-1">
