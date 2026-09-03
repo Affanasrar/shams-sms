@@ -4,8 +4,7 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getCurrentFeeForCourse, getFeeForStudent } from '@/lib/course-fees'
-import { generateFeeVoucherPdfBuffer } from '@/lib/pdf-helpers'
-import { sendSmartMessage, sendSmartDocument } from '@/lib/messaging'
+import { sendSmartMessage } from '@/lib/messaging'
 import { logAudit } from '@/lib/audit'
 
 function getErrorMessage(error: unknown): string {
@@ -157,70 +156,35 @@ export async function enrollStudent(studentId: string, courseOnSlotId: string) {
  timeZone: 'Asia/Karachi'
  })
 
- const welcomePacketCaption = `🎉 *WELCOME TO SHAMS COMMERCIAL INSTITUTE!*\n\nDear *${student.name}* (${student.studentId}),\nCongratulations on your admission! Your admission fee voucher is attached.\n\n📚 *Course:* ${course.name}\n⏰ *Class Timing:* ${startTime} - ${endTime} (${slot.days})\n📍 *Classroom:* ${roomName}\n📅 *Joining Date:* ${joiningDateStr}\n\n----------------------------------------\n📜 *INSTITUTE RULES & REGULATIONS:*\n1. 🎓 *Attendance:* Minimum 75% attendance is required for course completion & certificate.\n2. ⏰ *Punctuality:* Classes start on time. Late entry beyond 10 mins is strictly prohibited.\n3. 📱 *Mobile Phones:* Must be kept on silent mode during lectures and lab sessions.\n4. 💳 *Fee Due Date:* Monthly fees must be cleared on or before your specified due date.\n5. 💻 *Lab Protocol:* Computer equipment must be handled with care.\n\nWe wish you a successful learning journey!\n- Management, Shams Commercial Institute`
+ const admissionMessage = `*SHAMS COMMERCIAL INSTITUTE — ADMISSION CONFIRMATION*
 
- let msgResponse
+Dear *${student.name}* (${student.studentId}),
 
- if (firstFee) {
- try {
- const cycleMonth = new Date(firstFee.cycleDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'Asia/Karachi' })
- const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Karachi' })
- const dueDateStr = new Date(firstFee.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Karachi' })
+Welcome to Shams Commercial Institute. Your admission has been successfully confirmed.
 
- const pdfBuffer = await generateFeeVoucherPdfBuffer({
- voucherNo: `VCH-${firstFee.id.slice(0, 8).toUpperCase()}`,
- issueDate: todayStr,
- dueDate: dueDateStr,
- cycleMonth: cycleMonth,
- student: {
- studentId: student.studentId,
- name: student.name,
- fatherName: student.fatherName || 'N/A',
- phone: student.phone,
- },
- course: {
- name: course.name,
- timing: `${slot.days} (${startTime} - ${endTime})`,
- room: roomName,
- },
- financials: {
- baseAmount: Number(firstFee.amount),
- discountAmount: Number(firstFee.discountAmount || 0),
- rolloverAmount: Number(firstFee.rolloverAmount || 0),
- finalAmount: Number(firstFee.finalAmount),
- paidAmount: Number(firstFee.paidAmount),
- remainingAmount: Number(firstFee.finalAmount) - Number(firstFee.paidAmount),
- },
- institution: {
- name: 'Shams Commercial Institute',
- address: 'Main Campus, Commercial Area',
- phone: '+92 300 1234567',
- },
- })
+• *Course:* ${course.name}
+• *Class Schedule:* ${slot.days} (${startTime} – ${endTime})
+• *Classroom:* ${roomName}
+• *Commencement Date:* ${joiningDateStr}
 
- const fileName = `Admission_Fee_Voucher_${student.studentId}.pdf`
+Please ensure regular attendance and punctuality for your scheduled sessions.
 
- // Send PDF Voucher + Welcome Packet Caption via WhatsApp / SMS fallback
- msgResponse = await sendSmartDocument(student.phone, pdfBuffer, fileName, welcomePacketCaption)
- } catch (pdfErr) {
- console.error('Admission PDF voucher generation error:', pdfErr)
- msgResponse = await sendSmartMessage(student.phone, welcomePacketCaption, 'SMART')
- }
- } else {
- msgResponse = await sendSmartMessage(student.phone, welcomePacketCaption, 'SMART')
- }
+Academic Administration
+Shams Commercial Institute`
+
+ const msgResponse = await sendSmartMessage(student.phone, admissionMessage, 'SMART')
 
  await prisma.smsMessage.create({
- data: {
- studentId: student.id,
- phoneNumber: student.phone,
- message: `[Admission PDF Voucher & Welcome Packet] ${welcomePacketCaption}`,
- direction: 'OUTBOUND',
- status: msgResponse.success ? 'SENT' : 'FAILED',
- textbeeId: msgResponse.id || null,
- errorMsg: msgResponse.error || null,
- sentAt: msgResponse.success ? new Date() : null
- }
+   data: {
+     studentId: student.id,
+     phoneNumber: student.phone,
+     message: admissionMessage,
+     direction: 'OUTBOUND',
+     status: msgResponse.success ? 'SENT' : 'FAILED',
+     textbeeId: msgResponse.id || null,
+     errorMsg: msgResponse.error || null,
+     sentAt: msgResponse.success ? new Date() : null
+   }
  })
  }
 

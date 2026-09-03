@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
- AlertCircle, CheckCircle2, ChevronDown, Filter,
- Loader2, MessageSquare, Phone, Send, Users, X, Zap
+  AlertCircle, CheckCircle2, ChevronDown, CreditCard, Filter,
+  GraduationCap, Loader2, MessageSquare, Phone, ReceiptText,
+  RotateCcw, Send, Sparkles, Users, X, Zap
 } from 'lucide-react'
 
 type Student = {
@@ -138,10 +139,92 @@ export function SmsSender({ students, courseSlots, onSent }: Props) {
  setFeedback(null)
  }
 
- const insertTemplate = (tpl: string) => {
- setCustomMessage(prev => prev + tpl)
- setFeedback(null)
- }
+  const PRESETS = [
+    {
+      id: 'fee-reminder',
+      label: 'Fee Reminder',
+      icon: CreditCard,
+      text: `*SHAMS COMMERCIAL INSTITUTE — FEE REMINDER*
+
+Dear *[Student Name]* ([Student ID]),
+
+This is a reminder regarding your course fee payment:
+
+• *Course:* [Course]
+• *Payable Amount:* PKR [Amount]
+• *Due Date:* [Due Date]
+
+Kindly clear the outstanding dues at the accounts office.
+
+Accounts Department
+Shams Commercial Institute`
+    },
+    {
+      id: 'admission-confirmation',
+      label: 'Admission Confirmation',
+      icon: GraduationCap,
+      text: `*SHAMS COMMERCIAL INSTITUTE — ADMISSION CONFIRMATION*
+
+Dear *[Student Name]* ([Student ID]),
+
+Welcome to Shams Commercial Institute. Your admission has been successfully confirmed.
+
+• *Course:* [Course]
+• *Date:* [Date]
+
+Please ensure regular attendance and punctuality for your scheduled sessions.
+
+Academic Administration
+Shams Commercial Institute`
+    },
+    {
+      id: 'payment-confirmation',
+      label: 'Payment Confirmation',
+      icon: ReceiptText,
+      text: `*SHAMS COMMERCIAL INSTITUTE — PAYMENT CONFIRMATION*
+
+Dear *[Student Name]* ([Student ID]),
+
+We have received your fee payment. Here are your transaction details:
+
+• *Amount Received:* PKR [Amount]
+• *Course:* [Course]
+• *Payment Date:* [Date]
+
+Thank you for your payment.
+
+Accounts Department
+Shams Commercial Institute`
+    },
+    {
+      id: 'general-notice',
+      label: 'General Notice',
+      icon: Sparkles,
+      text: `*SHAMS COMMERCIAL INSTITUTE — OFFICIAL NOTICE*
+
+Dear Students & Parents,
+
+Please take note of the following institutional update:
+
+• *Notice:* [Type details here]
+• *Effective Date:* [Date]
+
+For any questions, please contact the campus administrative office.
+
+Administration Office
+Shams Commercial Institute`
+    }
+  ]
+
+  const applyPreset = (presetText: string) => {
+    setCustomMessage(presetText)
+    setFeedback(null)
+  }
+
+  const insertTemplate = (tpl: string) => {
+    setCustomMessage(prev => prev + tpl)
+    setFeedback(null)
+  }
 
  const handleSend = async () => {
  if (!selectedStudents.length) {
@@ -237,36 +320,70 @@ export function SmsSender({ students, courseSlots, onSent }: Props) {
  </div>
  </div>
 
- <div className="p-5 space-y-4">
- <textarea
- value={customMessage}
- onChange={e => { setCustomMessage(e.target.value); setFeedback(null) }}
- placeholder="Type your message here...&#10;&#10;Example: Dear [Student Name], your fee of PKR [Amount] is due. Please contact the admin. — Shams Institute"
- rows={6}
- className="w-full resize-none rounded-2xl border border-border bg-muted p-4 text-sm leading-7 text-foreground outline-none transition placeholder:text-muted-foreground dark:placeholder:text-muted-foreground focus:border-indigo-400 focus:bg-card dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/40"
- />
+        <div className="p-5 space-y-4">
+          {/* Quick Brand Preset Templates */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Brand Presets
+              </p>
+              {customMessage && (
+                <button
+                  type="button"
+                  onClick={() => { setCustomMessage(''); setFeedback(null) }}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-rose-500 transition"
+                >
+                  <RotateCcw size={12} /> Clear Text
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {PRESETS.map(preset => {
+                const Icon = preset.icon
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => applyPreset(preset.text)}
+                    className="flex items-center gap-1.5 rounded-xl border border-border bg-muted/70 px-3 py-2 text-xs font-medium text-foreground transition hover:border-indigo-300 hover:bg-indigo-50/50 hover:text-indigo-600 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300 text-left"
+                  >
+                    <Icon size={14} className="shrink-0 text-indigo-500" />
+                    <span className="truncate">{preset.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
- {/* Template chips */}
- <div>
- <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground ">Insert variable</p>
- <div className="flex flex-wrap gap-2">
- {['[Student Name]', '[Student ID]', '[Amount]', '[Due Date]'].map(tpl => (
- <button
- key={tpl}
- type="button"
- onClick={() => insertTemplate(tpl)}
- className="rounded-full border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition hover:bg-indigo-100 dark:hover:bg-indigo-900/60 hover:border-indigo-300"
- >
- {tpl}
- </button>
- ))}
- <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground select-none">
- Auto-personalized per student
- </span>
- </div>
- </div>
- </div>
- </div>
+          <textarea
+            value={customMessage}
+            onChange={e => { setCustomMessage(e.target.value); setFeedback(null) }}
+            placeholder="Select a Brand Preset above or write your custom message..."
+            rows={7}
+            className="w-full resize-none rounded-2xl border border-border bg-muted p-4 font-mono text-xs leading-relaxed text-foreground outline-none transition placeholder:text-muted-foreground placeholder:font-sans dark:placeholder:text-muted-foreground focus:border-indigo-400 focus:bg-card dark:focus:bg-slate-900 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/40"
+          />
+
+          {/* Variable chips */}
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Insert variable</p>
+            <div className="flex flex-wrap gap-2">
+              {['[Student Name]', '[Student ID]', '[Course]', '[Amount]', '[Due Date]', '[Date]'].map(tpl => (
+                <button
+                  key={tpl}
+                  type="button"
+                  onClick={() => insertTemplate(tpl)}
+                  className="rounded-full border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition hover:bg-indigo-100 dark:hover:bg-indigo-900/60 hover:border-indigo-300"
+                >
+                  {tpl}
+                </button>
+              ))}
+              <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground select-none">
+                Auto-personalized per student
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
  {/* Filters */}
  <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">

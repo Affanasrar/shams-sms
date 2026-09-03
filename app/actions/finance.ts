@@ -96,7 +96,21 @@ export async function collectFee(feeId: string, adminId: string, paymentAmount?:
  })
 
  if (course) {
- const receiptMessage = `🧾 *PAYMENT RECEIPT — SHAMS COMMERCIAL INSTITUTE*\n\nDear *${student.name}* (${student.studentId}),\nWe have successfully received your fee payment. Thank you!\n\n▪ *Amount Paid:* PKR ${updatedFee.amountPaid.toLocaleString()}\n▪ *Course:* ${course.name}\n▪ *Remaining Balance:* PKR ${updatedFee.newRemainingAmount.toLocaleString()}\n▪ *Payment Date:* ${paymentDate}\n\nThank you for choosing Shams Commercial Institute!`
+ const receiptMessage = `*SHAMS COMMERCIAL INSTITUTE — PAYMENT CONFIRMATION*
+
+Dear *${student.name}* (${student.studentId}),
+
+We have received your fee payment. Here are your transaction details:
+
+• *Amount Received:* PKR ${updatedFee.amountPaid.toLocaleString()}
+• *Course:* ${course.name}
+• *Remaining Balance:* PKR ${updatedFee.newRemainingAmount.toLocaleString()}
+• *Payment Date:* ${paymentDate}
+
+Thank you for your payment.
+
+Accounts Department
+Shams Commercial Institute`
 
  const msgResponse = await sendSmartMessage(student.phone, receiptMessage, 'SMART')
 

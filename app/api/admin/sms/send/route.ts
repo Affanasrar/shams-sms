@@ -79,19 +79,28 @@ export async function POST(request: Request) {
 
  for (const student of students) {
  try {
+ const allFees = student.enrollments.flatMap(enrollment => enrollment.fees || [])
+ const recentFee = allFees.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime())[0]
+ const totalOutstanding = allFees.reduce((sum, fee) => sum + Number(fee.finalAmount), 0)
+ const primaryCourse = student.enrollments[0]?.courseOnSlot?.course?.name || 'Enrolled Course'
+ const dueDateStr = recentFee ? recentFee.dueDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+ const feeAmount = recentFee ? Number(recentFee.finalAmount) : totalOutstanding
+ const todayStr = new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Karachi' })
+
  let message = ''
 
  if (customMessage.length > 0) {
- // Use custom message with placeholder replacement
+ // Use custom message with comprehensive placeholder replacement
  message = customMessage
  .replace(/\[Student Name\]/g, student.name)
  .replace(/\[Student ID\]/g, student.studentId)
+ .replace(/\[Father Name\]/g, student.fatherName || '')
+ .replace(/\[Course\]/g, primaryCourse)
+ .replace(/\[Amount\]/g, feeAmount.toLocaleString())
+ .replace(/\[Due Date\]/g, dueDateStr)
+ .replace(/\[Date\]/g, todayStr)
  } else {
- // Generate due-date reminder message
- const allFees = student.enrollments.flatMap(enrollment => enrollment.fees)
- const recentFee = allFees.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime())[0]
- const totalOutstanding = allFees.reduce((sum, fee) => sum + Number(fee.finalAmount), 0)
-
+ // Generate clean, premium due-date reminder message
  if (!recentFee) {
  results.push({
  studentId: student.id,
@@ -101,12 +110,21 @@ export async function POST(request: Request) {
  continue
  }
 
- const monthName = recentFee.dueDate.toLocaleString('en-US', { month: 'long' })
- const year = recentFee.dueDate.getFullYear()
- const dueDateStr = recentFee.dueDate.toISOString().split('T')[0]
- const amount = Number(recentFee.finalAmount)
+ message = `*SHAMS COMMERCIAL INSTITUTE — FEE REMINDER*
 
- message = `Dear ${student.name}, your fee for ${monthName} ${year} is due on ${dueDateStr}. Amount due now: PKR ${amount}. Total outstanding: PKR ${totalOutstanding}. Student ID: ${student.studentId}. Please pay promptly to avoid late fees. - Shams Commercial Institute`
+Dear *${student.name}* (${student.studentId}),
+
+This is a reminder regarding your fee payment:
+
+• *Course:* ${primaryCourse}
+• *Payable Amount:* PKR ${feeAmount.toLocaleString()}
+• *Total Outstanding:* PKR ${totalOutstanding.toLocaleString()}
+• *Due Date:* ${dueDateStr}
+
+Kindly clear the outstanding dues at the accounts office.
+
+Accounts Department
+Shams Commercial Institute`
  }
 
  if (!student.phone) {
