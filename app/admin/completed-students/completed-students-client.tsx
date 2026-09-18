@@ -3,7 +3,8 @@
 
 import { useState } from 'react'
 import { markAsCompleted, extendAndReactivate } from '@/app/actions/course-completion'
-import { GraduationCap, Clock, CheckCircle2, RotateCcw, Calendar, Users, AlertCircle } from 'lucide-react'
+import { dropStudent } from '@/app/actions/enrollment'
+import { GraduationCap, Clock, CheckCircle2, RotateCcw, Calendar, Users, AlertCircle, UserMinus } from 'lucide-react'
 
 type Enrollment = {
  id: string
@@ -88,6 +89,18 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  setExtendModal(null)
  setAdditionalMonths(1)
  setMessage({ type: result.success ? 'success' : 'error', text: result.message || result.error || '' })
+ }
+
+ const handleDrop = async (enrollmentId: string) => {
+ if (!confirm('Are you sure you want to drop this student? This will vacate their seat and they will not be marked as completed.')) return
+ setLoading(enrollmentId)
+ setMessage(null)
+ const formData = new FormData()
+ formData.set('enrollmentId', enrollmentId)
+ formData.set('refund', 'false')
+ const result = await dropStudent(formData)
+ setLoading(null)
+ setMessage({ type: result?.success ? 'success' : 'error', text: result?.message || result?.error || 'Unknown error' })
  }
 
  const formatDate = (dateStr: string | null) => {
@@ -220,7 +233,15 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  </div>
  </div>
 
- <div className="flex gap-2 shrink-0">
+ <div className="flex gap-2 shrink-0 flex-wrap lg:flex-nowrap">
+ <button
+ onClick={() => handleDrop(enrollment.id)}
+ disabled={loading === enrollment.id}
+ className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl disabled:opacity-50 text-sm font-medium flex items-center gap-2 transition"
+ >
+ <UserMinus size={14} />
+ Drop
+ </button>
  <button
  onClick={() => setExtendModal({
  enrollmentId: enrollment.id,
