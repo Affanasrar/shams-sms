@@ -129,7 +129,7 @@ export async function markAsCompleted(formData: FormData) {
 
  revalidatePath('/admin/completed-students')
  revalidatePath('/admin/enrollment')
- revalidatePath(`/admin/students/${enrollment.studentId}`)
+ revalidatePath(`/admin/students/${enrollment.student.studentId}`)
  revalidatePath('/admin')
 
  return { success: true, message: `${enrollment.student.name} marked as completed for ${courseName}. Seat has been vacated.` }
@@ -232,7 +232,7 @@ export async function extendAndReactivate(formData: FormData) {
 
  revalidatePath('/admin/completed-students')
  revalidatePath('/admin/enrollment')
- revalidatePath(`/admin/students/${enrollment.studentId}`)
+ revalidatePath(`/admin/students/${enrollment.student.studentId}`)
  revalidatePath('/admin')
 
  return {

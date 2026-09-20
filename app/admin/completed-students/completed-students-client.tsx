@@ -45,6 +45,9 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  const [additionalMonths, setAdditionalMonths] = useState(1)
  const [loading, setLoading] = useState<string | null>(null)
  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+ const [pendingPage, setPendingPage] = useState(1)
+ const [completedPage, setCompletedPage] = useState(1)
+ const itemsPerPage = 10
 
  // Extract unique courses for filter
  const allCourses = Array.from(new Set([
@@ -65,6 +68,12 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
 
  const filteredPending = filterEnrollments(pendingEnrollments)
  const filteredCompleted = filterEnrollments(completedEnrollments)
+
+ const totalPendingPages = Math.ceil(filteredPending.length / itemsPerPage)
+ const currentPending = filteredPending.slice((pendingPage - 1) * itemsPerPage, pendingPage * itemsPerPage)
+
+ const totalCompletedPages = Math.ceil(filteredCompleted.length / itemsPerPage)
+ const currentCompleted = filteredCompleted.slice((completedPage - 1) * itemsPerPage, completedPage * itemsPerPage)
 
  const handleComplete = async (enrollmentId: string) => {
  if (!confirm('Are you sure you want to mark this student as completed? This will vacate their seat.')) return
@@ -112,6 +121,31 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  return new Date(dateStr).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })
  }
 
+ const renderPagination = (currentPage: number, totalPages: number, setPage: (p: number) => void) => {
+ if (totalPages <= 1) return null
+ return (
+ <div className="flex items-center justify-center gap-3 mt-6">
+ <button
+ onClick={() => setPage(Math.max(1, currentPage - 1))}
+ disabled={currentPage === 1}
+ className="px-3 py-1.5 bg-card border border-border rounded-lg disabled:opacity-50 text-sm font-medium hover:bg-muted transition"
+ >
+ Previous
+ </button>
+ <span className="text-sm text-muted-foreground font-medium">
+ Page {currentPage} of {totalPages}
+ </span>
+ <button
+ onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+ disabled={currentPage === totalPages}
+ className="px-3 py-1.5 bg-card border border-border rounded-lg disabled:opacity-50 text-sm font-medium hover:bg-muted transition"
+ >
+ Next
+ </button>
+ </div>
+ )
+ }
+
  return (
  <div className="space-y-6">
  {/* Header */}
@@ -149,12 +183,12 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  type="text"
  placeholder="Search student name or ID..."
  value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
+ onChange={(e) => { setSearchQuery(e.target.value); setPendingPage(1); setCompletedPage(1) }}
  className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-indigo-500 "
  />
  <select
  value={selectedCourse}
- onChange={(e) => setSelectedCourse(e.target.value)}
+ onChange={(e) => { setSelectedCourse(e.target.value); setPendingPage(1); setCompletedPage(1) }}
  className="rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-indigo-500 "
  >
  <option value="">All Courses</option>
@@ -200,7 +234,7 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  </div>
  ) : (
  <div className="grid gap-4">
- {filteredPending.map((enrollment) => (
+ {currentPending.map((enrollment) => (
  <div key={enrollment.id} className="card-surface p-5 border-amber-300/60 dark:border-amber-700/50 transition-shadow">
  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
  <div className="flex-1 space-y-2">
@@ -268,6 +302,7 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  ))}
  </div>
  )}
+ {renderPagination(pendingPage, totalPendingPages, setPendingPage)}
  </div>
  )}
 
@@ -292,7 +327,7 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  </tr>
  </thead>
  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
- {filteredCompleted.map((enrollment) => (
+ {currentCompleted.map((enrollment) => (
  <tr key={enrollment.id} className="hover:bg-muted transition">
  <td className="px-5 py-3.5">
  <div className="font-medium text-foreground ">{enrollment.student.name}</div>
@@ -315,6 +350,7 @@ export default function CompletedStudentsClient({ pendingEnrollments, completedE
  </tbody>
  </table>
  </div>
+ {renderPagination(completedPage, totalCompletedPages, setCompletedPage)}
  </div>
  )}
  </div>
