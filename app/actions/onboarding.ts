@@ -6,6 +6,7 @@ import { generateStudentId } from '@/lib/utils'
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { OnboardingSchema } from '@/app/admin/students/new/schema'
+import { logAudit } from '@/lib/audit'
 
 export async function onboardStudentAction(rawData: z.infer<typeof OnboardingSchema>) {
   // Validate data
@@ -150,9 +151,11 @@ export async function onboardStudentAction(rawData: z.infer<typeof OnboardingSch
               }
             })
           }
+          
+          return { student, enrollmentId: enrollment.id, courseName: targetAssignment.course.name, feeId: fee.id, amountPaid: paidAmount, newStatus: feeStatus }
         } else {
           // If enrolling without paying now, automatically generate UNPAID initial voucher
-          await tx.fee.create({
+          const fee = await tx.fee.create({
             data: {
               studentId: student.id,
               enrollmentId: enrollment.id,
@@ -165,11 +168,56 @@ export async function onboardStudentAction(rawData: z.infer<typeof OnboardingSch
               status: 'UNPAID'
             }
           })
+          
+          return { student, enrollmentId: enrollment.id, courseName: targetAssignment.course.name, feeId: fee.id, amountPaid: 0, newStatus: 'UNPAID' }
         }
       }
 
-      return student
+      return { student, enrollmentId: null, courseName: null, feeId: null, amountPaid: 0, newStatus: null }
     })
+    
+    // 4. Audit Logging (outside the transaction)
+    const userName = currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : currentUser.email
+
+    await logAudit({
+      action: 'STUDENT_CREATED',
+      entity: 'Student',
+      entityId: result.student.id,
+      userId: currentUser.id,
+      userName: userName,
+      details: {
+        studentName: result.student.name,
+      }
+    })
+
+    if (result.enrollmentId && result.courseName) {
+      await logAudit({
+        action: 'ENROLLMENT_CREATED',
+        entity: 'Enrollment',
+        entityId: result.enrollmentId,
+        userId: currentUser.id,
+        userName: userName,
+        details: {
+          studentName: result.student.name,
+          courseName: result.courseName,
+        }
+      })
+    }
+
+    if (result.feeId && result.amountPaid > 0) {
+      await logAudit({
+        action: 'FEE_COLLECTED',
+        entity: 'Fee',
+        entityId: result.feeId,
+        userId: currentUser.id,
+        userName: userName,
+        details: {
+          studentName: result.student.name,
+          amountPaid: result.amountPaid,
+          newStatus: result.newStatus,
+        }
+      })
+    }
     
     revalidatePath('/admin/students')
     revalidatePath('/admin/enrollment')
@@ -181,7 +229,7 @@ export async function onboardStudentAction(rawData: z.infer<typeof OnboardingSch
     revalidatePath('/receptionist/schedule')
     revalidatePath('/receptionist')
     
-    return { success: true, studentId: result.studentId, studentDbId: result.id }
+    return { success: true, studentId: result.student.studentId, studentDbId: result.student.id }
     
   } catch (error: any) {
     console.error('Onboarding transaction failed:', error)
