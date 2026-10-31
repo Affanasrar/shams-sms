@@ -20,7 +20,7 @@ import {
   Filter,
   Timer
 } from 'lucide-react'
-import { formatSlotTimeRange, getSlotSeatSummary } from '@/lib/seat-engine'
+import { formatSlotTimeRange, formatSlotTime, getSlotSeatSummary } from '@/lib/seat-engine'
 import { changeEnrollmentTiming } from '@/app/actions/enrollment'
 
 export interface MatrixAssignment {
@@ -76,28 +76,50 @@ interface ScheduleMatrixGridProps {
   baseEnrollUrl?: string
 }
 
-function getHourInKarachi(date: Date | string): number {
+function getHourAndMinutesInKarachi(date: Date | string): { hour: number; minutes: number } {
+  if (!date) return { hour: 9, minutes: 0 }
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return { hour: 9, minutes: 0 }
   const timeStr = d.toLocaleTimeString('en-US', {
     hour: 'numeric',
+    minute: 'numeric',
     hour12: false,
     timeZone: 'Asia/Karachi'
   })
-  return parseInt(timeStr, 10)
+  const parts = timeStr.split(':')
+  let hour = parseInt(parts[0], 10)
+  const minutes = parseInt(parts[1], 10) || 0
+  if (hour === 24) hour = 0
+  return { hour: isNaN(hour) ? 9 : hour, minutes }
 }
 
 function formatHourBlock(hour24: number): string {
   const formatH = (h: number) => {
-    const h12 = h % 12 === 0 ? 12 : h % 12
-    const ampm = h >= 12 && h < 24 ? 'PM' : 'AM'
+    const normalizedH = h % 24
+    const h12 = normalizedH % 12 === 0 ? 12 : normalizedH % 12
+    const ampm = normalizedH >= 12 && normalizedH < 24 ? 'PM' : 'AM'
     return `${h12.toString().padStart(2, '0')}:00 ${ampm}`
   }
   return `${formatH(hour24)} - ${formatH(hour24 + 1)}`
 }
 
+function getDayBadgeColor(days: string) {
+  const d = (days || '').toLowerCase()
+  if (d.includes('mwf') || d.includes('mon') || d.includes('wed') || d.includes('fri')) {
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+  }
+  if (d.includes('tts') || d.includes('tue') || d.includes('thu') || d.includes('sat')) {
+    return 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+  }
+  if (d.includes('sun')) {
+    return 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+  }
+  return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+}
+
 export function ScheduleMatrixGrid({
-  assignments,
-  rooms,
+  assignments = [],
+  rooms = [],
   baseEnrollUrl = '/admin/enrollment/new'
 }: ScheduleMatrixGridProps) {
   const router = useRouter()
@@ -144,14 +166,15 @@ export function ScheduleMatrixGrid({
   const uniqueDays = useMemo(() => {
     const daySet = new Set<string>()
     assignments.forEach((a) => {
-      if (a.slot?.days) {
-        daySet.add(a.slot.days)
+      const d = a.slot?.days?.trim()
+      if (d) {
+        daySet.add(d)
       }
     })
     return Array.from(daySet).sort()
   }, [assignments])
 
-  // 3. Group assignments by Slot ID
+  // 3. Group assignments by Slot ID (collecting co-located courses and all enrollments)
   const slotGroups = useMemo(() => {
     const map = new Map<
       string,
@@ -185,6 +208,7 @@ export function ScheduleMatrixGrid({
     >()
 
     assignments.forEach((a) => {
+      if (!a.slot || !a.slot.id) return
       const slotId = a.slot.id
       const start = new Date(a.slot.startTime)
       const end = new Date(a.slot.endTime)
@@ -194,12 +218,12 @@ export function ScheduleMatrixGrid({
       if (!map.has(slotId)) {
         map.set(slotId, {
           slotId,
-          room: a.slot.room,
+          room: a.slot.room || { id: 'unknown', name: 'Unknown Room', capacity: 0 },
           startTime: start,
           endTime: end,
           timeRangeKey,
           timeRangeFormatted,
-          days: a.slot.days,
+          days: (a.slot.days || '').trim(),
           assignments: [],
           allEnrollments: [],
           seatSummary: {} as any
@@ -212,8 +236,8 @@ export function ScheduleMatrixGrid({
       enrollmentsList.forEach((e) => {
         entry.allEnrollments.push({
           ...e,
-          courseId: a.course.id,
-          courseName: a.course.name,
+          courseId: a.course?.id || '',
+          courseName: a.course?.name || '',
           assignmentId: a.id
         })
       })
@@ -238,37 +262,47 @@ export function ScheduleMatrixGrid({
     return map
   }, [assignments])
 
-  // 4. Map Slots with Hourly Coordinates (startHour, endHour, durationHours)
+  // 4. Map Slots with Hourly Coordinates (startHour, endHourCeiling, durationHours)
   const slotHourlyEntries = useMemo(() => {
     return Array.from(slotGroups.values()).map((g) => {
-      const startHour = getHourInKarachi(g.startTime)
-      let endHour = getHourInKarachi(g.endTime)
-      if (endHour <= startHour) {
-        endHour = startHour + 1
+      const start = getHourAndMinutesInKarachi(g.startTime)
+      const end = getHourAndMinutesInKarachi(g.endTime)
+      const startHour = start.hour
+      let endHourCeiling = end.minutes > 0 ? end.hour + 1 : end.hour
+      if (endHourCeiling <= startHour) {
+        endHourCeiling = startHour + 1
       }
-      const durationHours = Math.max(1, endHour - startHour)
+      const durationHours = Math.max(1, endHourCeiling - startHour)
       return {
         ...g,
         startHour,
-        endHour,
+        endHourCeiling,
         durationHours
       }
     })
   }, [slotGroups])
 
-  // 5. Compute Continuous Hourly Timeline Blocks
+  // 5. Continuous Hourly Timeline Blocks covering all slots
   const hourlyTimeBlocks = useMemo(() => {
     if (slotHourlyEntries.length === 0) {
       return [
         { hour: 9, label: formatHourBlock(9) },
         { hour: 10, label: formatHourBlock(10) },
         { hour: 11, label: formatHourBlock(11) },
-        { hour: 12, label: formatHourBlock(12) }
+        { hour: 12, label: formatHourBlock(12) },
+        { hour: 13, label: formatHourBlock(13) },
+        { hour: 14, label: formatHourBlock(14) },
+        { hour: 15, label: formatHourBlock(15) },
+        { hour: 16, label: formatHourBlock(16) },
+        { hour: 17, label: formatHourBlock(17) },
+        { hour: 18, label: formatHourBlock(18) },
+        { hour: 19, label: formatHourBlock(19) },
+        { hour: 20, label: formatHourBlock(20) }
       ]
     }
 
     const minHour = Math.min(...slotHourlyEntries.map((s) => s.startHour), 9)
-    const maxHour = Math.max(...slotHourlyEntries.map((s) => s.endHour), 20)
+    const maxHour = Math.max(...slotHourlyEntries.map((s) => s.endHourCeiling), 21)
 
     const blocks = []
     for (let h = minHour; h < maxHour; h++) {
@@ -280,14 +314,34 @@ export function ScheduleMatrixGrid({
     return blocks
   }, [slotHourlyEntries])
 
-  // 6. Filtered Rooms
-  const displayedRooms = useMemo(() => {
-    const base = [...rooms].sort((a, b) => a.name.localeCompare(b.name))
-    if (selectedRoomId === 'ALL') return base
-    return base.filter((r) => r.id === selectedRoomId || r.name === selectedRoomId)
-  }, [rooms, selectedRoomId])
+  // 6. Comprehensive Room List (merging rooms prop with any rooms found in assignments)
+  const allRoomsList = useMemo(() => {
+    const roomMap = new Map<string, RoomInfo>()
+    if (rooms && rooms.length > 0) {
+      rooms.forEach((r) => {
+        if (r && (r.id || r.name)) {
+          roomMap.set(r.id || r.name, { id: r.id || r.name, name: r.name, capacity: r.capacity || 0 })
+        }
+      })
+    }
+    assignments.forEach((a) => {
+      if (a.slot?.room) {
+        const key = a.slot.room.id || a.slot.room.name
+        if (!roomMap.has(key)) {
+          roomMap.set(key, a.slot.room)
+        }
+      }
+    })
+    return Array.from(roomMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [rooms, assignments])
 
-  // 7. Active Filter Check Helper
+  // 7. Filtered Rooms
+  const displayedRooms = useMemo(() => {
+    if (selectedRoomId === 'ALL') return allRoomsList
+    return allRoomsList.filter((r) => r.id === selectedRoomId || r.name === selectedRoomId)
+  }, [allRoomsList, selectedRoomId])
+
+  // 8. Active Filter Check Helper
   const isSlotMatched = (slotEntry: (typeof slotHourlyEntries)[0]) => {
     if (!slotEntry) return false
 
@@ -302,7 +356,7 @@ export function ScheduleMatrixGrid({
     }
 
     // Course filter
-    if (selectedCourseId !== 'ALL' && !slotEntry.assignments.some((a) => a.course.id === selectedCourseId)) {
+    if (selectedCourseId !== 'ALL' && !slotEntry.assignments.some((a) => a.course?.id === selectedCourseId)) {
       return false
     }
 
@@ -317,7 +371,7 @@ export function ScheduleMatrixGrid({
       const matchesRoom = slotEntry.room.name.toLowerCase().includes(query)
       const matchesDays = slotEntry.days.toLowerCase().includes(query)
       const matchesTime = slotEntry.timeRangeFormatted.toLowerCase().includes(query)
-      const matchesCourse = slotEntry.assignments.some((a) => a.course.name.toLowerCase().includes(query))
+      const matchesCourse = slotEntry.assignments.some((a) => a.course?.name?.toLowerCase().includes(query))
       const matchesTeacher = slotEntry.assignments.some((a) => {
         const tName = `${a.teacher?.firstName || ''} ${a.teacher?.lastName || ''}`.toLowerCase()
         return tName.includes(query)
@@ -336,6 +390,26 @@ export function ScheduleMatrixGrid({
     return true
   }
 
+  // 9. Count stats of matching classes
+  const visibleStats = useMemo(() => {
+    let totalAssignmentsMatching = 0
+    let totalSlotsMatching = 0
+
+    slotHourlyEntries.forEach((slot) => {
+      if (isSlotMatched(slot)) {
+        totalSlotsMatching++
+        totalAssignmentsMatching += slot.assignments.length
+      }
+    })
+
+    return {
+      totalAssignmentsMatching,
+      totalSlotsMatching,
+      totalAssignments: assignments.length,
+      totalSlots: slotHourlyEntries.length
+    }
+  }, [slotHourlyEntries, assignments, selectedDay, selectedRoomId, selectedCourseId, selectedSeatStatus, searchQuery])
+
   // Active drawer slot
   const activeDrawerSlot = selectedCellSlotId ? slotGroups.get(selectedCellSlotId) : null
 
@@ -349,7 +423,6 @@ export function ScheduleMatrixGrid({
           a.slotId !== transferringEnrollment.currentSlotId
       )
       .map((a) => {
-        // Use the aggregated slotGroup which gathers all active students sharing this physical slot
         const slotGroup = slotGroups.get(a.slot.id)
         const summary = slotGroup
           ? slotGroup.seatSummary
@@ -399,7 +472,7 @@ export function ScheduleMatrixGrid({
   return (
     <div className="space-y-3">
       {/* ── Compact Filter Control Header ── */}
-      <div className="rounded-[24px] border border-border bg-card/95 p-3.5 shadow-sm space-y-2.5">
+      <div className="rounded-[24px] border border-border bg-card/95 p-3.5 shadow-sm space-y-3">
         {/* Filter Dropdowns Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {/* Room Filter */}
@@ -412,8 +485,8 @@ export function ScheduleMatrixGrid({
               onChange={(e) => setSelectedRoomId(e.target.value)}
               className="w-full rounded-xl border border-border bg-muted/60 px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition focus:border-indigo-500 focus:bg-card cursor-pointer"
             >
-              <option value="ALL">All Rooms ({rooms.length})</option>
-              {rooms.map((r) => (
+              <option value="ALL">All Rooms ({allRoomsList.length})</option>
+              {allRoomsList.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name} (Cap: {r.capacity})
                 </option>
@@ -440,7 +513,7 @@ export function ScheduleMatrixGrid({
             </select>
           </div>
 
-          {/* Day Filter */}
+          {/* Day Filter Dropdown */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5 flex items-center gap-1">
               <Calendar size={11} className="text-emerald-500" /> Days
@@ -486,7 +559,7 @@ export function ScheduleMatrixGrid({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Teacher / Student..."
+                placeholder="Teacher / Student / Course..."
                 className="w-full rounded-xl border border-border bg-muted/60 py-1.5 pl-2.5 pr-6 text-xs text-foreground outline-none transition placeholder:text-muted-foreground focus:border-indigo-500 focus:bg-card"
               />
               {searchQuery && (
@@ -502,12 +575,56 @@ export function ScheduleMatrixGrid({
           </div>
         </div>
 
+        {/* ── Quick Day Filter Buttons (1-Click Switching) ── */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1 flex items-center gap-1">
+            <Calendar size={11} className="text-emerald-500" /> Quick Day:
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedDay('ALL')}
+            className={`rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer ${
+              selectedDay === 'ALL'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+            }`}
+          >
+            All Days
+          </button>
+          {uniqueDays.map((day) => {
+            const isSelected = selectedDay === day
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => setSelectedDay(day)}
+                className={`rounded-full px-3 py-1 text-xs font-bold transition cursor-pointer ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                }`}
+              >
+                {day}
+              </button>
+            )
+          })}
+        </div>
+
         {/* Status Bar */}
-        {(selectedDay !== 'ALL' || selectedRoomId !== 'ALL' || selectedCourseId !== 'ALL' || selectedSeatStatus !== 'ALL' || searchQuery) && (
-          <div className="flex items-center justify-between border-t border-border/60 pt-2 text-[11px]">
+        <div className="flex flex-wrap items-center justify-between border-t border-border/60 pt-2 text-[11px] gap-2">
+          <div className="flex items-center gap-2">
             <span className="font-semibold text-foreground">
-              Filtered Hourly Timetable active
+              {visibleStats.totalAssignmentsMatching === visibleStats.totalAssignments
+                ? `Showing all ${visibleStats.totalAssignments} classes across ${displayedRooms.length} room${displayedRooms.length !== 1 ? 's' : ''}`
+                : `Showing ${visibleStats.totalAssignmentsMatching} of ${visibleStats.totalAssignments} classes (${visibleStats.totalSlotsMatching} slots) across ${displayedRooms.length} room${displayedRooms.length !== 1 ? 's' : ''}`}
             </span>
+            {selectedDay !== 'ALL' && (
+              <span className="rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 text-[10px] font-bold">
+                Day: {selectedDay}
+              </span>
+            )}
+          </div>
+          {(selectedDay !== 'ALL' || selectedRoomId !== 'ALL' || selectedCourseId !== 'ALL' || selectedSeatStatus !== 'ALL' || searchQuery) && (
             <button
               type="button"
               onClick={() => {
@@ -521,31 +638,31 @@ export function ScheduleMatrixGrid({
             >
               Reset Filters ✕
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* ── Hourly Timetable Matrix with Multi-Hour Spanning (100% Width, Zero Horizontal Scroll) ── */}
-      <div className="rounded-[24px] border border-border bg-card shadow-sm overflow-hidden w-full">
-        <table className="w-full table-fixed border-collapse text-left text-xs">
+      {/* ── Hourly Timetable Matrix Grid (All Classes Visible, Multi-Class Support) ── */}
+      <div className="rounded-[24px] border border-border bg-card shadow-sm overflow-x-auto w-full">
+        <table className="w-full min-w-[700px] border-collapse text-left text-xs">
           {/* Header Row: Room Columns */}
           <thead>
             <tr className="bg-muted/70 border-b border-border">
-              <th className="w-28 sm:w-36 p-2.5 font-bold text-foreground text-center border-r border-border bg-muted/90">
+              <th className="w-28 sm:w-36 p-2.5 font-bold text-foreground text-center border-r border-border bg-muted/90 sticky left-0 z-10 shadow-xs">
                 <div className="flex items-center justify-center gap-1 text-[11px]">
                   <Clock size={12} className="text-indigo-600 dark:text-indigo-400" />
                   <span>Hourly Slot</span>
                 </div>
               </th>
               {displayedRooms.map((room) => (
-                <th key={room.id} className="p-2.5 font-bold text-foreground border-r last:border-r-0 border-border">
+                <th key={room.id} className="min-w-[160px] p-2.5 font-bold text-foreground border-r last:border-r-0 border-border">
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1 truncate">
                       <MapPin size={11} className="text-indigo-500 shrink-0" />
                       <span className="truncate text-xs">{room.name}</span>
                     </div>
                     <span className="rounded-full bg-background px-1.5 py-0.2 text-[9px] font-semibold text-muted-foreground shrink-0 border border-border">
-                      {room.capacity}
+                      Cap: {room.capacity}
                     </span>
                   </div>
                 </th>
@@ -553,7 +670,7 @@ export function ScheduleMatrixGrid({
             </tr>
           </thead>
 
-          {/* Body: Hourly Rows with rowSpan for 2/3 hour courses */}
+          {/* Body: Hourly Rows */}
           <tbody className="divide-y divide-border">
             {hourlyTimeBlocks.map((block) => {
               const currentHour = block.hour
@@ -561,106 +678,133 @@ export function ScheduleMatrixGrid({
               return (
                 <tr key={block.hour} className="hover:bg-muted/15 transition-colors">
                   {/* Hourly Time Cell */}
-                  <td className="p-2 font-bold text-foreground border-r border-border bg-muted/30 text-center align-middle whitespace-nowrap">
+                  <td className="p-2 font-bold text-foreground border-r border-border bg-muted/30 text-center align-middle whitespace-nowrap sticky left-0 z-10 bg-card">
                     <span className="text-[11px] block">{block.label}</span>
                   </td>
 
                   {/* Room Cells */}
                   {displayedRooms.map((room) => {
-                    // Check if a slot STARTS at this hour
-                    const startingSlot = slotHourlyEntries.find(
-                      (g) => g.room.name === room.name && g.startHour === currentHour
-                    )
+                    // 1. Slots starting in this hour for this room
+                    const startingSlots = slotHourlyEntries.filter((g) => {
+                      const matchesRoom =
+                        (g.room.id && g.room.id === room.id) ||
+                        (g.room.name && g.room.name.toLowerCase() === room.name.toLowerCase())
+                      return matchesRoom && g.startHour === currentHour && isSlotMatched(g)
+                    })
 
-                    // Check if a slot is SPANNING from an earlier hour
-                    const spanningSlot = slotHourlyEntries.find(
-                      (g) => g.room.name === room.name && g.startHour < currentHour && g.endHour > currentHour
-                    )
+                    // 2. Multi-hour slots ongoing in this hour for this room
+                    const ongoingSlots = slotHourlyEntries.filter((g) => {
+                      const matchesRoom =
+                        (g.room.id && g.room.id === room.id) ||
+                        (g.room.name && g.room.name.toLowerCase() === room.name.toLowerCase())
+                      return matchesRoom && g.startHour < currentHour && g.endHourCeiling > currentHour && isSlotMatched(g)
+                    })
 
-                    // If spanning from earlier hour, DO NOT render <td> because rowSpan covers it!
-                    if (spanningSlot) {
-                      return null
-                    }
-
-                    // If no slot starts at this hour, render subtle empty cell
-                    if (!startingSlot) {
+                    if (startingSlots.length === 0 && ongoingSlots.length === 0) {
                       return (
-                        <td key={room.id} className="p-1.5 border-r last:border-r-0 border-border text-center align-middle bg-muted/5">
-                          <span className="text-muted-foreground/40 text-[11px] font-mono select-none">—</span>
+                        <td
+                          key={room.id}
+                          className="p-1.5 border-r last:border-r-0 border-border text-center align-middle bg-muted/5 min-h-[4rem]"
+                        >
+                          <span className="text-muted-foreground/30 text-[11px] font-mono select-none">—</span>
                         </td>
                       )
                     }
 
-                    const isMatched = isSlotMatched(startingSlot)
-                    const { seatSummary, assignments: slotAssignments, durationHours } = startingSlot
-                    const isFull = seatSummary.status === 'FULL'
-                    const isAlmostFull = seatSummary.status === 'ALMOST_FULL'
-                    const isMultiHour = durationHours > 1
-
                     return (
                       <td
                         key={room.id}
-                        rowSpan={durationHours}
-                        className={`p-1.5 border-r last:border-r-0 border-border align-middle transition-opacity ${
-                          !isMatched ? 'opacity-20 grayscale pointer-events-none' : ''
-                        }`}
+                        className="p-1.5 border-r last:border-r-0 border-border align-top"
                       >
-                        <div
-                          onClick={() => setSelectedCellSlotId(startingSlot.slotId)}
-                          className={`group cursor-pointer rounded-xl border p-2 transition-all duration-150 hover:shadow-md ${
-                            isFull
-                              ? 'border-rose-200 bg-rose-50/70 dark:border-rose-900/50 dark:bg-rose-950/25'
-                              : isAlmostFull
-                              ? 'border-amber-200 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-950/25'
-                              : 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/25'
-                          }`}
-                        >
-                          {/* Course Names & Duration Badge */}
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            <div className="font-bold text-foreground text-xs truncate">
-                              {slotAssignments.map((a) => a.course.name).join(' + ')}
-                            </div>
-                            
-                            <div className="flex items-center gap-1 shrink-0">
-                              {isMultiHour && (
-                                <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.2 text-[8px] font-bold">
-                                  <Timer size={9} /> {durationHours}h
-                                </span>
-                              )}
-                              <span className="rounded bg-background/90 px-1 py-0.2 text-[8px] font-bold uppercase tracking-wider text-muted-foreground">
-                                {startingSlot.days.slice(0, 7)}
-                              </span>
-                            </div>
-                          </div>
+                        <div className="flex flex-col gap-1.5">
+                          {/* Starting Slots */}
+                          {startingSlots.map((startingSlot) => {
+                            const { seatSummary, assignments: slotAssignments, durationHours } = startingSlot
+                            const isFull = seatSummary.status === 'FULL'
+                            const isAlmostFull = seatSummary.status === 'ALMOST_FULL'
+                            const isMultiHour = durationHours > 1
+                            const dayColor = getDayBadgeColor(startingSlot.days)
 
-                          {/* Teacher & Real-time Seat Badge */}
-                          <div className="flex items-center justify-between gap-1 text-[10px]">
-                            <span className="text-muted-foreground truncate">
-                              {slotAssignments.map((a) => a.teacher?.firstName ? `${a.teacher.firstName}` : 'TBD').join(', ')}
-                            </span>
+                            return (
+                              <div
+                                key={startingSlot.slotId}
+                                onClick={() => setSelectedCellSlotId(startingSlot.slotId)}
+                                className={`group cursor-pointer rounded-xl border p-2 transition-all duration-150 hover:shadow-md ${
+                                  isFull
+                                    ? 'border-rose-200 bg-rose-50/70 dark:border-rose-900/50 dark:bg-rose-950/25 hover:border-rose-300'
+                                    : isAlmostFull
+                                    ? 'border-amber-200 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-950/25 hover:border-amber-300'
+                                    : 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/25 hover:border-emerald-300'
+                                }`}
+                              >
+                                {/* Days badge & Timing */}
+                                <div className="flex items-center justify-between gap-1 mb-1">
+                                  <span className={`rounded px-1.5 py-0.2 text-[8px] font-bold border uppercase tracking-wider ${dayColor}`}>
+                                    {startingSlot.days}
+                                  </span>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    {isMultiHour && (
+                                      <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.2 text-[8px] font-bold">
+                                        <Timer size={9} /> {durationHours}h
+                                      </span>
+                                    )}
+                                    <span className="text-[9px] font-medium text-muted-foreground">
+                                      {startingSlot.timeRangeFormatted}
+                                    </span>
+                                  </div>
+                                </div>
 
-                            <span
-                              className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold shrink-0 ${
-                                isFull
-                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300'
-                                  : isAlmostFull
-                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
-                                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
-                              }`}
-                            >
-                              {isFull ? 'FULL' : `${seatSummary.availableSeats} Free`}
-                            </span>
-                          </div>
+                                {/* Course Names */}
+                                <div className="font-bold text-foreground text-xs leading-snug line-clamp-2">
+                                  {slotAssignments.map((a) => a.course?.name || 'Class').join(' + ')}
+                                </div>
 
-                          {/* Multi-hour indicator line */}
-                          {isMultiHour && (
-                            <div className="mt-1 text-[9px] text-muted-foreground/80 flex items-center justify-between border-t border-border/40 pt-1">
-                              <span>Full Timing: {startingSlot.timeRangeFormatted}</span>
-                              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                                {startingSlot.allEnrollments.length}/{startingSlot.room.capacity} Enrolled
-                              </span>
-                            </div>
-                          )}
+                                {/* Teacher & Real-time Seat Badge */}
+                                <div className="flex items-center justify-between gap-1 mt-1 text-[10px]">
+                                  <span className="text-muted-foreground truncate max-w-[65%]">
+                                    {slotAssignments.map((a) => (a.teacher?.firstName ? a.teacher.firstName : 'TBD')).join(', ')}
+                                  </span>
+
+                                  <span
+                                    className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold shrink-0 ${
+                                      isFull
+                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300'
+                                        : isAlmostFull
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
+                                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
+                                    }`}
+                                  >
+                                    {isFull ? 'FULL' : `${seatSummary.availableSeats} Free`}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })}
+
+                          {/* Ongoing multi-hour slots */}
+                          {ongoingSlots.map((ongoingSlot) => {
+                            const dayColor = getDayBadgeColor(ongoingSlot.days)
+                            return (
+                              <div
+                                key={`ongoing-${ongoingSlot.slotId}`}
+                                onClick={() => setSelectedCellSlotId(ongoingSlot.slotId)}
+                                className="group cursor-pointer rounded-xl border border-dashed border-border/80 bg-muted/40 p-1.5 text-[10px] transition hover:bg-muted/70 hover:border-indigo-400"
+                                title={`Ongoing class (${ongoingSlot.timeRangeFormatted}). Click to view details.`}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className={`rounded px-1 py-0.2 text-[8px] font-bold uppercase tracking-wider border ${dayColor}`}>
+                                    {ongoingSlot.days}
+                                  </span>
+                                  <span className="text-[8px] font-semibold text-muted-foreground">
+                                    ongoing (ends {formatSlotTime(ongoingSlot.endTime)})
+                                  </span>
+                                </div>
+                                <div className="font-semibold text-foreground text-[11px] truncate mt-0.5">
+                                  {ongoingSlot.assignments.map((a) => a.course?.name || 'Class').join(' + ')}
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </td>
                     )
