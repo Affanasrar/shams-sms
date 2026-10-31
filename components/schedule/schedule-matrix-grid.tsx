@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useTransition } from 'react'
+import { useState, useMemo, useTransition, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -17,11 +17,13 @@ import {
   Loader2,
   Building2,
   BookOpen,
-  Filter,
-  Timer
+  Timer,
+  GripVertical,
+  Move
 } from 'lucide-react'
-import { formatSlotTimeRange, formatSlotTime, getSlotSeatSummary } from '@/lib/seat-engine'
+import { formatSlotTimeRange, formatSlotTime, getSlotSeatSummary, type SlotSeatSummary } from '@/lib/seat-engine'
 import { changeEnrollmentTiming } from '@/app/actions/enrollment'
+import { moveClassSchedule } from '@/app/actions/schedule'
 
 export interface MatrixAssignment {
   id: string
@@ -134,6 +136,40 @@ export function ScheduleMatrixGrid({
   // Slide-over Drawer State
   const [selectedCellSlotId, setSelectedCellSlotId] = useState<string | null>(null)
 
+  // Drag and drop state
+  const [draggedAssignment, setDraggedAssignment] = useState<{
+    assignmentId: string
+    courseName: string
+    teacherName: string
+    studentCount: number
+    currentRoomId: string
+    currentRoomName: string
+    currentHour: number
+    days: string
+    durationHours: number
+  } | null>(null)
+
+  const [dragOverCellKey, setDragOverCellKey] = useState<string | null>(null)
+
+  // Drag-and-drop Reschedule Modal State
+  const [reschedulePrompt, setReschedulePrompt] = useState<{
+    assignmentId: string
+    courseName: string
+    fromRoomName: string
+    fromTimeDisplay: string
+    targetRoomId: string
+    targetRoomName: string
+    targetRoomCapacity: number
+    targetHour: number
+    targetTimeDisplay: string
+    days: string
+    durationHours: number
+    studentCount: number
+  } | null>(null)
+
+  const [isRescheduling, startRescheduleTransition] = useTransition()
+  const [rescheduleMessage, setRescheduleMessage] = useState<{ success: boolean; text: string } | null>(null)
+
   // Student Transfer State
   const [transferringEnrollment, setTransferringEnrollment] = useState<{
     enrollmentId: string
@@ -226,7 +262,7 @@ export function ScheduleMatrixGrid({
           days: (a.slot.days || '').trim(),
           assignments: [],
           allEnrollments: [],
-          seatSummary: {} as any
+          seatSummary: {} as SlotSeatSummary
         })
       }
 
@@ -243,7 +279,7 @@ export function ScheduleMatrixGrid({
       })
     })
 
-    // Compute seat summary
+    // Compute slot-level seat summary
     map.forEach((entry) => {
       entry.seatSummary = getSlotSeatSummary(
         entry.room.capacity,
@@ -342,7 +378,7 @@ export function ScheduleMatrixGrid({
   }, [allRoomsList, selectedRoomId])
 
   // 8. Active Filter Check Helper
-  const isSlotMatched = (slotEntry: (typeof slotHourlyEntries)[0]) => {
+  const isSlotMatched = useCallback((slotEntry: (typeof slotHourlyEntries)[0]) => {
     if (!slotEntry) return false
 
     // Day filter
@@ -388,7 +424,7 @@ export function ScheduleMatrixGrid({
     }
 
     return true
-  }
+  }, [selectedDay, selectedRoomId, selectedCourseId, selectedSeatStatus, searchQuery])
 
   // 9. Count stats of matching classes
   const visibleStats = useMemo(() => {
@@ -408,7 +444,7 @@ export function ScheduleMatrixGrid({
       totalAssignments: assignments.length,
       totalSlots: slotHourlyEntries.length
     }
-  }, [slotHourlyEntries, assignments, selectedDay, selectedRoomId, selectedCourseId, selectedSeatStatus, searchQuery])
+  }, [slotHourlyEntries, assignments, isSlotMatched])
 
   // Active drawer slot
   const activeDrawerSlot = selectedCellSlotId ? slotGroups.get(selectedCellSlotId) : null
@@ -446,17 +482,82 @@ export function ScheduleMatrixGrid({
       .sort((a, b) => a.days.localeCompare(b.days))
   }, [transferringEnrollment, assignments, slotGroups])
 
+  // Drag-and-drop drop handler
+  const handleCellDrop = (e: React.DragEvent, targetRoom: RoomInfo, targetHour: number) => {
+    e.preventDefault()
+    setDragOverCellKey(null)
+
+    try {
+      const dataStr = e.dataTransfer.getData('application/json')
+      if (!dataStr) return
+      const data = JSON.parse(dataStr)
+
+      // If dropped onto the exact same room and start hour, do nothing
+      if (data.currentRoomId === targetRoom.id && data.currentHour === targetHour) {
+        return
+      }
+
+      const targetTimeDisplay = formatHourBlock(targetHour)
+      const fromTimeDisplay = formatHourBlock(data.currentHour)
+
+      setReschedulePrompt({
+        assignmentId: data.assignmentId,
+        courseName: data.courseName,
+        fromRoomName: data.currentRoomName,
+        fromTimeDisplay,
+        targetRoomId: targetRoom.id,
+        targetRoomName: targetRoom.name,
+        targetRoomCapacity: targetRoom.capacity,
+        targetHour: targetHour,
+        targetTimeDisplay,
+        days: data.days,
+        durationHours: data.durationHours || 1,
+        studentCount: data.studentCount || 0
+      })
+      setRescheduleMessage(null)
+    } catch (err) {
+      console.error('Failed to parse drag data:', err)
+    }
+  }
+
+  const handleConfirmReschedule = () => {
+    if (!reschedulePrompt) return
+    setRescheduleMessage(null)
+
+    startRescheduleTransition(async () => {
+      const result = await moveClassSchedule({
+        assignmentId: reschedulePrompt.assignmentId,
+        targetRoomId: reschedulePrompt.targetRoomId,
+        targetHour: reschedulePrompt.targetHour,
+        targetDays: reschedulePrompt.days,
+        targetDurationHours: reschedulePrompt.durationHours
+      })
+
+      if (result.success) {
+        setRescheduleMessage({ success: true, text: result.message || 'Class rescheduled successfully!' })
+        setTimeout(() => {
+          setReschedulePrompt(null)
+          setRescheduleMessage(null)
+          router.refresh()
+        }, 1200)
+      } else {
+        setRescheduleMessage({ success: false, text: result.error || 'Failed to reschedule class.' })
+      }
+    })
+  }
+
   const handleConfirmTransfer = () => {
     if (!transferringEnrollment || !targetSlotAssignmentId) return
     setTransferMessage(null)
 
     startTransferTransition(async () => {
-      const result = await changeEnrollmentTiming(
+      const result = (await changeEnrollmentTiming(
         transferringEnrollment.enrollmentId,
         targetSlotAssignmentId
-      )
+      )) as { success: boolean; message?: string; error?: string }
+
       if (result.success) {
-        setTransferMessage({ success: true, text: (result as any).message || 'Student timing updated successfully!' })
+        setTransferMessage({ success: true, text: result.message || 'Student timing updated successfully!' })
         setTimeout(() => {
           setTransferringEnrollment(null)
           setTargetSlotAssignmentId('')
@@ -464,7 +565,7 @@ export function ScheduleMatrixGrid({
           router.refresh()
         }, 1200)
       } else {
-        setTransferMessage({ success: false, text: (result as any).error || 'Failed to move student timing.' })
+        setTransferMessage({ success: false, text: result.error || 'Failed to move student timing.' })
       }
     })
   }
@@ -624,44 +725,52 @@ export function ScheduleMatrixGrid({
               </span>
             )}
           </div>
-          {(selectedDay !== 'ALL' || selectedRoomId !== 'ALL' || selectedCourseId !== 'ALL' || selectedSeatStatus !== 'ALL' || searchQuery) && (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedDay('ALL')
-                setSelectedRoomId('ALL')
-                setSelectedCourseId('ALL')
-                setSelectedSeatStatus('ALL')
-                setSearchQuery('')
-              }}
-              className="rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 px-2.5 py-0.5 text-[10px] font-bold hover:bg-rose-100 transition cursor-pointer"
-            >
-              Reset Filters ✕
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
+              <Move size={10} className="text-indigo-500" /> Drag class cards to reschedule room or time
+            </span>
+            {(selectedDay !== 'ALL' || selectedRoomId !== 'ALL' || selectedCourseId !== 'ALL' || selectedSeatStatus !== 'ALL' || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDay('ALL')
+                  setSelectedRoomId('ALL')
+                  setSelectedCourseId('ALL')
+                  setSelectedSeatStatus('ALL')
+                  setSearchQuery('')
+                }}
+                className="rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 px-2.5 py-0.5 text-[10px] font-bold hover:bg-rose-100 transition cursor-pointer"
+              >
+                Reset Filters ✕
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Hourly Timetable Matrix Grid (All Classes Visible, Multi-Class Support) ── */}
+      {/* ── Hourly Timetable Matrix Grid (All Classes Visible, Accurate Seating & Drag-Drop) ── */}
       <div className="rounded-[24px] border border-border bg-card shadow-sm overflow-x-auto w-full">
-        <table className="w-full min-w-[700px] border-collapse text-left text-xs">
+        <table
+          className="w-full table-fixed border-collapse text-left text-xs"
+          style={{ minWidth: `${Math.max(760, 140 + displayedRooms.length * 220)}px` }}
+        >
           {/* Header Row: Room Columns */}
           <thead>
             <tr className="bg-muted/70 border-b border-border">
-              <th className="w-28 sm:w-36 p-2.5 font-bold text-foreground text-center border-r border-border bg-muted/90 sticky left-0 z-10 shadow-xs">
+              <th className="w-32 min-w-[120px] max-w-[130px] p-2.5 font-bold text-foreground text-center border-r border-border bg-muted/90 sticky left-0 z-10 shadow-xs">
                 <div className="flex items-center justify-center gap-1 text-[11px]">
                   <Clock size={12} className="text-indigo-600 dark:text-indigo-400" />
                   <span>Hourly Slot</span>
                 </div>
               </th>
               {displayedRooms.map((room) => (
-                <th key={room.id} className="min-w-[160px] p-2.5 font-bold text-foreground border-r last:border-r-0 border-border">
+                <th key={room.id} className="w-[220px] min-w-[220px] p-2.5 font-bold text-foreground border-r last:border-r-0 border-border">
                   <div className="flex items-center justify-between gap-1">
-                    <div className="flex items-center gap-1 truncate">
-                      <MapPin size={11} className="text-indigo-500 shrink-0" />
-                      <span className="truncate text-xs">{room.name}</span>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <MapPin size={12} className="text-indigo-500 shrink-0" />
+                      <span className="truncate text-xs font-semibold" title={room.name}>{room.name}</span>
                     </div>
-                    <span className="rounded-full bg-background px-1.5 py-0.2 text-[9px] font-semibold text-muted-foreground shrink-0 border border-border">
+                    <span className="rounded-full bg-background px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground shrink-0 border border-border">
                       Cap: {room.capacity}
                     </span>
                   </div>
@@ -678,12 +787,15 @@ export function ScheduleMatrixGrid({
               return (
                 <tr key={block.hour} className="hover:bg-muted/15 transition-colors">
                   {/* Hourly Time Cell */}
-                  <td className="p-2 font-bold text-foreground border-r border-border bg-muted/30 text-center align-middle whitespace-nowrap sticky left-0 z-10 bg-card">
+                  <td className="w-32 min-w-[120px] max-w-[130px] p-2 font-bold text-foreground border-r border-border bg-muted/30 text-center align-middle whitespace-nowrap sticky left-0 z-10 bg-card">
                     <span className="text-[11px] block">{block.label}</span>
                   </td>
 
-                  {/* Room Cells */}
+                  {/* Room Cells with Drop Target */}
                   {displayedRooms.map((room) => {
+                    const cellKey = `${room.id}-${currentHour}`
+                    const isCellDragOver = dragOverCellKey === cellKey
+
                     // 1. Slots starting in this hour for this room
                     const startingSlots = slotHourlyEntries.filter((g) => {
                       const matchesRoom =
@@ -700,112 +812,203 @@ export function ScheduleMatrixGrid({
                       return matchesRoom && g.startHour < currentHour && g.endHourCeiling > currentHour && isSlotMatched(g)
                     })
 
-                    if (startingSlots.length === 0 && ongoingSlots.length === 0) {
-                      return (
-                        <td
-                          key={room.id}
-                          className="p-1.5 border-r last:border-r-0 border-border text-center align-middle bg-muted/5 min-h-[4rem]"
-                        >
-                          <span className="text-muted-foreground/30 text-[11px] font-mono select-none">—</span>
-                        </td>
-                      )
-                    }
-
                     return (
                       <td
                         key={room.id}
-                        className="p-1.5 border-r last:border-r-0 border-border align-top"
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          e.dataTransfer.dropEffect = 'move'
+                          if (dragOverCellKey !== cellKey) {
+                            setDragOverCellKey(cellKey)
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverCellKey === cellKey) {
+                            setDragOverCellKey(null)
+                          }
+                        }}
+                        onDrop={(e) => handleCellDrop(e, room, currentHour)}
+                        className={`w-[220px] min-w-[220px] max-w-[220px] p-1.5 border-r last:border-r-0 border-border align-top transition-colors min-h-[4.5rem] ${
+                          isCellDragOver
+                            ? 'bg-indigo-100/70 dark:bg-indigo-950/70 ring-2 ring-indigo-500 ring-inset'
+                            : ''
+                        }`}
                       >
-                        <div className="flex flex-col gap-1.5">
-                          {/* Starting Slots */}
-                          {startingSlots.map((startingSlot) => {
-                            const { seatSummary, assignments: slotAssignments, durationHours } = startingSlot
-                            const isFull = seatSummary.status === 'FULL'
-                            const isAlmostFull = seatSummary.status === 'ALMOST_FULL'
-                            const isMultiHour = durationHours > 1
-                            const dayColor = getDayBadgeColor(startingSlot.days)
+                        {isCellDragOver && (
+                          <div className="mb-1 rounded-lg border-2 border-dashed border-indigo-500 bg-indigo-50/90 dark:bg-indigo-950/80 p-2 text-center text-[10px] font-bold text-indigo-700 dark:text-indigo-300 animate-pulse">
+                            + Drop here to move class to {room.name}
+                          </div>
+                        )}
 
-                            return (
-                              <div
-                                key={startingSlot.slotId}
-                                onClick={() => setSelectedCellSlotId(startingSlot.slotId)}
-                                className={`group cursor-pointer rounded-xl border p-2 transition-all duration-150 hover:shadow-md ${
-                                  isFull
-                                    ? 'border-rose-200 bg-rose-50/70 dark:border-rose-900/50 dark:bg-rose-950/25 hover:border-rose-300'
-                                    : isAlmostFull
-                                    ? 'border-amber-200 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-950/25 hover:border-amber-300'
-                                    : 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/25 hover:border-emerald-300'
-                                }`}
-                              >
-                                {/* Days badge & Timing */}
-                                <div className="flex items-center justify-between gap-1 mb-1">
-                                  <span className={`rounded px-1.5 py-0.2 text-[8px] font-bold border uppercase tracking-wider ${dayColor}`}>
-                                    {startingSlot.days}
-                                  </span>
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    {isMultiHour && (
-                                      <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.2 text-[8px] font-bold">
-                                        <Timer size={9} /> {durationHours}h
-                                      </span>
-                                    )}
-                                    <span className="text-[9px] font-medium text-muted-foreground">
-                                      {startingSlot.timeRangeFormatted}
+                        {startingSlots.length === 0 && ongoingSlots.length === 0 ? (
+                          <div className="h-full flex items-center justify-center min-h-[3.5rem]">
+                            <span className="text-muted-foreground/30 text-[11px] font-mono select-none">—</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {/* Starting Slots */}
+                            {startingSlots.map((startingSlot) => {
+                              const { seatSummary, assignments: slotAssignments, durationHours } = startingSlot
+                              const isFull = seatSummary.status === 'FULL'
+                              const isAlmostFull = seatSummary.status === 'ALMOST_FULL'
+                              const isMultiHour = durationHours > 1
+                              const dayColor = getDayBadgeColor(startingSlot.days)
+
+                              return (
+                                <div key={startingSlot.slotId} className="flex flex-col gap-1.5">
+                                  {slotAssignments.map((assignment) => {
+                                    const studentCount = assignment.enrollments?.length || 0
+                                    const teacherName = assignment.teacher?.firstName
+                                      ? `${assignment.teacher.firstName} ${assignment.teacher.lastName || ''}`.trim()
+                                      : 'Teacher TBD'
+
+                                    const isDragging = draggedAssignment?.assignmentId === assignment.id
+
+                                    return (
+                                      <div
+                                        key={assignment.id}
+                                        draggable
+                                        onDragStart={(e) => {
+                                          const dragPayload = {
+                                            assignmentId: assignment.id,
+                                            courseName: assignment.course?.name || 'Class',
+                                            teacherName,
+                                            studentCount,
+                                            currentRoomId: startingSlot.room.id,
+                                            currentRoomName: startingSlot.room.name,
+                                            currentHour,
+                                            days: startingSlot.days,
+                                            durationHours
+                                          }
+                                          e.dataTransfer.setData('application/json', JSON.stringify(dragPayload))
+                                          e.dataTransfer.effectAllowed = 'move'
+                                          setDraggedAssignment(dragPayload)
+                                        }}
+                                        onDragEnd={() => {
+                                          setDraggedAssignment(null)
+                                          setDragOverCellKey(null)
+                                        }}
+                                        onClick={() => setSelectedCellSlotId(startingSlot.slotId)}
+                                        className={`group cursor-grab active:cursor-grabbing rounded-xl border p-2 transition-all duration-150 hover:shadow-md relative select-none w-full overflow-hidden ${
+                                          isDragging ? 'opacity-40 scale-95 border-indigo-500 ring-2 ring-indigo-400' : ''
+                                        } ${
+                                          isFull
+                                            ? 'border-rose-200 bg-rose-50/70 dark:border-rose-900/50 dark:bg-rose-950/25 hover:border-rose-300'
+                                            : isAlmostFull
+                                            ? 'border-amber-200 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-950/25 hover:border-amber-300'
+                                            : 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/25 hover:border-emerald-300'
+                                        }`}
+                                      >
+                                        {/* Row 1: Days badge, Duration & Drag Grip */}
+                                        <div className="flex items-center justify-between gap-1 mb-1">
+                                          <span className={`truncate max-w-[130px] rounded px-1.5 py-0.5 text-[8px] font-bold border uppercase tracking-wider ${dayColor}`} title={startingSlot.days}>
+                                            {startingSlot.days}
+                                          </span>
+                                          <div className="flex items-center gap-1 shrink-0">
+                                            {isMultiHour && (
+                                              <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.2 text-[8px] font-bold">
+                                                <Timer size={9} /> {durationHours}h
+                                              </span>
+                                            )}
+                                            <span
+                                              className="opacity-40 group-hover:opacity-100 transition-opacity text-muted-foreground cursor-grab"
+                                              title="Drag to move this class"
+                                            >
+                                              <GripVertical size={11} />
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Row 2: Time display cleanly on its own line */}
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
+                                          <Clock size={10} className="shrink-0 text-indigo-500" />
+                                          <span className="font-semibold text-foreground/90 truncate">{startingSlot.timeRangeFormatted}</span>
+                                        </div>
+
+                                        {/* Row 3: Course Title */}
+                                        <div className="font-bold text-foreground text-xs leading-snug truncate" title={assignment.course?.name}>
+                                          {assignment.course?.name || 'Class'}
+                                        </div>
+
+                                        {/* Row 4: Teacher */}
+                                        <div className="text-[10px] text-muted-foreground truncate mt-0.5" title={teacherName}>
+                                          {teacherName}
+                                        </div>
+
+                                        {/* Row 5: Seating Breakdown (Accurate, transparent, and structured) */}
+                                        <div className="mt-1.5 pt-1.5 border-t border-border/50 flex flex-col gap-1 text-[10px]">
+                                          <div className="flex items-center justify-between gap-1">
+                                            <span className="font-bold text-foreground flex items-center gap-1 text-[10px] truncate">
+                                              <Users size={10} className="text-indigo-500 shrink-0" />
+                                              <span className="truncate">{studentCount} enrolled</span>
+                                            </span>
+
+                                            <span
+                                              className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold shrink-0 ${
+                                                isFull
+                                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300'
+                                                  : isAlmostFull
+                                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
+                                                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
+                                              }`}
+                                            >
+                                              {isFull ? 'FULL' : `${seatSummary.availableSeats} Free`}
+                                            </span>
+                                          </div>
+
+                                          <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                                            <span>Cap: {seatSummary.roomCapacity}</span>
+                                            <span className="font-semibold text-foreground/80 truncate">
+                                              {seatSummary.totalEnrolled}/{seatSummary.roomCapacity} total
+                                            </span>
+                                          </div>
+
+                                          <div className="h-1 w-full rounded-full bg-muted/80 overflow-hidden">
+                                            <div
+                                              className={`h-full rounded-full transition-all duration-300 ${
+                                                isFull ? 'bg-rose-500' : isAlmostFull ? 'bg-amber-500' : 'bg-emerald-500'
+                                              }`}
+                                              style={{ width: `${Math.min(100, seatSummary.occupancyPercent)}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )
+                            })}
+
+                            {/* Ongoing multi-hour slots */}
+                            {ongoingSlots.map((ongoingSlot) => {
+                              const dayColor = getDayBadgeColor(ongoingSlot.days)
+                              return (
+                                <div
+                                  key={`ongoing-${ongoingSlot.slotId}`}
+                                  onClick={() => setSelectedCellSlotId(ongoingSlot.slotId)}
+                                  className="group cursor-pointer rounded-xl border border-dashed border-border/80 bg-muted/40 p-2 text-[10px] transition hover:bg-muted/70 hover:border-indigo-400 w-full overflow-hidden"
+                                  title={`Ongoing class (${ongoingSlot.timeRangeFormatted}). Click to view details.`}
+                                >
+                                  <div className="flex items-center justify-between gap-1 mb-1">
+                                    <span className={`truncate max-w-[110px] rounded px-1.5 py-0.2 text-[8px] font-bold uppercase tracking-wider border ${dayColor}`} title={ongoingSlot.days}>
+                                      {ongoingSlot.days}
+                                    </span>
+                                    <span className="text-[9px] font-semibold text-muted-foreground shrink-0">
+                                      ends {formatSlotTime(ongoingSlot.endTime)}
                                     </span>
                                   </div>
+                                  <div className="font-semibold text-foreground text-xs truncate" title={ongoingSlot.assignments.map((a) => a.course?.name || 'Class').join(' + ')}>
+                                    {ongoingSlot.assignments.map((a) => a.course?.name || 'Class').join(' + ')}
+                                  </div>
+                                  <div className="text-[9px] text-muted-foreground mt-1 flex items-center justify-between">
+                                    <span>Ongoing slot</span>
+                                    <span className="font-medium text-foreground">{ongoingSlot.seatSummary.totalEnrolled}/{ongoingSlot.seatSummary.roomCapacity} seats</span>
+                                  </div>
                                 </div>
-
-                                {/* Course Names */}
-                                <div className="font-bold text-foreground text-xs leading-snug line-clamp-2">
-                                  {slotAssignments.map((a) => a.course?.name || 'Class').join(' + ')}
-                                </div>
-
-                                {/* Teacher & Real-time Seat Badge */}
-                                <div className="flex items-center justify-between gap-1 mt-1 text-[10px]">
-                                  <span className="text-muted-foreground truncate max-w-[65%]">
-                                    {slotAssignments.map((a) => (a.teacher?.firstName ? a.teacher.firstName : 'TBD')).join(', ')}
-                                  </span>
-
-                                  <span
-                                    className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold shrink-0 ${
-                                      isFull
-                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300'
-                                        : isAlmostFull
-                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
-                                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
-                                    }`}
-                                  >
-                                    {isFull ? 'FULL' : `${seatSummary.availableSeats} Free`}
-                                  </span>
-                                </div>
-                              </div>
-                            )
-                          })}
-
-                          {/* Ongoing multi-hour slots */}
-                          {ongoingSlots.map((ongoingSlot) => {
-                            const dayColor = getDayBadgeColor(ongoingSlot.days)
-                            return (
-                              <div
-                                key={`ongoing-${ongoingSlot.slotId}`}
-                                onClick={() => setSelectedCellSlotId(ongoingSlot.slotId)}
-                                className="group cursor-pointer rounded-xl border border-dashed border-border/80 bg-muted/40 p-1.5 text-[10px] transition hover:bg-muted/70 hover:border-indigo-400"
-                                title={`Ongoing class (${ongoingSlot.timeRangeFormatted}). Click to view details.`}
-                              >
-                                <div className="flex items-center justify-between gap-1">
-                                  <span className={`rounded px-1 py-0.2 text-[8px] font-bold uppercase tracking-wider border ${dayColor}`}>
-                                    {ongoingSlot.days}
-                                  </span>
-                                  <span className="text-[8px] font-semibold text-muted-foreground">
-                                    ongoing (ends {formatSlotTime(ongoingSlot.endTime)})
-                                  </span>
-                                </div>
-                                <div className="font-semibold text-foreground text-[11px] truncate mt-0.5">
-                                  {ongoingSlot.assignments.map((a) => a.course?.name || 'Class').join(' + ')}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </td>
                     )
                   })}
@@ -815,6 +1018,128 @@ export function ScheduleMatrixGrid({
           </tbody>
         </table>
       </div>
+
+      {/* ── Drag & Drop Reschedule Confirmation Modal ── */}
+      {reschedulePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-[28px] border border-border bg-card p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between border-b border-border pb-3">
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                  <Move size={12} />
+                  Reschedule Class
+                </span>
+                <h3 className="text-lg font-bold text-foreground mt-1">
+                  Move {reschedulePrompt.courseName}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setReschedulePrompt(null)
+                  setRescheduleMessage(null)
+                }}
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* From -> To Summary */}
+            <div className="space-y-2 text-xs">
+              <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Current Location:
+                </span>
+                <p className="font-semibold text-foreground">
+                  {reschedulePrompt.fromRoomName} • {reschedulePrompt.fromTimeDisplay} ({reschedulePrompt.days})
+                </p>
+              </div>
+
+              <div className="rounded-xl border-2 border-indigo-500/80 bg-indigo-50/40 dark:bg-indigo-950/40 p-3 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                  New Target Location:
+                </span>
+                <p className="font-bold text-foreground text-sm">
+                  {reschedulePrompt.targetRoomName} • {reschedulePrompt.targetTimeDisplay}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Room Capacity: {reschedulePrompt.targetRoomCapacity} seats • Enrolled Students: {reschedulePrompt.studentCount}
+                </p>
+              </div>
+            </div>
+
+            {/* Target Day Selector */}
+            <div className="space-y-1 text-xs">
+              <label className="block text-[11px] font-bold text-foreground">
+                Class Days Schedule:
+              </label>
+              <select
+                value={reschedulePrompt.days}
+                onChange={(e) =>
+                  setReschedulePrompt({
+                    ...reschedulePrompt,
+                    days: e.target.value
+                  })
+                }
+                className="w-full rounded-xl border border-border bg-muted/60 px-3 py-2 text-xs font-semibold text-foreground outline-none focus:border-indigo-500 focus:bg-card cursor-pointer"
+              >
+                {uniqueDays.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Feedback Message */}
+            {rescheduleMessage && (
+              <div
+                className={`rounded-xl p-3 text-xs font-semibold flex items-center gap-2 ${
+                  rescheduleMessage.success
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                }`}
+              >
+                {rescheduleMessage.success ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
+                <span>{rescheduleMessage.text}</span>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                disabled={isRescheduling}
+                onClick={handleConfirmReschedule}
+                className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {isRescheduling ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    Rescheduling...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={14} />
+                    Confirm Move
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReschedulePrompt(null)
+                  setRescheduleMessage(null)
+                }}
+                className="rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Slide-over Drawer for Detailed Slot Roster & 1-Click Transfers ── */}
       {activeDrawerSlot && (
@@ -872,6 +1197,20 @@ export function ScheduleMatrixGrid({
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   {activeDrawerSlot.seatSummary.availableSeats} seats
                 </span>
+              </div>
+
+              {/* Progress meter */}
+              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    activeDrawerSlot.seatSummary.status === 'FULL'
+                      ? 'bg-rose-500'
+                      : activeDrawerSlot.seatSummary.status === 'ALMOST_FULL'
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(100, activeDrawerSlot.seatSummary.occupancyPercent)}%` }}
+                />
               </div>
 
               {activeDrawerSlot.seatSummary.nextVacancyDate && (
